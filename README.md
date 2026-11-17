@@ -20,7 +20,7 @@ code, runs commands, edits files, and checks its own work, all on your phone. It
 cloud server doing the work somewhere else.
 
 It is a fork of [jeph/pipkin](https://github.com/jeph/pipkin). The Termux backend is being ported to
-Go on top of [sky-valley/pi](https://github.com/sky-valley/pi); the app is unchanged.
+Go on top of [PiG](https://github.com/MichaelKinsy/PiG) (Pi in Go); the app is unchanged.
 
 <p align="center">
   <picture>

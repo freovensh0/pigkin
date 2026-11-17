@@ -16,7 +16,7 @@ import (
 	"github.com/freovensh0/pigkin/backend/internal/modes"
 	// The Go port of Pi is the backend this host is built on; linking it
 	// makes its version part of the binary the app talks to.
-	_ "github.com/sky-valley/pi/coding"
+	_ "github.com/MichaelKinsy/PiG/coding"
 )
 
 const (
@@ -102,7 +102,7 @@ func piVersion() any {
 		return nil
 	}
 	for _, dependency := range info.Deps {
-		if dependency.Path == "github.com/sky-valley/pi" {
+		if dependency.Path == "github.com/MichaelKinsy/PiG" {
 			return dependency.Version
 		}
 	}

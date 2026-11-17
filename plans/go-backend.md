@@ -1,8 +1,8 @@
 # Go backend
 
 The app still starts the TypeScript host (`host/src/main.ts`) inside Termux. This plan replaces it
-with a Go host built on [sky-valley/pi](https://github.com/sky-valley/pi), a pure-Go port of the same
-Pi harness (`pi-ai`, `pi-agent-core`, `pi-coding-agent`), so the phone runs no Node.js.
+with a Go host built on [PiG](https://github.com/MichaelKinsy/PiG) (Pi in Go), a pure-Go port of the
+same Pi harness, pinned to Pi 1.5.0 and MIT-licensed, so chats need no Node.js.
 
 Today `backend/` holds the start of that host and is not wired into the app:
 
@@ -39,18 +39,20 @@ has to be ported with the extensions, not with the protocol core.
      `sessions`, `session_messages`, `backups`, `save_attachments`, `delete_sessions`.
    - `files`, `git`, `browse` in full, including remote folders over SSH.
    - `ensure`, `package_install`, `update_extensions`, `login`, `logout`, auth and provider modes on
-     `ai`'s model/auth runtime; `ModelRuntime` replaces the Pi SDK import.
+     PiG's `ai` model and credential runtime.
 2. **Agent chats**
-   - `rpc` on `coding.Session` and `agent.Agent`: streaming events, steering, subagent runs, session
-     persistence at `PI_CODING_AGENT_DIR` in Pi's JSONL v3 format.
+   - `rpc` on PiG's `coding` session and `agent` loop: streaming events, steering, subagent runs,
+     session persistence in `PI_CODING_AGENT_DIR` in Pi's JSONL v3 format.
    - `terminal` and `askpass`, including raw byte piping after the first message.
-   - `remote_*` on `env.ConnectSSH` / `RemoteExecutionEnv`, replacing `host/src/remote`.
+   - `remote_*` on PiG's `env` package, replacing `host/src/remote`.
 3. **Pi extensions**
-   The bundled extensions (`pigkin-subagents`, `pigkin-todo`, `pigkin-background`,
-   `pigkin-remote`, `pigkin-web-access`) are TypeScript loaded by Pi's Node runtime. The Go host
-   cannot load them; each has to become a Go tool or stay in a Node sidecar. `pigkin-web-access` is
-   the largest and needs its own parity work and license upkeep. The fd-3 channel and every topic in
-   `host/src/pi-extensions/pigkin-channel.ts` must be mirrored either way.
+   PiG's extension host runs Pi's TypeScript extensions through a process-based SDK alongside Go,
+   Rust, and Python ones, so the bundled extensions (`pigkin-subagents`, `pigkin-todo`,
+   `pigkin-background`, `pigkin-remote`, `pigkin-web-access`) can be reused where PiG's SDK matches
+   Pi's. Reuse means keeping Node on the phone for the extensions even though the agent is Go, so
+   each extension still needs a pass: the fd-3 channel and every topic in
+   `host/src/pi-extensions/pigkin-channel.ts` must exist under PiG, and `pigkin-web-access` (the
+   largest) carries its own parity and license upkeep.
 4. **Packaging and wiring**
    - Bundle the cross-compiled `pigkin-host` as an APK asset, point `HostLauncher.HOST_ASSET` and
      `TermuxSetup` at it, and stop installing Node and the pinned Pi under `PIGKIN_ROOT`.
@@ -64,5 +66,7 @@ has to be ported with the extensions, not with the protocol core.
   ported yet (`shortcut:` in `backend/internal/modes/browse.go`).
 - Remote browsing, search, and every SSH-backed mode are unported.
 - The hello's `nodeVersion` carries the Go runtime version; the app shows it as the runtime version.
+- PiG is a pre-stable 0.x port pinned to Pi 1.5.0, so parity gaps are tracked upstream and the
+  dependency needs a pin-and-review step on each bump.
 - Nothing in `backend/` is reachable from the app yet, so the TypeScript host remains the only
   backend that runs.
