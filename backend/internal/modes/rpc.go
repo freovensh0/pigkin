@@ -72,6 +72,10 @@ func rpc(ctx *Context) (host.Message, error) {
 	}
 	sessionPath, _ := ctx.Params["sessionPath"].(string)
 
+	if extensions := installedPigkinExtensions(ctx); len(extensions) > 0 {
+		return rpcWithPi(ctx, cwd, sessionPath, extensions)
+	}
+
 	exe, err := pigRPCBinary()
 	if err != nil {
 		return nil, err
