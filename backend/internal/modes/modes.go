@@ -26,6 +26,7 @@ var All = map[string]Mode{
 	"browse":  browse,
 	"files":   files,
 	"utility": utility,
+	"git":     git,
 }
 
 // Failure is the pigkin_result that reports err as a refusal.
