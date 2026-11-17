@@ -17,21 +17,15 @@ import io.pigkin.host.PlaySetup
  */
 internal object TermuxSetup {
   /**
-   * F-Droid: Node.js 22.19+, allow-external-apps, then back to Pigkin, the build with [packageName]: the debug build has
-   * its own package beside the release. `dpkg --configure -a` finishes an upgrade an earlier paste left half done.
-   * Packages are upgraded before Node.js is installed: a fresh F-Droid bootstrap ships an older openssl that the
-   * current nodejs package cannot link against ("CANNOT LINK EXECUTABLE node"), and a Node.js that can't start fails
-   * the version check the same way. `yes` answers dpkg's conffile prompts. A failed install stops before "done", so
-   * Pigkin isn't reopened as if setup had worked. Storage access is its own setup step.
+   * F-Droid: allow-external-apps, then back to Pigkin, the build with [packageName]: the debug build has its own
+   * package beside the release. The Go host is self-contained, so no runtime is installed here. A failed setup stops
+   * before "done", so Pigkin isn't reopened as if setup had worked. Storage access is its own setup step.
    */
   fun fdroidCommand(packageName: String): String = inBash(
-    "{ node -e \"const [a,b]=process.versions.node.split(/[.]/).map(Number);" +
-      "process.exit(a>22||(a===22&&b>=19)?0:1)\" " +
-      "2>/dev/null || { dpkg --configure -a; yes | pkg upgrade -y && pkg install -y nodejs; }; } && " +
-      "mkdir -p ~/.termux && { grep -qx allow-external-apps=true ~/.termux/termux.properties 2>/dev/null " +
+    "mkdir -p ~/.termux && { grep -qx allow-external-apps=true ~/.termux/termux.properties 2>/dev/null " +
       "|| echo allow-external-apps=true >> ~/.termux/termux.properties; } && termux-reload-settings " +
       "&& echo \"Pigkin setup done\" && am start -n $packageName/${MainActivity::class.java.name} >/dev/null " +
-      "|| echo \"Pigkin setup did not finish. Check your internet connection, then paste the command again.\"",
+      "|| echo \"Pigkin setup did not finish. Paste the command again.\"",
   )
 
   /**

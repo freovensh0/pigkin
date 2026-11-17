@@ -10,6 +10,25 @@ plugins {
 }
 
 val hostDir = rootProject.layout.projectDirectory.dir("host")
+val backendDir = rootProject.layout.projectDirectory.dir("backend")
+
+/** Cross-compiled Go host; AGP picks the output directory and wires the asset dependency. */
+abstract class GoHostBundle : Exec() {
+  @get:OutputDirectory
+  abstract val outputDir: DirectoryProperty
+
+  override fun exec() {
+    val binary = outputDir.get().file("pigkin-host").asFile
+    // A binary that was renamed or removed would otherwise stay behind and ship in the APK.
+    binary.parentFile.deleteRecursively()
+    binary.parentFile.mkdirs()
+    environment("GOOS", "android")
+    environment("GOARCH", "arm64")
+    environment("CGO_ENABLED", "0")
+    args("-o", binary.absolutePath, "./cmd/pigkin-host")
+    super.exec()
+  }
+}
 
 /** esbuild bundle of the Termux host; AGP picks the output directory and wires the dependency. */
 abstract class HostBundle : Exec() {
@@ -23,6 +42,16 @@ abstract class HostBundle : Exec() {
     environment("OUT", out.absolutePath)
     super.exec()
   }
+}
+
+// The Go host is cross-compiled from backend/; its binary ships as the pigkin-host APK asset.
+val goHostBuild = tasks.register<GoHostBundle>("goHostBuild") {
+  description = "Cross-compiles the Go host into the pigkin-host APK asset."
+  workingDir = backendDir.asFile
+  inputs.dir(backendDir.dir("cmd"))
+  inputs.dir(backendDir.dir("internal"))
+  inputs.files(backendDir.file("go.mod"), backendDir.file("go.sum"))
+  commandLine("go", "build")
 }
 
 // The Termux-side host is a TypeScript package; its bundle ships as an APK asset.
@@ -487,6 +516,7 @@ android {
 androidComponents {
   onVariants { variant ->
     variant.sources.assets?.addGeneratedSourceDirectory(hostBuild, HostBundle::outputDir)
+    variant.sources.assets?.addGeneratedSourceDirectory(goHostBuild, GoHostBundle::outputDir)
     variant.sources.assets?.addGeneratedSourceDirectory(syntaxSources, SyntaxSources::assetsDir)
   }
 }
@@ -531,7 +561,7 @@ tasks.withType<dev.detekt.gradle.Detekt>().named { it == "detektDebug" }.configu
 }
 
 tasks.named("check") {
-  dependsOn("detektDebug", "detektDebugUnitTest", hostCheck)
+  dependsOn("detektDebug", "detektDebugUnitTest", hostCheck, goHostBuild)
 }
 
 dependencies {
