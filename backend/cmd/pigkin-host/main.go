@@ -37,6 +37,15 @@ func main() {
 		cli.Main(os.Args[2:], nil)
 		return
 	}
+	// ssh runs the host as its askpass program with the question as an
+	// argument; that role never connects back to the app.
+	if len(os.Args) >= 2 && os.Args[1] == "askpass" {
+		prompt := ""
+		if len(os.Args) >= 3 {
+			prompt = os.Args[2]
+		}
+		os.Exit(modes.Askpass(prompt))
+	}
 
 	mode, port, ok := arguments()
 	if !ok {

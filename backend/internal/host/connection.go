@@ -23,8 +23,9 @@ const (
 // before a listener is set are queued and delivered to it, so a mode can send
 // its ready line before it reads the next request.
 type Connection struct {
-	conn net.Conn
-	mu   sync.Mutex
+	conn    net.Conn
+	mu      sync.Mutex
+	writeMu sync.Mutex
 
 	queue    []Message
 	listener func(Message)
@@ -181,8 +182,8 @@ func (c *Connection) Send(message Message) {
 	if err != nil {
 		return
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
 	_, _ = c.conn.Write(line)
 }
 
