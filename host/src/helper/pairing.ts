@@ -25,7 +25,7 @@ export function decryptPairingBody(bodyHex: string, token: Buffer, sid: string):
   }
   const body = Buffer.from(hex, "hex");
   const decipher = createDecipheriv("aes-256-gcm", pairingKey(token), body.subarray(0, NONCE_BYTES));
-  decipher.setAAD(Buffer.from(`pigkin-pair|${sid}`, "utf8"));
+  decipher.setAAD(Buffer.from(`pipkin-pair|${sid}`, "utf8"));
   decipher.setAuthTag(body.subarray(body.length - TAG_BYTES));
   try {
     return Buffer.concat([decipher.update(body.subarray(NONCE_BYTES, body.length - TAG_BYTES)), decipher.final()]);
