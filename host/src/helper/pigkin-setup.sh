@@ -52,6 +52,19 @@ write_file() {
   fi
 }
 
+# 2. Node.js 22.19 or newer, which helper.mjs pair needs before ensure installs the agent's runtime.
+node_ok() {
+  node -e 'const [a, b] = process.versions.node.split(".").map(Number); process.exit(a > 22 || (a === 22 && b >= 19) ? 0 : 1)' \
+    >/dev/null 2>&1
+}
+dpkg --configure -a || true
+if ! node_ok; then
+  say "Installing Node.js. This can take a few minutes."
+  yes | pkg upgrade -y
+  pkg install -y nodejs
+  node_ok || fail "Node.js couldn't be installed. Check your internet connection and paste the command again."
+fi
+
 # 3. The helper's files and ports, the boot script, the shell hooks and <name>-start.
 { mkdir -p "$dir" && chmod 700 "$dir"; } || fail "Couldn't create $dir."
 fetch() { # $1 = name, $2 = sha256, $3 = mode

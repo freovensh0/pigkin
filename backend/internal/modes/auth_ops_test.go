@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/freovensh0/pigkin/backend/internal/host"
@@ -406,7 +407,13 @@ func TestSubscriptionModelsOpWithKey(t *testing.T) {
 	if len(models) != 2 {
 		t.Fatalf("models = %v", models)
 	}
-	if models[0]["id"] != "known-model" || models[1]["id"] != "new-model" {
+	ids := make([]string, 0, len(models))
+	for _, model := range models {
+		id, _ := model["id"].(string)
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	if !reflect.DeepEqual(ids, []string{"known-model", "new-model"}) {
 		t.Fatalf("models = %v", models)
 	}
 }

@@ -68,7 +68,7 @@ func main() {
 		"protocol":      protocol,
 		"token":         env.Token,
 		"mode":          mode,
-		"piVersion":     modes.RuntimeVersion(),
+		"piVersion":     modes.PiVersion(env.Root),
 		"nodeVersion":   runtime.Version(),
 		"configDir":     env.ConfigDir,
 		"home":          env.Home,
