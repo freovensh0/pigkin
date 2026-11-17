@@ -166,6 +166,15 @@ pnpm install --frozen-lockfile
 pnpm run check
 ```
 
+Run the Go backend's checks (it is not wired into the app yet; see
+[plans/go-backend.md](plans/go-backend.md)):
+
+```sh
+cd backend
+go test ./...
+GOOS=android GOARCH=arm64 CGO_ENABLED=0 go build ./cmd/pigkin-host
+```
+
 Run the website locally:
 
 ```sh
