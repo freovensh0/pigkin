@@ -192,7 +192,7 @@ internal class SetupSession(
 
     /**
      * hex(nonce || AES-256-GCM(pk, nonce, key, aad = "pigkin-pair|" + sid) || tag), where
-     * pk = HMAC(token, "pigkin-pair-key").
+     * pk = HMAC(token, "pipkin-pair-key").
      */
     fun pairingBody(token: ByteArray, sid: String, key: ByteArray, nonce: ByteArray): ByteArray {
       val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -201,7 +201,7 @@ internal class SetupSession(
       return (nonce + cipher.doFinal(key)).toHexString().toByteArray(Charsets.US_ASCII)
     }
 
-    fun pairingKey(token: ByteArray): ByteArray = HelperProtocol.hmac(token, "pigkin-pair-key")
+    fun pairingKey(token: ByteArray): ByteArray = HelperProtocol.hmac(token, "pipkin-pair-key")
   }
 }
 

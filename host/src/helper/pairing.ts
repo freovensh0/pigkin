@@ -1,6 +1,6 @@
 /**
  * `node helper.mjs pair`: fetches the pending pairing key from Pigkin's setup endpoint and stores it as `key`.
- * The setup command carries the token T; the body is encrypted under pk = HMAC(T, "pigkin-pair-key") so the key
+ * The setup command carries the token T; the body is encrypted under pk = HMAC(T, "pipkin-pair-key") so the key
  * never appears in the terminal or the command itself.
  */
 import { createDecipheriv, createHmac } from "node:crypto";
@@ -14,7 +14,7 @@ const TAG_BYTES = 16;
 const KEY_BYTES = 32;
 
 export function pairingKey(token: Buffer): Buffer {
-  return createHmac("sha256", token).update("pigkin-pair-key", "ascii").digest();
+  return createHmac("sha256", token).update("pipkin-pair-key", "ascii").digest();
 }
 
 /** Decrypts the `/key` response body (hex of nonce || ciphertext || tag) into the 32-byte pairing key. */
