@@ -22,13 +22,14 @@ type Mode func(*Context) (host.Message, error)
 // All is the modes ported so far. Every other mode the TypeScript host has is
 // still there; see plans/go-backend.md for the port order.
 var All = map[string]Mode{
-	"hello":   hello,
-	"browse":  browse,
-	"files":   files,
-	"login":   login,
-	"utility": utility,
-	"git":     git,
-	"rpc":     rpc,
+	"hello":    hello,
+	"browse":   browse,
+	"files":    files,
+	"login":    login,
+	"utility":  utility,
+	"git":      git,
+	"rpc":      rpc,
+	"terminal": terminal,
 }
 
 // Failure is the pigkin_result that reports err as a refusal.
