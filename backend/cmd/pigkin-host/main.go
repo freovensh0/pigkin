@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -69,7 +68,7 @@ func main() {
 		"protocol":      protocol,
 		"token":         env.Token,
 		"mode":          mode,
-		"piVersion":     piVersion(),
+		"piVersion":     modes.RuntimeVersion(),
 		"nodeVersion":   runtime.Version(),
 		"configDir":     env.ConfigDir,
 		"home":          env.Home,
@@ -109,21 +108,6 @@ func main() {
 	}
 	conn.Send(result)
 	_ = conn.Close()
-}
-
-// piVersion is the Go Pi port's version from the build, or nil when the binary
-// was built without module info.
-func piVersion() any {
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return nil
-	}
-	for _, dependency := range info.Deps {
-		if dependency.Path == "github.com/MichaelKinsy/PiG" {
-			return dependency.Version
-		}
-	}
-	return nil
 }
 
 // arguments reads the mode and connect-back port.

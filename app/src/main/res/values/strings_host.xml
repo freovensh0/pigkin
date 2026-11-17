@@ -11,6 +11,8 @@
     <!-- Configuration changes -->
     <string name="host_config_busy">Pigkin is backing up, restoring or updating the configuration; try again in a moment</string>
     <string name="host_config_lock_busy">Another backup, restore or extension update is running.</string>
+    <!-- %1$s: what the host was asked to do, such as "Installing npm packages". -->
+    <string name="host_unsupported_mode"><xliff:g id="feature" example="Installing npm packages">%1$s</xliff:g> isn\'t supported by this host yet.</string>
     <!-- %1$s: the ids of the running Pi processes, such as "4242, 4343". "pi" is the command the user started in a terminal. -->
     <string name="host_pi_running">Pi is still running (process <xliff:g id="processes" example="4242">%1$s</xliff:g>). Stop it, for example by quitting <xliff:g id="command">pi</xliff:g> in a terminal, and try again.</string>
     <!-- %1$s: the path of the chat's session file in Termux. -->

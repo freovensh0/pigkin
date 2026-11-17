@@ -163,6 +163,11 @@ func backupDeleteOp(ctx *Context) (host.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	release, err := withConfigLock(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}

@@ -104,6 +104,7 @@ private sealed interface Template {
 private val templates: Map<String, Template> = mapOf(
   "config_busy" to Template.Text(R.string.host_config_busy),
   "config_lock_busy" to Template.Text(R.string.host_config_lock_busy),
+  "unsupported_mode" to Template.Text(R.string.host_unsupported_mode, listOf("feature")),
   "pi_running" to Template.Text(R.string.host_pi_running, listOf("processes")),
   "session_not_found" to Template.Text(R.string.host_session_not_found, listOf("path")),
   "models_invalid" to Template.Text(R.string.host_models_invalid),
