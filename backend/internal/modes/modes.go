@@ -25,6 +25,7 @@ var All = map[string]Mode{
 	"hello":   hello,
 	"browse":  browse,
 	"files":   files,
+	"login":   login,
 	"utility": utility,
 	"git":     git,
 }

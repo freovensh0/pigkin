@@ -41,12 +41,22 @@ func utility(ctx *Context) (host.Message, error) {
 type utilityOp func(*Context) (host.Message, error)
 
 var utilityOps = map[string]utilityOp{
-	"sessions":         sessionsOp,
-	"session_messages": sessionMessagesOp,
-	"delete_sessions":  deleteSessionsOp,
-	"save_attachments": saveAttachmentsOp,
-	"backups":          listBackupsOp,
-	"backup_delete":    backupDeleteOp,
+	"sessions":            sessionsOp,
+	"session_messages":    sessionMessagesOp,
+	"delete_sessions":     deleteSessionsOp,
+	"save_attachments":    saveAttachmentsOp,
+	"backups":             listBackupsOp,
+	"backup_delete":       backupDeleteOp,
+	"logout":              logoutOp,
+	"auth_status":         authStatusOp,
+	"provider_models":     providerModelsOp,
+	"provider_save":       providerSaveOp,
+	"provider_remove":     providerRemoveOp,
+	"model_defaults":      modelDefaultsOp,
+	"default_model":       defaultModelOp,
+	"subscription_models": subscriptionModelsOp,
+	"subscription_save":   subscriptionSaveOp,
+	"local_models_sync":   localModelsSyncOp,
 }
 
 func answerUtility(ctx *Context, op, params any) host.Message {
