@@ -24,6 +24,7 @@ type Mode func(*Context) (host.Message, error)
 var All = map[string]Mode{
 	"hello":  hello,
 	"browse": browse,
+	"files":  files,
 }
 
 // Failure is the pigkin_result that reports err as a refusal.
