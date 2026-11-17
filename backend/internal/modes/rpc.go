@@ -12,9 +12,11 @@ import (
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
 
-// systemAppend is Pigkin's identity and Termux guidance, appended to the
-// agent's system prompt for every local chat (host/src/prompt.ts).
-const systemAppend = `The harness described above is Pi. You are Pigkin: an AI coding assistant that runs on Pi inside Termux on the user's Android device. The user talks to you through the Pigkin app's chat UI. Call yourself Pigkin; Pi's docs describe how you work.
+// pigkinIdentity opens the agent's system prompt for every chat (host/src/prompt.ts).
+const pigkinIdentity = `The harness described above is Pi. You are Pigkin: an AI coding assistant that runs on Pi inside Termux on the user's Android device. The user talks to you through the Pigkin app's chat UI. Call yourself Pigkin; Pi's docs describe how you work.`
+
+// termuxAppend is the Termux guidance added for a chat in a folder on the phone.
+const termuxAppend = `
 
 Termux is not a standard Linux system:
 - Software can be installed with ` + "`pkg`" + `, Termux's package manager. The ` + "`proot`" + ` package, which provides ` + "`termux-chroot`" + `, and ` + "`proot-distro`" + ` are both available through ` + "`pkg`" + `.
@@ -30,6 +32,27 @@ Termux docs: https://wiki.termux.com/wiki/Differences_from_Linux (includes ` + "
 Termux env docs: https://github.com/termux/termux-packages/wiki/Termux-execution-environment
 PRoot docs: https://wiki.termux.com/wiki/PRoot
 proot-distro docs: https://github.com/termux/proot-distro`
+
+// systemAppend is Pigkin's identity and Termux guidance for a local chat.
+const systemAppend = pigkinIdentity + termuxAppend
+
+// hostLabel names a remote host in a chat's prompt, as host/src/prompt.ts does.
+func hostLabel(host Host) string {
+	if host.Name == host.Address {
+		return host.Name
+	}
+	return host.Name + " (" + host.Address + ")"
+}
+
+// remoteSystemAppend replaces the Termux guidance for a remote chat: the tools
+// run on another machine, but Pi and its settings stay in Termux.
+func remoteSystemAppend(host Host, remotePath string) string {
+	return pigkinIdentity + `
+
+This chat works in a folder on another machine, reached over SSH: ` + remotePath + ` on ` + hostLabel(host) + `. Your read, write, edit and bash tools, and the commands the user runs with ` + "`" + `!` + "`" + `, run on that machine, in that folder, and ` + "`" + `~` + "`" + ` in their paths means its home folder. Pi itself, its settings, sessions and docs stay on the phone, in Termux; Termux's conventions apply only there, not to the remote machine, which has its own tools, package manager and folder layout.
+
+There are no grep, find or ls tools in this chat: use bash on the remote machine instead. The remote folder's AGENTS.md or CLAUDE.md files aren't loaded; read them yourself when they matter.`
+}
 
 const (
 	stderrTail = 16 * 1024
@@ -67,12 +90,14 @@ func rpc(ctx *Context) (host.Message, error) {
 	if err != nil || !info.IsDir() {
 		return nil, host.NewError("cwd_missing", "Folder not found: "+cwd, &host.Text{Key: "folder_not_found", Args: map[string]any{"path": cwd}})
 	}
-	if remoteWorkspace(ctx.Env, cwd) {
-		return nil, host.NewError("bad_params", remoteNotPorted, nil)
-	}
 	sessionPath, _ := ctx.Params["sessionPath"].(string)
 
-	if extensions := installedPigkinExtensions(ctx); len(extensions) > 0 {
+	extensions := installedPigkinExtensions(ctx)
+	if len(extensions) == 0 && remoteWorkspace(ctx.Env, cwd) {
+		// PiG's own RPC backend has no remote tool overrides; only bundled Node Pi can run them.
+		return nil, host.NewError("pi_version", "The agent's bundled extensions are out of date", &host.Text{Key: "agent_extensions_outdated"})
+	}
+	if len(extensions) > 0 {
 		return rpcWithPi(ctx, cwd, sessionPath, extensions)
 	}
 

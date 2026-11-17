@@ -16,7 +16,10 @@ import (
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
 
-const piPackage = "@earendil-works/pi-coding-agent"
+const (
+	piPackage       = "@earendil-works/pi-coding-agent"
+	remoteExtension = "pigkin-remote"
+)
 
 var extensionNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
@@ -105,6 +108,38 @@ func installedPigkinExtensions(ctx *Context) []pigkinExtension {
 	return extensions
 }
 
+type remoteChat struct {
+	extension string
+	prompt    string
+}
+
+// remoteChatFor resolves the remote workspace a stand-in cwd names. A local
+// folder needs no remote chat; a remote one needs pigkin-remote installed.
+func remoteChatFor(ctx *Context, cwd string, extensions []pigkinExtension) (*remoteChat, error) {
+	paths := remoteLayoutFor(ctx.Env)
+	standIn, err := readStandIn(paths.remotes, cwd)
+	if err != nil || standIn == nil {
+		return nil, err
+	}
+	var extension string
+	for _, candidate := range extensions {
+		if candidate.name == remoteExtension {
+			extension = candidate.path
+			break
+		}
+	}
+	if extension == "" {
+		return nil, host.NewError("pi_version", "The agent's bundled extensions are out of date", &host.Text{Key: "agent_extensions_outdated"})
+	}
+	hostID, _ := standIn["hostId"].(string)
+	remotePath, _ := standIn["path"].(string)
+	target, err := findHost(paths, hostID)
+	if err != nil {
+		return nil, err
+	}
+	return &remoteChat{extension: extension, prompt: remoteSystemAppend(target, remotePath)}, nil
+}
+
 // rpcWithPi runs the Node Pi the app bundles, with the same fd-3 channel and
 // --extension paths as host/src/modes/rpc.ts. PiG's own extension host spawns
 // Node with no ExtraFiles (coding/extension/host/subprocess/host.go:3192-3269),
@@ -121,14 +156,27 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 			return nil, err
 		}
 	}
+	remote, err := remoteChatFor(ctx, cwd, extensions)
+	if err != nil {
+		return nil, err
+	}
 	args := []string{entry, "--mode", "rpc"}
 	if sessionPath != "" {
 		args = append(args, "--session", sessionPath)
 	}
 	for _, extension := range extensions {
+		if remote != nil && extension.name == remoteExtension {
+			continue
+		}
 		args = append(args, "--extension", extension.path)
 	}
-	args = append(args, "--append-system-prompt", systemAppend)
+	prompt := systemAppend
+	if remote != nil {
+		// pigkin-remote replaces the local tools, so Pi must load it last.
+		args = append(args, "--extension", remote.extension)
+		prompt = remote.prompt
+	}
+	args = append(args, "--append-system-prompt", prompt)
 
 	cmd := exec.Command(node, args...)
 	cmd.Dir = cwd
@@ -136,6 +184,7 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 		"PIGKIN_ROOT="+ctx.Env.Root,
 		"PI_CODING_AGENT_DIR="+ctx.Env.ConfigDir,
 		"HOME="+ctx.Env.Home,
+		"PREFIX="+ctx.Env.Prefix,
 	)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

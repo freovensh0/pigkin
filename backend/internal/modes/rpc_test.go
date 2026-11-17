@@ -6,12 +6,50 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
+
+func TestRemoteSystemAppend(t *testing.T) {
+	prompt := remoteSystemAppend(Host{Name: "devbox", Address: "me@devbox.lan"}, "/home/me/src/api")
+	for _, want := range []string{pigkinIdentity, "/home/me/src/api", "devbox (me@devbox.lan)", "over SSH", "no grep, find or ls tools"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("remote prompt missing %q: %s", want, prompt)
+		}
+	}
+	if strings.Contains(prompt, "pkg") || strings.Contains(prompt, "$PREFIX") {
+		t.Fatalf("remote prompt carried Termux guidance: %s", prompt)
+	}
+	if label := hostLabel(Host{Name: "box", Address: "box"}); label != "box" {
+		t.Fatalf("host label = %q", label)
+	}
+}
+
+func TestRemoteChatFor(t *testing.T) {
+	env := testEnv(t)
+	id := saveTestHost(t, env, host.Message{"name": "devbox", "auth": "key", "address": "me@devbox.lan", "port": float64(22)})
+	cwd := opData(t, runOp(t, env, "remote_workspace", host.Message{"hostId": id, "path": "/home/me/src/api"}))["cwd"].(string)
+	extensions := []pigkinExtension{{name: "pigkin-background", path: "/bg"}, {name: remoteExtension, path: "/remote"}}
+	chat, err := remoteChatFor(&Context{Env: env}, cwd, extensions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if chat.extension != "/remote" || !strings.Contains(chat.prompt, "/home/me/src/api") {
+		t.Fatalf("remote chat = %+v", chat)
+	}
+	_, err = remoteChatFor(&Context{Env: env}, cwd, extensions[:1])
+	if failure, ok := err.(*host.Error); !ok || failure.I18n == nil || failure.I18n.Key != "agent_extensions_outdated" {
+		t.Fatalf("missing extension: %v", err)
+	}
+	local, err := remoteChatFor(&Context{Env: env}, env.Home, extensions)
+	if err != nil || local != nil {
+		t.Fatalf("local chat: %v, %+v", err, local)
+	}
+}
 
 func TestRPCRefusesMissingFolder(t *testing.T) {
 	_, err := rpc(&Context{Params: host.Message{"cwd": filepath.Join(t.TempDir(), "gone")}})

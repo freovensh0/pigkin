@@ -134,8 +134,48 @@ func TestTerminalRefusesRemoteWorkspace(t *testing.T) {
 	}
 	_, err := terminal(&Context{Env: env, Params: host.Message{"cwd": standIn, "rows": 24, "cols": 80}})
 	var refusal *host.Error
-	if !errors.As(err, &refusal) || refusal.Code != "bad_params" || refusal.Message != remoteNotPorted {
-		t.Fatalf("got %v, want a remote refusal", err)
+	if !errors.As(err, &refusal) || refusal.Code != "remote_host_unknown" || refusal.I18n == nil || refusal.I18n.Key != "remote_host_unknown" {
+		t.Fatalf("got %v, want a removed-host refusal", err)
+	}
+}
+
+func TestRemoteShellCommand(t *testing.T) {
+	r := remote{
+		paths: remoteLayoutFor(host.Env{ConfigDir: "/state/pi", Prefix: "/usr", Home: "/home/me"}),
+		host:  Host{ID: "abc123456789", Name: "devbox", Address: "me@devbox.lan", Auth: hostAuthKey},
+	}
+	command, err := remoteShellCommand(r, "/home/me/src/api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		`stty rows "$PIGKIN_ROWS" cols "$PIGKIN_COLS"`,
+		`tty > "$PIGKIN_TTY"`,
+		`exec 2>"$PIGKIN_SSH_ERRORS"`,
+		"unset PIGKIN_ROWS PIGKIN_COLS PIGKIN_TTY PIGKIN_SSH_ERRORS",
+		"-tt",
+		base64.StdEncoding.EncodeToString([]byte(`cd -- '/home/me/src/api' && exec "$SHELL" -l`)),
+	} {
+		if !strings.Contains(command, want) {
+			t.Fatalf("command missing %q: %s", want, command)
+		}
+	}
+}
+
+func TestRemoteFailure(t *testing.T) {
+	r := remote{
+		paths: remoteLayoutFor(host.Env{ConfigDir: "/state/pi", Prefix: "/usr", Home: "/home/me"}),
+		host:  Host{ID: "abc123456789", Name: "devbox", Address: "me@devbox.lan", Auth: hostAuthKey},
+	}
+	if failure := remoteFailure(r, 0, ""); failure != nil {
+		t.Fatalf("a normal exit has no failure: %v", failure)
+	}
+	full := sessionsFull(r.host.Name).Message
+	if failure := remoteFailure(r, 255, "noise\n"+full+"\n"); failure == nil || failure.Code != "remote_sessions_full" {
+		t.Fatalf("sessions full: %v", failure)
+	}
+	if failure := remoteFailure(r, 255, "me@devbox.lan: Permission denied (publickey).\n"); failure == nil || failure.Code != "remote_auth_failed" {
+		t.Fatalf("auth refused: %v", failure)
 	}
 }
 

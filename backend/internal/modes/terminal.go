@@ -31,6 +31,47 @@ const (
 	commLength     = 15
 )
 
+// remoteShellCommand is SHELL_COMMAND for a remote workspace. ssh -tt runs the
+// remote user's login shell in the remote folder, through sessionScript so a
+// refused session is retried; ssh's own messages go to PIGKIN_SSH_ERRORS so a
+// failed connection can be told from the shell's output (host/src/modes/terminal.ts).
+func remoteShellCommand(r remote, path string) (string, error) {
+	quotedPath, err := shellQuote(path)
+	if err != nil {
+		return "", err
+	}
+	session, err := sessionScript(r, remoteScript(`cd -- `+quotedPath+` && exec "$SHELL" -l`), []string{"-tt"}, os.Getpid())
+	if err != nil {
+		return "", err
+	}
+	return strings.Join([]string{
+		`stty rows "$PIGKIN_ROWS" cols "$PIGKIN_COLS"`,
+		`tty > "$PIGKIN_TTY"`,
+		`exec 2>"$PIGKIN_SSH_ERRORS"`,
+		"unset PIGKIN_ROWS PIGKIN_COLS PIGKIN_TTY PIGKIN_SSH_ERRORS",
+		"{\n" + session + "\n}",
+	}, " && "), nil
+}
+
+// remoteFailure says why a remote shell's ssh exited with 255, unless the
+// remote shell ended it while the connection stayed up.
+func remoteFailure(r remote, code any, errors string) *host.Error {
+	number, ok := code.(int)
+	if !ok || number != 255 {
+		return nil
+	}
+	if failure := sessionFailure(r, &number, errors); failure != nil {
+		return failure
+	}
+	if isConnected(r) {
+		return nil
+	}
+	if failure := classifySshFailure(errors, failureContext{name: r.host.Name, auth: r.host.Auth}); failure != nil {
+		return failure
+	}
+	return unreachable(r.host.Name, "Connection lost")
+}
+
 var shells = map[string]bool{
 	"sh": true, "login": true, "ash": true, "bash": true, "dash": true,
 	"zsh": true, "fish": true, "ksh": true, "mksh": true, "oksh": true,
@@ -296,8 +337,12 @@ func terminal(ctx *Context) (host.Message, error) {
 	if err != nil || !info.IsDir() {
 		return nil, host.NewError("cwd_missing", "Folder not found: "+cwd, &host.Text{Key: "folder_not_found", Args: map[string]any{"path": cwd}})
 	}
-	if remoteWorkspace(ctx.Env, cwd) {
-		return nil, host.NewError("bad_params", remoteNotPorted, nil)
+	relay, remotePath, err := remoteFolderFor(ctx, cwd)
+	if err != nil {
+		return nil, err
+	}
+	if relay != nil && !sshInstalled(relay.paths) {
+		return nil, sshMissing()
 	}
 
 	deviceFile := filepath.Join(ctx.Env.Root, fmt.Sprintf("terminal-tty-%d", os.Getpid()))
@@ -308,7 +353,16 @@ func terminal(ctx *Context) (host.Message, error) {
 		"PIGKIN_COLS="+strconv.Itoa(cols),
 		"PIGKIN_TTY="+deviceFile,
 	)
-	cmd := exec.Command(filepath.Join(ctx.Env.Prefix, "bin", "script"), "-qfec", shellCommand, "/dev/null")
+	command := shellCommand
+	errorsFile := ""
+	if relay != nil {
+		errorsFile = filepath.Join(ctx.Env.Root, fmt.Sprintf("terminal-ssh-%d", os.Getpid()))
+		env = append(env, "SHELL="+filepath.Join(ctx.Env.Prefix, "bin", "sh"), "PIGKIN_SSH_ERRORS="+errorsFile)
+		if command, err = remoteShellCommand(*relay, remotePath); err != nil {
+			return nil, err
+		}
+	}
+	cmd := exec.Command(filepath.Join(ctx.Env.Prefix, "bin", "script"), "-qfec", command, "/dev/null")
 	cmd.Dir = cwd
 	cmd.Env = env
 	stdin, err := cmd.StdinPipe()
@@ -370,7 +424,11 @@ func terminal(ctx *Context) (host.Message, error) {
 		}
 	}()
 
-	stopWatching := watchBusy(ctx, cmd.Process.Pid)
+	stopWatching := func() {}
+	if relay == nil {
+		// The remote's processes can't be seen from here, so its busy flag stays idle.
+		stopWatching = watchBusy(ctx, cmd.Process.Pid)
+	}
 	childDone := make(chan struct{})
 	go func() {
 		// script only forwards SIGTERM, which the shell ignores; killing it
@@ -402,6 +460,15 @@ func terminal(ctx *Context) (host.Message, error) {
 	} else if waitErr != nil {
 		code = nil
 	}
-	ctx.Conn.Send(host.Message{"type": "pigkin_exit", "code": code, "signal": signal, "stderr": stderr.String()})
+	result := host.Message{"type": "pigkin_exit", "code": code, "signal": signal, "stderr": stderr.String()}
+	if relay != nil {
+		errors, _ := os.ReadFile(errorsFile)
+		_ = os.Remove(errorsFile)
+		if failure := remoteFailure(*relay, code, string(errors)); failure != nil {
+			ctx.Conn.Send(host.Message{"type": "output", "data": base64.StdEncoding.EncodeToString([]byte("\r\n" + failure.Message + "\r\n"))})
+			result["error"] = errorJSON(failure)
+		}
+	}
+	ctx.Conn.Send(result)
 	return host.Message{}, nil
 }

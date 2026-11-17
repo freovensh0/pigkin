@@ -56,6 +56,23 @@ func createStandIn(remotes, hostID, value string) (string, error) {
 	return cwd, nil
 }
 
+// remoteFolderFor reports the host and folder a stand-in cwd names, or nil for
+// a local folder. A removed host is a refusal the app can show.
+func remoteFolderFor(ctx *Context, cwd string) (*remote, string, error) {
+	paths := remoteLayoutFor(ctx.Env)
+	standIn, err := readStandIn(paths.remotes, cwd)
+	if err != nil || standIn == nil {
+		return nil, "", err
+	}
+	hostID, _ := standIn["hostId"].(string)
+	remotePath, _ := standIn["path"].(string)
+	target, err := findHost(paths, hostID)
+	if err != nil {
+		return nil, "", err
+	}
+	return &remote{paths: paths, host: target}, remotePath, nil
+}
+
 // listStandIns reports every stand-in, including those of removed hosts whose
 // chats still need a label.
 func listStandIns(remotes string) ([]host.Message, error) {
