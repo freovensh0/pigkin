@@ -60,7 +60,7 @@ class PlaySetupTest {
       SecretKeySpec(SetupSession.pairingKey(session.token), "AES"),
       GCMParameterSpec(128, sealed.copyOfRange(0, 12)),
     )
-    cipher.updateAAD("pigkin-pair|${session.sid}".toByteArray())
+    cipher.updateAAD("pipkin-pair|${session.sid}".toByteArray())
     assertArrayEquals(session.key, cipher.doFinal(sealed.copyOfRange(12, sealed.size)))
     assertEquals(1, servedKeys.size)
     assertArrayEquals(session.key, servedKeys.single())
