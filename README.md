@@ -107,7 +107,7 @@ gh attestation verify pigkin-v<VERSION>.apk --repo freovensh0/pigkin
 
 ### Build from source
 
-The build needs a JDK, the Android SDK, and Node.js and pnpm on your `PATH`; see
+The build needs a JDK, the Android SDK, Go, and Node.js and pnpm on your `PATH`; see
 [Development](#development) for the exact toolchain.
 
 ```sh
@@ -147,6 +147,8 @@ Building Pigkin needs:
 - A JDK 17 or newer, through `JAVA_HOME` or `java` on your `PATH`, to start Gradle.
 - The Android SDK with API level 37, NDK `30.0.16248370`, and CMake `4.1.2`. Point Gradle at the SDK
   with `ANDROID_HOME` or `sdk.dir` in `local.properties`.
+- Go 1.26 or newer, the version pinned in `backend/go.mod`, which cross-compiles the host bundled in
+  the APK.
 - Node.js 22.19 or newer and [pnpm](https://pnpm.io), which build the host bundle.
 - A network connection on the first build, which downloads the pinned tree-sitter grammars and the
   JDKs Gradle provisions for itself.
@@ -166,11 +168,11 @@ pnpm install --frozen-lockfile
 pnpm run check
 ```
 
-Run the Go backend's checks (it is not wired into the app yet; see
-[plans/go-backend.md](plans/go-backend.md)):
+Run the Go backend's checks (see [plans/go-backend.md](plans/go-backend.md)):
 
 ```sh
 cd backend
+go vet ./...
 go test ./...
 GOOS=android GOARCH=arm64 CGO_ENABLED=0 go build ./cmd/pigkin-host
 ```

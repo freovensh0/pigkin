@@ -51,7 +51,7 @@ val goHostBuild = tasks.register<GoHostBundle>("goHostBuild") {
   inputs.dir(backendDir.dir("cmd"))
   inputs.dir(backendDir.dir("internal"))
   inputs.files(backendDir.file("go.mod"), backendDir.file("go.sum"))
-  commandLine("go", "build")
+  commandLine("go", "build", "-ldflags=-s -w")
 }
 
 // The Termux-side host is a TypeScript package; its bundle ships as an APK asset.

@@ -82,6 +82,18 @@ jobs:
         with:
           node-version: 24
 
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: backend/go.mod
+
+      # Gradle cross-compiles the Go host from backend/, so Go must be on PATH before the Android build.
+      - name: Check Go backend
+        working-directory: backend
+        run: |
+          go vet ./...
+          go test ./...
+          GOOS=android GOARCH=arm64 CGO_ENABLED=0 go build ./cmd/pigkin-host
+
       - name: Install Android SDK packages
         run: >-
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install
