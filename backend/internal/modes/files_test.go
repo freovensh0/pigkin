@@ -3,9 +3,7 @@ package modes
 import (
 	"bufio"
 	"bytes"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
@@ -448,38 +446,26 @@ func TestFilesRefusesTakenAndInvalidFolderNames(t *testing.T) {
 	}
 }
 
-func TestFilesRefusesRemoteWorkspaces(t *testing.T) {
-	_, err := files(&Context{Env: host.Env{}, Params: host.Message{"hostId": "devbox"}, Conn: nil})
-	var refusal *host.Error
-	if !errors.As(err, &refusal) || refusal.Code != "bad_params" || refusal.I18n != nil {
-		t.Fatalf("got %v, want a bad_params refusal", err)
-	}
-
+func TestFilesReportsRemoteFailures(t *testing.T) {
 	run, _, _ := newFiles(t)
-	remote := "/home/me/project"
-	sum := sha256.Sum256([]byte(remote))
-	standIn := filepath.Join(filepath.Dir(run.env.ConfigDir), "remotes", "devbox", hex.EncodeToString(sum[:])[:16])
-	if err := os.MkdirAll(standIn, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	manifest := `{"version":1,"hostId":"devbox","path":"` + remote + `"}`
-	if err := os.WriteFile(filepath.Join(standIn, "remote.json"), []byte(manifest), 0o600); err != nil {
+	standIn, err := createStandIn(remoteLayoutFor(run.env).remotes, "devbox", "/home/me/project")
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	listing := run.request("pigkin_files_list", host.Message{"root": standIn, "path": "."})
-	if listing["error"] != remoteNotPorted || listing["code"] != "bad_params" || errorKey(listing) != "" {
+	if listing["error"] != "This workspace's host was removed." || listing["errorCode"] != "remote_host_unknown" || errorKey(listing) != "remote_host_unknown" {
 		t.Fatalf("got %v", listing)
 	}
 	if entries := listing["entries"].([]any); len(entries) != 0 {
 		t.Fatalf("got %v", entries)
 	}
 	read := run.request("pigkin_files_read", host.Message{"root": standIn, "path": "x.txt"})
-	if read["error"] != remoteNotPorted || read["code"] != "bad_params" {
+	if read["error"] != "This workspace's host was removed." || read["errorCode"] != "remote_host_unknown" {
 		t.Fatalf("got %v", read)
 	}
 	made := run.request("pigkin_files_mkdir", host.Message{"root": standIn, "path": ".", "name": "x"})
-	if made["error"] != remoteNotPorted || made["code"] != "bad_params" {
+	if made["error"] != "This workspace's host was removed." || made["errorCode"] != "remote_host_unknown" {
 		t.Fatalf("got %v", made)
 	}
 	if _, err := os.Stat(filepath.Join(standIn, "x")); !errors.Is(err, os.ErrNotExist) {

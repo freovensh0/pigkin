@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -73,16 +74,20 @@ func formatSeconds(seconds float64) string {
 	return strconv.FormatFloat(seconds, 'f', -1, 64)
 }
 
-func remoteRefused() error {
-	return &gitError{code: "bad_params", message: remoteNotPorted}
-}
-
 func gitFailure(err error) host.Message {
 	var gitErr *gitError
 	if errors.As(err, &gitErr) {
 		reply := host.Message{"error": gitErr.message, "code": gitErr.code}
 		if gitErr.i18n != nil {
 			reply["errorI18n"] = *gitErr.i18n
+		}
+		return reply
+	}
+	var hostErr *host.Error
+	if errors.As(err, &hostErr) {
+		reply := host.Message{"error": hostErr.Message, "code": hostErr.Code}
+		if hostErr.I18n != nil {
+			reply["errorI18n"] = *hostErr.I18n
 		}
 		return reply
 	}
@@ -100,11 +105,8 @@ func gitTimeout() time.Duration {
 
 // git is the long-lived, read-only host for the app's Changes tab. It sends
 // pigkin_git_ready, then answers requests with their id until the app hangs up.
-// Remote workspaces are not ported yet, so their requests are refused.
+// A remote workspace's stand-in runs git on the remote folder it names.
 func git(ctx *Context) (host.Message, error) {
-	if _, ok := ctx.Params["hostId"].(string); ok {
-		return nil, host.NewError("bad_params", remoteNotPorted, nil)
-	}
 	base, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -209,11 +211,16 @@ func git(ctx *Context) (host.Message, error) {
 	return host.Message{}, nil
 }
 
+// gitProcess starts git for a repo: in Termux, or on a remote host over ssh.
+type gitProcess interface {
+	run(ctx context.Context, args []string, env map[string]string, onStdout, onStderr func([]byte)) (int, error)
+}
+
 type repo struct {
-	base     context.Context
-	root     string
-	binary   string
-	safeArgs []string
+	base    context.Context
+	root    string
+	process gitProcess
+	remote  *remoteFolder
 }
 
 type gitPaths struct {
@@ -236,8 +243,12 @@ type runResult struct {
 }
 
 func openRepo(base context.Context, env host.Env, root string) (*repo, error) {
-	if remoteWorkspace(env, root) {
-		return nil, remoteRefused()
+	folder, err := remoteFolderForEnv(env, root)
+	if err != nil {
+		return nil, err
+	}
+	if folder != nil {
+		return &repo{base: base, root: folder.path, process: remoteGit{folder: folder}, remote: folder}, nil
 	}
 	binary := filepath.Join(env.Prefix, "bin", "git")
 	if !isExecutable(binary) {
@@ -254,7 +265,138 @@ func openRepo(base context.Context, env host.Env, root string) (*repo, error) {
 	if realRoot != root {
 		safeArgs = append(safeArgs, "-c", "safe.directory="+realRoot)
 	}
-	return &repo{base: base, root: root, binary: binary, safeArgs: safeArgs}, nil
+	return &repo{base: base, root: root, process: localGit{binary: binary, root: root, safeArgs: safeArgs}}, nil
+}
+
+type localGit struct {
+	binary   string
+	root     string
+	safeArgs []string
+}
+
+func (g localGit) run(ctx context.Context, args []string, env map[string]string, onStdout, onStderr func([]byte)) (int, error) {
+	cmd := exec.CommandContext(ctx, g.binary, append(append([]string{}, g.safeArgs...), args...)...)
+	cmd.Dir = g.root
+	cmd.Env = os.Environ()
+	for name, value := range env {
+		cmd.Env = append(cmd.Env, name+"="+value)
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		if cmd.Process == nil {
+			return nil
+		}
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
+	cmd.WaitDelay = 2 * time.Second
+	cmd.Stdout = writerFunc(func(data []byte) (int, error) {
+		onStdout(data)
+		return len(data), nil
+	})
+	cmd.Stderr = writerFunc(func(data []byte) (int, error) {
+		onStderr(data)
+		return len(data), nil
+	})
+	_ = cmd.Run()
+	if cmd.ProcessState == nil {
+		return -1, nil
+	}
+	return cmd.ProcessState.ExitCode(), nil
+}
+
+// What a remote git command writes to stderr, with remoteSetupFailed, when it
+// can't start git or find the folder.
+const (
+	remoteNoFolder    = "pigkin: no such folder"
+	remoteNoGit       = "pigkin: no git"
+	remoteSetupFailed = 127
+)
+
+type remoteGit struct{ folder *remoteFolder }
+
+func (g remoteGit) run(ctx context.Context, args []string, env map[string]string, onStdout, onStderr func([]byte)) (int, error) {
+	command, err := remoteGitCommand(g.folder.path, args, env)
+	if err != nil {
+		return 0, err
+	}
+	result, err := runWatched(g.folder.remote, command, "/", sshRunOptions{
+		ctx: ctx, idle: readIdleMs(), onStdout: onStdout, onStderr: onStderr,
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return 0, nil
+		}
+		return 0, asRemoteError(g.folder.remote, err)
+	}
+	code := -1
+	if result.code != nil {
+		code = *result.code
+	}
+	if code == remoteSetupFailed {
+		if strings.Contains(result.stderr, remoteNoGit) {
+			return code, remoteGitMissing(g.folder)
+		}
+		if strings.Contains(result.stderr, remoteNoFolder) {
+			return code, folderMissing(g.folder.path)
+		}
+	}
+	return code, nil
+}
+
+func remoteGitMissing(folder *remoteFolder) error {
+	name := folder.remote.host.Name
+	return &gitError{
+		code:    "no_git",
+		message: "git isn't installed on " + name + ".",
+		i18n:    &host.Text{Key: "remote_git_missing", Args: map[string]any{"host": name}},
+	}
+}
+
+// remoteGitCommand runs git with args and env in remote root, trusting the
+// root and its real path as safe directories.
+func remoteGitCommand(root string, args []string, env map[string]string) (string, error) {
+	quotedRoot, err := shellQuote(root)
+	if err != nil {
+		return "", err
+	}
+	lines := []string{
+		`cd -- ` + quotedRoot + ` 2>/dev/null || { echo ` + shellQuoteOrEmpty(remoteNoFolder) + ` >&2; exit 127; }`,
+		`command -v git >/dev/null 2>&1 || { echo ` + shellQuoteOrEmpty(remoteNoGit) + ` >&2; exit 127; }`,
+	}
+	names := make([]string, 0, len(env))
+	for name := range env {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		quoted, err := shellQuote(env[name])
+		if err != nil {
+			return "", err
+		}
+		lines = append(lines, `export `+name+`=`+quoted)
+	}
+	quotedArgs := make([]string, 0, len(args))
+	for _, arg := range args {
+		quoted, err := shellQuote(arg)
+		if err != nil {
+			quoted = shellQuoteOrEmpty(arg)
+		}
+		quotedArgs = append(quotedArgs, quoted)
+	}
+	lines = append(lines,
+		`real=$(pwd -P && echo x); real=${real%x}; real=${real%$'\n'}`,
+		`exec git -c safe.directory=`+quotedRoot+` -c "safe.directory=$real" `+strings.Join(quotedArgs, " "),
+	)
+	return strings.Join(lines, "\n"), nil
+}
+
+// posixResolve is node's path.resolve for a remote root and a possibly
+// relative path from git.
+func posixResolve(root, raw string) string {
+	if path.IsAbs(raw) {
+		return path.Clean(raw)
+	}
+	return path.Join(root, raw)
 }
 
 func isExecutable(path string) bool {
@@ -267,30 +409,34 @@ func hasDotGit(root string) bool {
 	return err == nil && (info.IsDir() || info.Mode().IsRegular())
 }
 
-func readText(r *repo, path string) (string, error) {
-	data, err := os.ReadFile(resolvePath(r.root, path))
+func readText(r *repo, filePath string) (string, error) {
+	if r.remote != nil {
+		data, err := readRemoteFile(r.remote.remote, posixResolve(r.root, filePath), sshRunOptions{ctx: r.base, idle: readIdleMs()})
+		if err != nil {
+			return "", asRemoteError(r.remote.remote, err)
+		}
+		return strings.TrimSpace(string(data)), nil
+	}
+	data, err := os.ReadFile(resolvePath(r.root, filePath))
 	return strings.TrimSpace(string(data)), err
+}
+
+func gitEnvironment(options runOptions) map[string]string {
+	env := map[string]string{
+		"GIT_OPTIONAL_LOCKS":    "0",
+		"GIT_TERMINAL_PROMPT":   "0",
+		"GIT_LITERAL_PATHSPECS": "1",
+		"LC_ALL":                "C",
+	}
+	for name, value := range options.env {
+		env[name] = value
+	}
+	return env
 }
 
 func run(r *repo, args []string, options runOptions) (runResult, error) {
 	ctx, cancel := context.WithTimeout(r.base, gitTimeout())
 	defer cancel()
-	cmd := exec.CommandContext(ctx, r.binary, append(append([]string{}, r.safeArgs...), args...)...)
-	cmd.Dir = r.root
-	cmd.Env = append(os.Environ(),
-		"GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0", "GIT_LITERAL_PATHSPECS=1", "LC_ALL=C",
-	)
-	for name, value := range options.env {
-		cmd.Env = append(cmd.Env, name+"="+value)
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		if cmd.Process == nil {
-			return nil
-		}
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-	cmd.WaitDelay = 2 * time.Second
 
 	var mu sync.Mutex
 	reason := ""
@@ -304,16 +450,16 @@ func run(r *repo, args []string, options runOptions) (runResult, error) {
 	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd.Stdout = writerFunc(func(data []byte) (int, error) {
+	onStdout := func(data []byte) {
 		mu.Lock()
 		if reason != "" {
 			mu.Unlock()
-			return len(data), nil
+			return
 		}
 		if options.onStdout != nil {
 			mu.Unlock()
 			options.onStdout(data)
-			return len(data), nil
+			return
 		}
 		if options.truncateAt > 0 && stdout.Len()+len(data) > options.truncateAt {
 			remaining := options.truncateAt - stdout.Len()
@@ -322,7 +468,7 @@ func run(r *repo, args []string, options runOptions) (runResult, error) {
 			}
 			mu.Unlock()
 			mark("truncated")
-			return len(data), nil
+			return
 		}
 		stdout.Write(data)
 		overflow := options.stdoutLimit > 0 && stdout.Len() > options.stdoutLimit
@@ -330,9 +476,8 @@ func run(r *repo, args []string, options runOptions) (runResult, error) {
 		if overflow {
 			mark("overflow")
 		}
-		return len(data), nil
-	})
-	cmd.Stderr = writerFunc(func(data []byte) (int, error) {
+	}
+	onStderr := func(data []byte) {
 		if stderr.Len() < stderrLimit {
 			remaining := stderrLimit - stderr.Len()
 			if len(data) < remaining {
@@ -340,10 +485,9 @@ func run(r *repo, args []string, options runOptions) (runResult, error) {
 			}
 			stderr.Write(data[:remaining])
 		}
-		return len(data), nil
-	})
+	}
 
-	_ = cmd.Run()
+	exitCode, processErr := r.process.run(ctx, args, gitEnvironment(options), onStdout, onStderr)
 	mu.Lock()
 	why := reason
 	mu.Unlock()
@@ -363,9 +507,8 @@ func run(r *repo, args []string, options runOptions) (runResult, error) {
 	if why == "overflow" {
 		return runResult{}, errTooLarge
 	}
-	exitCode := -1
-	if cmd.ProcessState != nil {
-		exitCode = cmd.ProcessState.ExitCode()
+	if processErr != nil {
+		return runResult{}, processErr
 	}
 	result := runResult{exitCode: exitCode, stdout: stdout.Bytes(), truncated: why == "truncated"}
 	if result.truncated || exitCode == 0 || options.anyExit {
@@ -946,6 +1089,66 @@ func isTimeout(err error) bool {
 	return errors.As(err, &gitErr) && gitErr.timeout
 }
 
+// localScratch is a temporary folder holding an empty objects folder and, when
+// there is one, a copy of index.
+func localScratch(index string) (string, error) {
+	dir, err := os.MkdirTemp("", "pigkin-git-")
+	if err != nil {
+		return "", err
+	}
+	fail := func(err error) (string, error) {
+		_ = os.RemoveAll(dir)
+		return "", err
+	}
+	if err := os.Mkdir(filepath.Join(dir, "objects"), 0o755); err != nil {
+		return fail(err)
+	}
+	if data, err := os.ReadFile(index); err == nil {
+		if err := os.WriteFile(filepath.Join(dir, "index"), data, 0o600); err != nil {
+			return fail(err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fail(err)
+	}
+	return dir, nil
+}
+
+// remoteScratch makes the same folder on the remote. A fresh repo has no index
+// until the first git add.
+func remoteScratch(r *repo, index string) (string, error) {
+	quotedIndex, err := shellQuote(index)
+	if err != nil {
+		return "", err
+	}
+	script := strings.Join([]string{
+		`i=` + quotedIndex,
+		`d=$(mktemp -d "${TMPDIR:-/tmp}/pigkin-git-XXXXXX") || exit 1`,
+		`mkdir -- "$d/objects" || { rm -rf -- "$d"; exit 1; }`,
+		`if [ -e "$i" ]; then cp -- "$i" "$d/index" || { rm -rf -- "$d"; exit 1; }; fi`,
+		`printf '%s' "$d"`,
+	}, "\n")
+	result, err := runScript(r.remote.remote, script, sshRunOptions{ctx: r.base, idle: readIdleMs()})
+	if err != nil {
+		return "", asRemoteError(r.remote.remote, err)
+	}
+	if result.code == nil || *result.code != 0 {
+		message := strings.TrimSpace(result.stderr)
+		if message == "" {
+			message = "Couldn't make a temporary folder."
+		}
+		return "", &gitError{code: "failed", message: message}
+	}
+	return string(result.stdout), nil
+}
+
+func (r *repo) removeScratch(dir string) {
+	if r.remote != nil {
+		_, _ = runScript(r.remote.remote, "rm -rf -- "+shellQuoteOrEmpty(dir), sshRunOptions{ctx: r.base, timeout: 15 * time.Second})
+		return
+	}
+	_ = os.RemoveAll(dir)
+}
+
 func workTreeDiff(r *repo, paths gitPaths, ignoreWhitespace bool) (diffBody, error) {
 	from, err := headCommit(r)
 	if err != nil {
@@ -957,21 +1160,16 @@ func workTreeDiff(r *repo, paths gitPaths, ignoreWhitespace bool) (diffBody, err
 			return diffBody{}, err
 		}
 	}
-	dir, err := os.MkdirTemp("", "pigkin-git-")
+	var dir string
+	if r.remote != nil {
+		dir, err = remoteScratch(r, paths.index)
+	} else {
+		dir, err = localScratch(paths.index)
+	}
 	if err != nil {
 		return diffBody{}, err
 	}
-	defer os.RemoveAll(dir)
-	if err := os.Mkdir(filepath.Join(dir, "objects"), 0o755); err != nil {
-		return diffBody{}, err
-	}
-	if data, err := os.ReadFile(paths.index); err == nil {
-		if err := os.WriteFile(filepath.Join(dir, "index"), data, 0o600); err != nil {
-			return diffBody{}, err
-		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return diffBody{}, err
-	}
+	defer r.removeScratch(dir)
 	alternate := paths.objects
 	if strings.ContainsAny(alternate, `:"`) {
 		quoted, _ := json.Marshal(alternate)
@@ -1047,8 +1245,12 @@ func guarded(base context.Context, env host.Env, root string) (*repo, host.Messa
 }
 
 func detect(base context.Context, env host.Env, root string, trusted bool) host.Message {
-	if remoteWorkspace(env, root) {
-		return gitFailure(remoteRefused())
+	folder, err := remoteFolderForEnv(env, root)
+	if err != nil {
+		return gitFailure(err)
+	}
+	if folder != nil {
+		return detectRemote(base, folder, trusted)
 	}
 	hasGit := isExecutable(filepath.Join(env.Prefix, "bin", "git"))
 	dotGit := filepath.IsAbs(root) && hasDotGit(root)
@@ -1071,6 +1273,54 @@ func detect(base context.Context, env host.Env, root string, trusted bool) host.
 		return nil
 	}
 	return host.Message{"repo": false, "git": true}
+}
+
+// detectRemote probes the remote in one round trip. A host that can't be
+// reached answers with the failure instead of repo and git, so the app can
+// keep what it knew.
+func detectRemote(base context.Context, folder *remoteFolder, trusted bool) host.Message {
+	root := folder.path
+	quotedRoot, err := shellQuote(root)
+	if err != nil {
+		return gitFailure(err)
+	}
+	script := strings.Join([]string{
+		`command -v git >/dev/null 2>&1 && g=1 || g=0`,
+		`r=` + quotedRoot,
+		`if [ ! -L "$r/.git" ] && { [ -d "$r/.git" ] || [ -f "$r/.git" ]; }; then d=1; else d=0; fi`,
+		`printf '%s %s ' "$g" "$d"`,
+		`cd -P -- "$r" 2>/dev/null && printf '%s' "$PWD"`,
+		`exit 0`,
+	}, "\n")
+	result, err := runScript(folder.remote, script, sshRunOptions{ctx: base, idle: readIdleMs()})
+	if err != nil {
+		if base.Err() != nil {
+			return nil
+		}
+		return gitFailure(asRemoteError(folder.remote, err))
+	}
+	probe := string(result.stdout)
+	hasGit := strings.HasPrefix(probe, "1")
+	dotGit := len(probe) > 2 && probe[2:3] == "1"
+	realRoot := ""
+	if len(probe) > 4 {
+		realRoot = probe[4:]
+	}
+	if !trusted || !hasGit || !dotGit {
+		return host.Message{"repo": dotGit, "git": hasGit}
+	}
+	r := &repo{base: base, root: root, process: remoteGit{folder: folder}, remote: folder}
+	checked, err := run(r, []string{"rev-parse", "--show-toplevel"}, runOptions{})
+	if err != nil {
+		if errors.Is(err, errAbort) {
+			return nil
+		}
+		if _, ok := err.(*host.Error); ok {
+			return gitFailure(err)
+		}
+		return host.Message{"repo": false, "git": true}
+	}
+	return host.Message{"repo": strings.TrimSuffix(string(checked.stdout), "\n") == realRoot, "git": true}
 }
 
 func changes(base context.Context, env host.Env, root, mode string, ignoreWhitespace bool, known any) host.Message {

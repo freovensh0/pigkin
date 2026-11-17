@@ -151,6 +151,10 @@ func isBashMissing(code *int, stderr string) bool {
 
 // exitCode reads a process's exit status, or nil when it was killed by a signal.
 func exitCode(err error) *int {
+	if err == nil {
+		code := 0
+		return &code
+	}
 	type status interface{ ExitCode() int }
 	if coded, ok := err.(status); ok {
 		code := coded.ExitCode()

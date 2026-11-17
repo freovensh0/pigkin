@@ -2,8 +2,6 @@ package modes
 
 import (
 	"bufio"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net"
 	"os"
@@ -750,33 +748,25 @@ func TestGitIgnoresMalformedRequests(t *testing.T) {
 	}
 }
 
-func TestGitRefusesRemote(t *testing.T) {
-	_, err := git(&Context{Env: host.Env{}, Params: host.Message{"hostId": "devbox"}, Conn: nil})
-	if err == nil {
-		t.Fatal("got no refusal")
-	}
-	refusal, ok := err.(*host.Error)
-	if !ok || refusal.Code != "bad_params" || refusal.I18n != nil {
-		t.Fatalf("got %v", err)
-	}
-
+func TestGitReportsRemoteFailures(t *testing.T) {
 	g := newGit(t)
-	remote := "/home/me/project"
-	sum := sha256.Sum256([]byte(remote))
-	standIn := filepath.Join(filepath.Dir(g.run.env.ConfigDir), "remotes", "devbox", hex.EncodeToString(sum[:])[:16])
-	if err := os.MkdirAll(standIn, 0o755); err != nil {
+	standIn, err := createStandIn(remoteLayoutFor(g.run.env).remotes, "devbox", "/home/me/project")
+	if err != nil {
 		t.Fatal(err)
 	}
-	manifest := `{"version":1,"hostId":"devbox","path":"` + remote + `"}`
-	if err := os.WriteFile(filepath.Join(standIn, "remote.json"), []byte(manifest), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	reply := g.run.request("pigkin_git_changes", host.Message{"root": standIn, "mode": "uncommitted", "ignoreWhitespace": false})
-	if reply["code"] != "bad_params" || reply["error"] != remoteNotPorted {
-		t.Fatalf("got %v", reply)
+	for _, kind := range []string{"pigkin_git_changes", "pigkin_git_commits"} {
+		fields := host.Message{"root": standIn}
+		if kind == "pigkin_git_changes" {
+			fields["mode"] = "uncommitted"
+			fields["ignoreWhitespace"] = false
+		}
+		reply := g.run.request(kind, fields)
+		if reply["code"] != "remote_host_unknown" || reply["error"] != "This workspace's host was removed." {
+			t.Fatalf("%s: got %v", kind, reply)
+		}
 	}
 	detected := g.run.request("pigkin_git_detect", host.Message{"root": standIn, "trusted": true})
-	if detected["code"] != "bad_params" {
+	if detected["code"] != "remote_host_unknown" {
 		t.Fatalf("got %v", detected)
 	}
 }

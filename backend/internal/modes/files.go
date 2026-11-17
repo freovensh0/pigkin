@@ -1,16 +1,17 @@
 package modes
 
 import (
-	"crypto/sha256"
+	"bytes"
+	"context"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"unicode/utf8"
@@ -72,13 +73,10 @@ const remoteNotPorted = "Remote workspaces are not ported to the Go host yet"
 // id until the app hangs up. pigkin_files_list gives a folder's entries and
 // pigkin_files_read a file's content, kind and size; pigkin_files_mkdir makes
 // a folder. root is absolute and every other path is relative to it,
-// `/`-separated, `.` for the root itself, and may not leave it.
-//
-// Remote workspaces are not ported yet, so their requests are refused.
+// `/`-separated, `.` for the root itself, and may not leave it. A remote
+// workspace's stand-in works on the remote folder it names.
 func files(ctx *Context) (host.Message, error) {
-	if _, ok := ctx.Params["hostId"].(string); ok {
-		return nil, host.NewError("bad_params", remoteNotPorted, nil)
-	}
+	base := connContext(ctx.Conn)
 	ctx.Conn.Send(host.Message{"type": "pigkin_files_ready"})
 	ctx.Conn.Listen(func(message host.Message) {
 		id, ok := message["id"].(float64)
@@ -95,15 +93,15 @@ func files(ctx *Context) (host.Message, error) {
 		}
 		switch message["type"] {
 		case "pigkin_files_list":
-			go answer(ctx.Conn, "pigkin_files_listing", id, listFiles(ctx.Env, root, path))
+			go answer(ctx.Conn, "pigkin_files_listing", id, listFiles(base, ctx.Env, root, path))
 		case "pigkin_files_read":
-			go answer(ctx.Conn, "pigkin_files_file", id, readFile(ctx.Env, root, path))
+			go answer(ctx.Conn, "pigkin_files_file", id, readFile(base, ctx.Env, root, path))
 		case "pigkin_files_mkdir":
 			name, ok := message["name"].(string)
 			if !ok {
 				return
 			}
-			go answer(ctx.Conn, "pigkin_files_made", id, makeFolder(ctx.Env, root, path, name))
+			go answer(ctx.Conn, "pigkin_files_made", id, makeFolder(base, ctx.Env, root, path, name))
 		}
 	})
 	<-ctx.Conn.Done()
@@ -118,10 +116,24 @@ func answer(conn *host.Connection, kind string, id float64, result host.Message)
 
 // listFiles answers a folder's entries, folders first. A failure is part of the
 // listing, so the browser can show it in place.
-func listFiles(env host.Env, root, raw string) host.Message {
+func listFiles(ctx context.Context, env host.Env, root, raw string) host.Message {
 	path := raw
-	if remoteWorkspace(env, root) {
-		return host.Message{"path": path, "entries": []host.Message{}, "error": remoteNotPorted, "code": "bad_params"}
+	folder, err := remoteFolderForEnv(env, root)
+	if err != nil {
+		return withError(host.Message{"path": path, "entries": []host.Message{}}, err)
+	}
+	if folder != nil {
+		requested, err := remoteRequested(folder.path, raw)
+		if err != nil {
+			return withError(host.Message{"path": path, "entries": []host.Message{}}, err)
+		}
+		path = relativeTo(folder.path, requested)
+		entries, err := remoteEntries(ctx, folder, requested, path)
+		if err != nil {
+			return withError(host.Message{"path": path, "entries": []host.Message{}}, err)
+		}
+		sortEntries(entries)
+		return host.Message{"path": path, "entries": entries}
 	}
 	dir, err := scope(root, raw)
 	if err != nil {
@@ -138,10 +150,24 @@ func listFiles(env host.Env, root, raw string) host.Message {
 
 // readFile answers a file's kind, size and, for text and images within their
 // limits, content.
-func readFile(env host.Env, root, raw string) host.Message {
+func readFile(ctx context.Context, env host.Env, root, raw string) host.Message {
 	path := raw
-	if remoteWorkspace(env, root) {
-		return host.Message{"path": path, "error": remoteNotPorted, "code": "bad_params"}
+	folder, err := remoteFolderForEnv(env, root)
+	if err != nil {
+		return withError(host.Message{"path": path}, err)
+	}
+	if folder != nil {
+		requested, err := remoteRequested(folder.path, raw)
+		if err != nil {
+			return withError(host.Message{"path": path}, err)
+		}
+		path = relativeTo(folder.path, requested)
+		image := isImage(requested)
+		size, data, err := remoteRead(ctx, folder, requested, image)
+		if err != nil {
+			return withError(host.Message{"path": path}, err)
+		}
+		return fileReply(path, size, image, data)
 	}
 	file, err := scope(root, raw)
 	if err != nil {
@@ -171,13 +197,24 @@ func readFile(env host.Env, root, raw string) host.Message {
 }
 
 // makeFolder answers the new folder's workspace-relative path.
-func makeFolder(env host.Env, root, raw, rawName string) host.Message {
+func makeFolder(ctx context.Context, env host.Env, root, raw, rawName string) host.Message {
 	name := strings.TrimSpace(rawName)
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\x00") {
 		return describe(host.NewError("bad_name", "Folder names can't be empty, contain / or be . or ..", &host.Text{Key: "files_folder_name_invalid"}))
 	}
-	if remoteWorkspace(env, root) {
-		return host.Message{"error": remoteNotPorted, "code": "bad_params"}
+	folder, err := remoteFolderForEnv(env, root)
+	if err != nil {
+		return describe(err)
+	}
+	if folder != nil {
+		parent, err := remoteRequested(folder.path, raw)
+		if err != nil {
+			return describe(err)
+		}
+		if err := remoteMakeFolder(ctx, folder, parent, name); err != nil {
+			return describe(err)
+		}
+		return host.Message{"path": relativeTo(folder.path, path.Join(parent, name))}
 	}
 	parent, err := scope(root, raw)
 	if err != nil {
@@ -199,9 +236,22 @@ func describe(err error) host.Message {
 		if hostErr.I18n != nil {
 			reply["errorI18n"] = *hostErr.I18n
 		}
+		if code := connectionCode(hostErr); code != "" {
+			reply["errorCode"] = code
+		}
 		return reply
 	}
-	code := errnoName(err)
+	code := ""
+	var exit *remoteExit
+	var fileErr *remoteFileError
+	switch {
+	case errors.As(err, &exit):
+		code = exit.code
+	case errors.As(err, &fileErr):
+		code = fileErr.code
+	default:
+		code = errnoName(err)
+	}
 	if code == "" {
 		return host.Message{"error": "Can't read this (unknown error).", "errorI18n": host.Text{Key: "files_unreadable_unknown"}}
 	}
@@ -524,34 +574,206 @@ func isImage(path string) bool {
 	return imageExtensions[strings.ToLower(filepath.Ext(path))]
 }
 
-// remoteWorkspace reports whether root is a remote workspace's stand-in folder:
-// a folder under the remotes beside Pi's config whose manifest names the same
-// remote folder its name hashes.
-func remoteWorkspace(env host.Env, root string) bool {
-	remotes := filepath.Join(filepath.Dir(env.ConfigDir), "remotes")
-	folder := filepath.Clean(root)
-	parent := filepath.Dir(filepath.Dir(folder))
-	if parent != remotes {
-		real, err := filepath.EvalSymlinks(remotes)
-		if err != nil || parent != real {
-			return false
-		}
+// A remote workspace: the same requests on the remote folder its stand-in
+// names, each in one ssh round trip.
+const (
+	remoteOutside     = 3
+	remoteRootMissing = 4
+	remoteNotRegular  = 5
+	remoteNameTaken   = 6
+)
+
+var remoteErrno = map[int]string{2: "ENOENT", 13: "EACCES", 20: "ENOTDIR", 21: "EISDIR"}
+
+type remoteExit struct {
+	status  int
+	code    string
+	message string
+}
+
+func (e *remoteExit) Error() string { return e.message }
+
+// remoteRequested is raw under remote root, refusing a `..` that leaves it;
+// links are left for scopeScript to check there.
+func remoteRequested(root, raw string) (string, error) {
+	requested := path.Clean(raw)
+	if !path.IsAbs(raw) {
+		requested = path.Join(root, raw)
 	}
-	data, err := os.ReadFile(filepath.Join(folder, "remote.json"))
+	if !inside(root, requested) {
+		return "", outsideWorkspace()
+	}
+	return requested, nil
+}
+
+// exactShell cuts variable name, captured with an `x` after it, back to the
+// exact path `$(…)` printed, keeping a trailing newline in a folder name.
+func exactShell(name string) string {
+	return name + "=${" + name + "%x}; " + name + "=${" + name + "%$'\\n'}"
+}
+
+// scopeScript resolves root to R and target to T, both with links resolved and
+// T inside R. A resolved path is captured with an `x` after it because `$(…)`
+// drops trailing newlines, which a folder name may end with.
+func scopeScript(root, target string) ([]string, error) {
+	quotedRoot, err := shellQuote(root)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	var manifest struct {
-		Version int    `json:"version"`
-		HostID  string `json:"hostId"`
-		Path    string `json:"path"`
+	quotedTarget, err := shellQuote(target)
+	if err != nil {
+		return nil, err
 	}
-	if json.Unmarshal(data, &manifest) != nil || manifest.Version != 1 {
-		return false
+	return []string{
+		"r=" + quotedRoot,
+		"t=" + quotedTarget,
+		`R=$(cd -P -- "$r" 2>/dev/null && pwd -P && echo x) || exit 4`,
+		exactShell("R"),
+		`[ -e "$t" ] || exit 2`,
+		`if [ -d "$t" ]; then T=$(cd -P -- "$t" 2>/dev/null && pwd -P && echo x) || exit 13`,
+		`else T=$({ realpath -- "$t" 2>/dev/null || readlink -f -- "$t" 2>/dev/null; } && echo x) || exit 2; fi`,
+		exactShell("T"),
+		`case $R in /) ;; *) case $T in "$R" | "$R"/*) ;; *) exit 3 ;; esac ;; esac`,
+	}, nil
+}
+
+// runRemote runs lines on folder's host; a failed exit becomes the error the
+// same failure is locally.
+func runRemote(ctx context.Context, folder *remoteFolder, lines []string) ([]byte, error) {
+	result, err := runScript(folder.remote, strings.Join(lines, "\n"), sshRunOptions{ctx: ctx, idle: readIdleMs()})
+	if err != nil {
+		return nil, asRemoteError(folder.remote, err)
 	}
-	if manifest.HostID == "" || !strings.HasPrefix(manifest.Path, "/") {
-		return false
+	status := -1
+	if result.code != nil {
+		status = *result.code
 	}
-	sum := sha256.Sum256([]byte(manifest.Path))
-	return filepath.Base(filepath.Dir(folder)) == manifest.HostID && filepath.Base(folder) == hex.EncodeToString(sum[:])[:16]
+	switch status {
+	case 0:
+		return result.stdout, nil
+	case remoteOutside:
+		return nil, outsideWorkspace()
+	case remoteRootMissing:
+		return nil, folderNotFound(folder.path)
+	case remoteNotRegular:
+		return nil, notRegular()
+	case 13:
+		name := folder.remote.host.Name
+		return nil, host.NewError("no_access", name+" doesn't let you open this.", &host.Text{Key: "remote_files_no_access", Args: map[string]any{"host": name}})
+	}
+	code := remoteErrno[status]
+	if code == "" {
+		code = "EIO"
+	}
+	message := code
+	if detail := strings.TrimSpace(result.stderr); detail != "" {
+		message += ": " + detail
+	}
+	return nil, &remoteExit{status: status, code: code, message: message}
+}
+
+// remoteEntries is folder's requested entries, as listEntries gives them.
+func remoteEntries(ctx context.Context, folder *remoteFolder, requested, rel string) ([]host.Message, error) {
+	lines, err := scopeScript(folder.path, requested)
+	if err != nil {
+		return nil, err
+	}
+	script, err := listingScript(requested)
+	if err != nil {
+		return nil, err
+	}
+	output, err := runRemote(ctx, folder, append(append(lines, `printf '%s\0' "$R"`), script))
+	if err != nil {
+		return nil, err
+	}
+	end := bytes.IndexByte(output, 0)
+	if end < 0 {
+		return nil, &remoteFileError{code: "EIO", path: requested, message: "EIO: truncated listing, scandir '" + requested + "'"}
+	}
+	realRoot := string(output[:end])
+	listed, err := parseListing(output[end+1:], requested)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]host.Message, 0, len(listed))
+	for _, item := range listed {
+		if item.symlink && (item.target == "" || !inside(realRoot, item.target)) {
+			continue
+		}
+		kind := "file"
+		if item.kind == remoteDirectory {
+			kind = "directory"
+		}
+		entries = append(entries, host.Message{
+			"name":     item.name,
+			"path":     childPath(rel, item.name),
+			"kind":     kind,
+			"size":     item.size,
+			"modified": item.mtimeMs,
+		})
+	}
+	return entries, nil
+}
+
+// remoteRead gets requested's size and the bytes bytesNeeded asks for, read
+// there so the rest of a large file never travels.
+func remoteRead(ctx context.Context, folder *remoteFolder, requested string, image bool) (int64, []byte, error) {
+	lines, err := scopeScript(folder.path, requested)
+	if err != nil {
+		return 0, nil, err
+	}
+	limit := int64(textLimit)
+	if image {
+		limit = imageLimit
+	}
+	needle := bytesNeeded(limit+1, image)
+	lines = append(lines,
+		`[ -d "$T" ] && exit 21`,
+		`[ -f "$T" ] || exit 5`,
+		`[ -r "$T" ] || exit 13`,
+		`if stat -c %s / >/dev/null 2>&1; then s=$(stat -L -c %s -- "$T"); else s=$(stat -L -f %z -- "$T"); fi || exit 13`,
+		`if [ "$s" -gt `+strconv.FormatInt(limit, 10)+` ]; then n=`+strconv.FormatInt(needle, 10)+`; else n=$s; fi`,
+		`printf '%s\n' "$s"`,
+		`[ "$n" -gt 0 ] || exit 0`,
+		`exec head -c "$n" -- "$T"`,
+	)
+	output, err := runRemote(ctx, folder, lines)
+	if err != nil {
+		return 0, nil, err
+	}
+	end := bytes.IndexByte(output, '\n')
+	if end < 0 {
+		return 0, nil, &remoteFileError{code: "EIO", path: requested, message: "EIO: unexpected read output, open '" + requested + "'"}
+	}
+	size, _ := strconv.ParseInt(string(output[:end]), 10, 64)
+	return size, output[end+1:], nil
+}
+
+// remoteMakeFolder makes name in remote parent.
+func remoteMakeFolder(ctx context.Context, folder *remoteFolder, parent, name string) error {
+	lines, err := scopeScript(folder.path, parent)
+	if err != nil {
+		return err
+	}
+	quotedName, err := shellQuote(name)
+	if err != nil {
+		return err
+	}
+	lines = append(lines,
+		`[ -d "$T" ] || exit 20`,
+		`n=`+quotedName,
+		`[ -e "$T/$n" ] || [ -L "$T/$n" ] && exit 6`,
+		`mkdir -- "$T/$n" 2>/dev/null && exit 0`,
+		`[ -e "$T/$n" ] && exit 6`,
+		`[ -w "$T" ] || exit 13`,
+		`exit 1`,
+	)
+	if _, err := runRemote(ctx, folder, lines); err != nil {
+		var exit *remoteExit
+		if errors.As(err, &exit) && exit.status == remoteNameTaken {
+			return nameTaken(name)
+		}
+		return err
+	}
+	return nil
 }

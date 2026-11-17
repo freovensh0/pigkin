@@ -456,6 +456,7 @@ func runScript(r remote, script string, opts sshRunOptions) (sshRunResult, error
 	defer idle.stop()
 	defer idle.cancel()
 
+	var stdout bytes.Buffer
 	run := opts
 	run.ctx = idle.ctx
 	run.idle = 0
@@ -463,6 +464,8 @@ func runScript(r remote, script string, opts sshRunOptions) (sshRunResult, error
 		idle.touch()
 		if opts.onStdout != nil {
 			opts.onStdout(data)
+		} else {
+			stdout.Write(data)
 		}
 	}
 	run.onStderr = func(data []byte) {
@@ -479,6 +482,9 @@ func runScript(r remote, script string, opts sshRunOptions) (sshRunResult, error
 			return sshRunResult{}, unreachable(r.host.Name, "Connection timed out")
 		}
 		return sshRunResult{}, err
+	}
+	if opts.onStdout == nil {
+		result.stdout = stdout.Bytes()
 	}
 	if result.code != nil && *result.code == 255 && !isConnected(r) {
 		if failure := classifySshFailure(result.stderr, failureContext{name: r.host.Name, auth: r.host.Auth}); failure != nil {
