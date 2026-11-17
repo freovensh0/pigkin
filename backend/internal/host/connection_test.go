@@ -85,6 +85,34 @@ func TestConnectionQueuesMessagesBeforeListen(t *testing.T) {
 	}
 }
 
+func TestConnectionRawForwardsLinesAfterRequest(t *testing.T) {
+	hostSide, appConn := net.Pipe()
+	defer appConn.Close()
+	conn := NewConnection(hostSide)
+
+	first, _ := EncodeLine(Message{"type": "pigkin_request"})
+	next, _ := EncodeLine(Message{"type": "prompt", "id": "r1"})
+	last, _ := EncodeLine(Message{"type": "abort", "id": "r2"})
+	go func() { _, _ = appConn.Write(append(append(first, next...), last...)) }()
+
+	request, status := conn.First(time.Second)
+	if status != FirstMessage || request["type"] != "pigkin_request" {
+		t.Fatalf("got %v, %v", request, status)
+	}
+	lines := conn.Raw()
+	for _, want := range []string{"prompt", "abort"} {
+		select {
+		case line := <-lines:
+			var message Message
+			if err := json.Unmarshal(line, &message); err != nil || message["type"] != want {
+				t.Fatalf("got %s, want %s", line, want)
+			}
+		case <-time.After(time.Second):
+			t.Fatalf("timed out waiting for %s", want)
+		}
+	}
+}
+
 func TestConnectionFirstTimesOut(t *testing.T) {
 	hostSide, appConn := net.Pipe()
 	defer appConn.Close()

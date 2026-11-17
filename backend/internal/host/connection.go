@@ -29,6 +29,11 @@ type Connection struct {
 	queue    []Message
 	listener func(Message)
 
+	// rawMode hands the socket to a byte-oriented mode after its first request.
+	raw     chan []byte
+	rawMode bool
+	pending [][]byte
+
 	done     chan struct{}
 	doneOnce sync.Once
 }
@@ -43,11 +48,29 @@ func (c *Connection) read() {
 	defer c.closeDone()
 	scanner := ScanLines(c.conn)
 	for scanner.Scan() {
+		line := append([]byte(nil), scanner.Bytes()...)
+		c.mu.Lock()
+		if c.rawMode {
+			raw := c.raw
+			c.mu.Unlock()
+			select {
+			case raw <- append(line, '\n'):
+			case <-c.done:
+			}
+			continue
+		}
+		c.mu.Unlock()
 		var message Message
-		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil || message == nil {
+		if err := json.Unmarshal(line, &message); err != nil || message == nil {
 			continue
 		}
 		c.deliver(message)
+	}
+	c.mu.Lock()
+	raw := c.raw
+	c.mu.Unlock()
+	if raw != nil {
+		close(raw)
 	}
 }
 
@@ -84,7 +107,7 @@ func (c *Connection) Listen(listener func(Message)) {
 
 // First waits for the first message, or for timeout or a hang-up.
 func (c *Connection) First(timeout time.Duration) (Message, FirstStatus) {
-	incoming := make(chan Message, 1)
+	incoming := make(chan Message, 256)
 	wait := func(message Message) {
 		select {
 		case incoming <- message:
@@ -98,8 +121,19 @@ func (c *Connection) First(timeout time.Duration) (Message, FirstStatus) {
 	case message := <-incoming:
 		c.mu.Lock()
 		c.listener = nil
-		c.mu.Unlock()
-		return message, FirstMessage
+		// Lines that arrived with the request belong to the mode, not to the
+		// app's next turn; keep them for a mode that takes the socket raw.
+		for {
+			select {
+			case extra := <-incoming:
+				if line, err := EncodeLine(extra); err == nil {
+					c.pending = append(c.pending, line)
+				}
+			default:
+				c.mu.Unlock()
+				return message, FirstMessage
+			}
+		}
 	case <-timer.C:
 		return nil, FirstTimeout
 	case <-c.done:
@@ -110,6 +144,34 @@ func (c *Connection) First(timeout time.Duration) (Message, FirstStatus) {
 			return nil, FirstClosed
 		}
 	}
+}
+
+// Raw hands the socket to a byte-oriented mode: every later line from the app
+// arrives on the returned channel with its newline, and Send still writes
+// lines back. Lines read before the switch come first.
+func (c *Connection) Raw() <-chan []byte {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.raw = make(chan []byte, 256)
+	c.rawMode = true
+	for _, line := range c.pending {
+		c.raw <- line
+	}
+	for _, message := range c.queue {
+		if line, err := EncodeLine(message); err == nil {
+			c.raw <- line
+		}
+	}
+	c.pending = nil
+	c.queue = nil
+	return c.raw
+}
+
+// SendBytes writes one already-framed line to the app.
+func (c *Connection) SendBytes(line []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, _ = c.conn.Write(line)
 }
 
 // Send writes one line. A client that hung up drops it; every caller is about

@@ -12,11 +12,12 @@ import (
 	"strconv"
 	"time"
 
+	_ "github.com/MichaelKinsy/PiG/ai/all"
+	// Linking the Go port makes its version part of the binary the app talks to.
+	_ "github.com/MichaelKinsy/PiG/coding"
+	"github.com/MichaelKinsy/PiG/coding/cli"
 	"github.com/freovensh0/pigkin/backend/internal/host"
 	"github.com/freovensh0/pigkin/backend/internal/modes"
-	// The Go port of Pi is the backend this host is built on; linking it
-	// makes its version part of the binary the app talks to.
-	_ "github.com/MichaelKinsy/PiG/coding"
 )
 
 const (
@@ -30,6 +31,13 @@ const (
 )
 
 func main() {
+	// The rpc mode starts this binary as a child so PiG's RPC server owns its
+	// own stdin/stdout and exit status.
+	if len(os.Args) > 1 && os.Args[1] == modes.HiddenRPCFlag {
+		cli.Main(os.Args[2:], nil)
+		return
+	}
+
 	mode, port, ok := arguments()
 	if !ok {
 		fmt.Fprintln(os.Stderr, "usage: PIGKIN_TOKEN=… PIGKIN_ROOT=… PI_CODING_AGENT_DIR=… PREFIX=… pigkin-host <mode> <port>")

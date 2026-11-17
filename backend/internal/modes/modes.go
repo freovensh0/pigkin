@@ -28,6 +28,7 @@ var All = map[string]Mode{
 	"login":   login,
 	"utility": utility,
 	"git":     git,
+	"rpc":     rpc,
 }
 
 // Failure is the pigkin_result that reports err as a refusal.
