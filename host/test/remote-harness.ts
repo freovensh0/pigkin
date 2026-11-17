@@ -32,7 +32,7 @@ export interface RemoteFixture {
 }
 
 /**
- * Starts sshd with Pipkin's key authorized and the host saved, as `remote_connect` leaves them: the host key known and
+ * Starts sshd with Pigkin's key authorized and the host saved, as `remote_connect` leaves them: the host key known and
  * the remote home learned, here a folder of the fixture's own.
  */
 export async function startRemoteFixture(): Promise<RemoteFixture> {

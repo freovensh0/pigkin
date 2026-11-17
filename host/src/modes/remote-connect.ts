@@ -7,8 +7,8 @@ import { remotePaths } from "../remote/paths.js";
 
 /**
  * Connects host `hostId`, leaving its master connection for every later call. Each question `ssh` asks goes to the
- * app as `pipkin_remote_prompt { id, kind, text, keyType?, fingerprint? }`, answered by
- * `pipkin_remote_answer { id, answer }`; a null answer, or the app hanging up, stops `ssh`. With `unattended: true`,
+ * app as `pigkin_remote_prompt { id, kind, text, keyType?, fingerprint? }`, answered by
+ * `pigkin_remote_answer { id, answer }`; a null answer, or the app hanging up, stops `ssh`. With `unattended: true`,
  * for the app answering with a saved password, `ssh` refuses an unknown or changed host key instead of asking.
  * Answers `{ home, tools: { bash, git, rg } }`.
  */
@@ -22,7 +22,7 @@ export async function remoteConnect(ctx: ModeContext): Promise<JsonObject> {
   let nextId = 1;
   ctx.conn.listen((message) => {
     const resolve = typeof message.id === "number" ? pending.get(message.id) : undefined;
-    if (message.type !== "pipkin_remote_answer" || resolve === undefined) return;
+    if (message.type !== "pigkin_remote_answer" || resolve === undefined) return;
     pending.delete(Number(message.id));
     resolve(typeof message.answer === "string" ? message.answer : null);
   });
@@ -46,7 +46,7 @@ export async function remoteConnect(ctx: ModeContext): Promise<JsonObject> {
         const id = nextId++;
         const { promise, resolve } = Promise.withResolvers<string | null>();
         pending.set(id, resolve);
-        ctx.conn.send({ type: "pipkin_remote_prompt", id, ...prompt });
+        ctx.conn.send({ type: "pigkin_remote_prompt", id, ...prompt });
         return promise;
       },
     },

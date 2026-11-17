@@ -33,14 +33,14 @@ describe("local_models_sync mode", () => {
     return JSON.parse(await readFile(path.join(dirs.configDir, file), "utf8")) as Record<string, unknown>;
   }
 
-  it("serves the models under pipkin-local with session affinity, free, text only, beside other providers", async () => {
+  it("serves the models under pigkin-local with session affinity, free, text only, beside other providers", async () => {
     const other = { baseUrl: "http://localhost:11434/v1", api: "openai-completions", apiKey: "x", models: [{ id: "llama" }] };
     await writeFile(path.join(dirs.configDir, "models.json"), JSON.stringify({ providers: { ollama: other } }));
     expect(await runOp("local_models_sync", dirs, SYNC)).toMatchObject({ ok: true });
 
     const models = await json("models.json");
     expect(models).toMatchObject({ providers: { ollama: other } });
-    const local = (models.providers as Record<string, Record<string, unknown>>)["pipkin-local"];
+    const local = (models.providers as Record<string, Record<string, unknown>>)["pigkin-local"];
     expect(local).toMatchObject({
       baseUrl: SYNC.baseUrl,
       api: "openai-completions",
@@ -60,15 +60,15 @@ describe("local_models_sync mode", () => {
     const keep = { reserveTokens: 1000, keepRecentTokens: 2000 };
     await writeFile(
       path.join(dirs.configDir, "settings.json"),
-      JSON.stringify({ compaction: { enabled: true, modelOverrides: { "openai/gpt": keep, "pipkin-local/gone": keep } } }),
+      JSON.stringify({ compaction: { enabled: true, modelOverrides: { "openai/gpt": keep, "pigkin-local/gone": keep } } }),
     );
     expect(await runOp("local_models_sync", dirs, SYNC)).toMatchObject({ ok: true });
     expect((await json("settings.json")).compaction).toEqual({
       enabled: true,
       modelOverrides: {
         "openai/gpt": keep,
-        "pipkin-local/qwen3-0.6b": { reserveTokens: 8192, keepRecentTokens: 2048 },
-        "pipkin-local/gemma-4-e2b": { reserveTokens: 6144, keepRecentTokens: 1024 },
+        "pigkin-local/qwen3-0.6b": { reserveTokens: 8192, keepRecentTokens: 2048 },
+        "pigkin-local/gemma-4-e2b": { reserveTokens: 6144, keepRecentTokens: 1024 },
       },
     });
   });
@@ -77,7 +77,7 @@ describe("local_models_sync mode", () => {
     await runOp("local_models_sync", dirs, SYNC);
     const overrides = (await json("settings.json")).compaction as { modelOverrides: Record<string, { reserveTokens: number }> };
     for (const model of SYNC.models) {
-      const { reserveTokens } = overrides.modelOverrides[`pipkin-local/${model.id}`]!;
+      const { reserveTokens } = overrides.modelOverrides[`pigkin-local/${model.id}`]!;
       // Pi compacts once the prompt passes the window less reserveTokens, so this is the largest prompt a reply gets.
       const prompt = model.contextWindow - reserveTokens;
       const usage = { input: prompt, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: prompt, cost: FREE_COST };
@@ -97,7 +97,7 @@ describe("local_models_sync mode", () => {
   it("keeps the local models in scope when enabledModels limits the list", async () => {
     await writeFile(path.join(dirs.configDir, "settings.json"), JSON.stringify({ enabledModels: ["anthropic/*"] }));
     expect(await runOp("local_models_sync", dirs, SYNC)).toMatchObject({ ok: true });
-    expect((await json("settings.json")).enabledModels).toEqual(["anthropic/*", "pipkin-local/*"]);
+    expect((await json("settings.json")).enabledModels).toEqual(["anthropic/*", "pigkin-local/*"]);
   });
 
   it("answers changed only when it wrote something, and leaves unchanged files alone", async () => {
@@ -126,8 +126,8 @@ describe("local_models_sync mode", () => {
     await writeFile(path.join(dirs.configDir, "settings.json"), scoped);
     expect(await runOp("local_models_sync", dirs, SYNC)).toMatchObject({ ok: true, data: { changed: true } });
     expect(await json("settings.json")).toMatchObject({
-      enabledModels: ["anthropic/*", "pipkin-local/*"],
-      compaction: { modelOverrides: { "pipkin-local/qwen3-0.6b": { reserveTokens: 8192 } } },
+      enabledModels: ["anthropic/*", "pigkin-local/*"],
+      compaction: { modelOverrides: { "pigkin-local/qwen3-0.6b": { reserveTokens: 8192 } } },
     });
   });
 });

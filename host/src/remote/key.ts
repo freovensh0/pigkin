@@ -10,7 +10,7 @@ import { keyFile, type RemotePaths } from "./paths.js";
 
 const run = promisify(execFile);
 
-/** The phone's model (`Pixel 9`), which names Pipkin's key in the server's `authorized_keys`; the host name off Android. */
+/** The phone's model (`Pixel 9`), which names Pigkin's key in the server's `authorized_keys`; the host name off Android. */
 async function deviceModel(): Promise<string> {
   try {
     const { stdout } = await run("getprop", ["ro.product.model"], { timeout: 5000 });
@@ -22,7 +22,7 @@ async function deviceModel(): Promise<string> {
   return os.hostname();
 }
 
-/** Pipkin's public key line, or null before Pipkin made its key. */
+/** Pigkin's public key line, or null before Pigkin made its key. */
 export async function publicKey(paths: RemotePaths): Promise<string | null> {
   const file = keyFile(paths);
   try {
@@ -49,14 +49,14 @@ function afterKeyWork<T>(work: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Pipkin's public key line, making the key first if needed: ed25519, no passphrase, mode 600, commented
- * `pipkin@<device model>`.
+ * Pigkin's public key line, making the key first if needed: ed25519, no passphrase, mode 600, commented
+ * `pigkin@<device model>`.
  */
 export function ensureKey(paths: RemotePaths): Promise<string> {
   return afterKeyWork(() => makeKey(paths, false));
 }
 
-/** Replaces Pipkin's key with a new one, after any key work already started, and returns its public line. */
+/** Replaces Pigkin's key with a new one, after any key work already started, and returns its public line. */
 export function replaceKey(paths: RemotePaths): Promise<string> {
   return afterKeyWork(() => makeKey(paths, true));
 }
@@ -76,7 +76,7 @@ async function makeKey(paths: RemotePaths, replace: boolean): Promise<string> {
   const temporary = `${file}.${process.pid}.tmp`;
   await rm(temporary, { force: true });
   await rm(`${temporary}.pub`, { force: true });
-  const args = ["-q", "-t", "ed25519", "-N", "", "-C", `pipkin@${await deviceModel()}`, "-f", temporary];
+  const args = ["-q", "-t", "ed25519", "-N", "", "-C", `pigkin@${await deviceModel()}`, "-f", temporary];
   try {
     await run(join(paths.bin, "ssh-keygen"), args);
   } catch (error) {

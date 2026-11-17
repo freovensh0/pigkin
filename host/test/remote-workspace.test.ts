@@ -47,7 +47,7 @@ class ModeHost {
   static async start(mode: string, dirs: Dirs, params: JsonObject = {}, env: Record<string, string> = {}): Promise<ModeHost> {
     const { run } = await startHost(mode, dirs, env);
     await run.next();
-    run.send({ type: "pipkin_request", params });
+    run.send({ type: "pigkin_request", params });
     return new ModeHost(run);
   }
 
@@ -125,7 +125,7 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
       forceCommand: `exec /usr/bin/env ${environment} PATH=${tools} /bin/sh -c "$SSH_ORIGINAL_COMMAND"`,
     });
     hosts = { main: await saveHost("main", sshd.port), noGit: await saveHost("nogit", noGit.port), down: await saveHost("down", await freePort()) };
-    const knownHosts = path.join(dirs.base, "pipkin", "ssh", "known_hosts");
+    const knownHosts = path.join(dirs.base, "pigkin", "ssh", "known_hosts");
     await writeFile(knownHosts, `[127.0.0.1]:${sshd.port} ${sshd.hostKey}\n[127.0.0.1]:${noGit.port} ${noGit.hostKey}\n`);
   });
 
@@ -152,12 +152,12 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
 
     afterAll(() => browser.close());
 
-    const list = (target: string) => browser.request("pipkin_list", { path: target });
-    const search = async (query: string) => (await browser.request("pipkin_search", { query })).paths;
+    const list = (target: string) => browser.request("pigkin_list", { path: target });
+    const search = async (query: string) => (await browser.request("pigkin_search", { query })).paths;
 
     it("offers the remote home and root", async () => {
       expect(await browser.run.next()).toEqual({
-        type: "pipkin_places",
+        type: "pigkin_places",
         places: [
           { kind: "remote_home", path: remoteHome },
           { kind: "remote_root", path: "/" },
@@ -219,8 +219,8 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
       const down = await ModeHost.start("browse", dirs, { hostId: hosts.down });
       try {
         const places = await down.run.next();
-        expect(places).toMatchObject({ type: "pipkin_places", places: [], error: { code: "remote_unreachable", i18n: { key: "remote_unreachable" } } });
-        expect(await down.request("pipkin_list", { path: "~" })).toMatchObject({ dirs: [], errorCode: "remote_unreachable" });
+        expect(places).toMatchObject({ type: "pigkin_places", places: [], error: { code: "remote_unreachable", i18n: { key: "remote_unreachable" } } });
+        expect(await down.request("pigkin_list", { path: "~" })).toMatchObject({ dirs: [], errorCode: "remote_unreachable" });
       } finally {
         down.close();
       }
@@ -270,8 +270,8 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
     const request = (type: string, at: string, target: string, fields: JsonObject = {}) => files.request(type, { root: at, path: target, ...fields });
 
     it("lists the remote folder as the local one, leaving out dangling links and links out of it", async () => {
-      const remote = await request("pipkin_files_list", root, ".");
-      expect(timeless(remote)).toEqual(timeless(await request("pipkin_files_list", folder, ".")));
+      const remote = await request("pigkin_files_list", root, ".");
+      expect(timeless(remote)).toEqual(timeless(await request("pigkin_files_list", folder, ".")));
       expect((remote.entries as JsonObject[]).map((entry) => entry.name)).toEqual([
         "inside",
         "locked",
@@ -283,50 +283,50 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
         "bin.dat",
         "pic.png",
       ]);
-      expect(timeless(await request("pipkin_files_list", root, "inside"))).toEqual({ path: "inside", entries: [{ name: "main.ts", path: "inside/main.ts", kind: "file", size: 5 }] });
+      expect(timeless(await request("pigkin_files_list", root, "inside"))).toEqual({ path: "inside", entries: [{ name: "main.ts", path: "inside/main.ts", kind: "file", size: 5 }] });
     });
 
     it("reads files as the local mode does: text, image, binary and too large", async () => {
       for (const file of ["a b's $x.txt", "pic.png", "bin.dat", "big.txt", "bigbin.dat", "big.png", "inside/main.ts", "src", "dangling", "missing"]) {
-        expect([file, await request("pipkin_files_read", root, file)]).toEqual([file, await request("pipkin_files_read", folder, file)]);
+        expect([file, await request("pigkin_files_read", root, file)]).toEqual([file, await request("pigkin_files_read", folder, file)]);
       }
-      expect(await request("pipkin_files_read", root, "big.txt")).toEqual({ path: "big.txt", size: 2 * MIB + 1, kind: "too_large" });
-      expect(await request("pipkin_files_read", root, "bigbin.dat")).toEqual({ path: "bigbin.dat", size: 2 * MIB + 1, kind: "binary" });
+      expect(await request("pigkin_files_read", root, "big.txt")).toEqual({ path: "big.txt", size: 2 * MIB + 1, kind: "too_large" });
+      expect(await request("pigkin_files_read", root, "bigbin.dat")).toEqual({ path: "bigbin.dat", size: 2 * MIB + 1, kind: "binary" });
     });
 
     it("refuses paths out of the workspace, by .. or through a link", async () => {
       for (const target of ["..", "../outside/secret.txt", "outside.txt", "outside", "/etc", "lookalike", "lookalike/secret.txt"]) {
-        expect(await request("pipkin_files_read", root, target)).toMatchObject({ errorI18n: { key: "files_outside_workspace" } });
+        expect(await request("pigkin_files_read", root, target)).toMatchObject({ errorI18n: { key: "files_outside_workspace" } });
       }
       for (const target of ["outside", "lookalike"]) {
-        expect(await request("pipkin_files_list", root, target)).toMatchObject({ entries: [], errorI18n: { key: "files_outside_workspace" } });
+        expect(await request("pigkin_files_list", root, target)).toMatchObject({ entries: [], errorI18n: { key: "files_outside_workspace" } });
       }
     });
 
     it("says when the remote refuses a folder, or the workspace is gone", async () => {
-      expect(await request("pipkin_files_list", root, "locked")).toEqual({
+      expect(await request("pigkin_files_list", root, "locked")).toEqual({
         path: "locked",
         entries: [],
         error: "main doesn't let you open this.",
         errorI18n: { key: "remote_files_no_access", args: { host: "main" } },
       });
       const gone = await standIn(hosts.main, path.join(dirs.base, "no-such-folder"));
-      expect(await request("pipkin_files_list", gone, ".")).toMatchObject({ entries: [], errorI18n: { key: "folder_not_found" } });
+      expect(await request("pigkin_files_list", gone, ".")).toMatchObject({ entries: [], errorI18n: { key: "folder_not_found" } });
     });
 
     it("makes folders on the remote", async () => {
-      expect(await request("pipkin_files_mkdir", root, "src", { name: " it's new " })).toEqual({ path: "src/it's new" });
+      expect(await request("pigkin_files_mkdir", root, "src", { name: " it's new " })).toEqual({ path: "src/it's new" });
       expect(await readdir(path.join(folder, "src"))).toContain("it's new");
-      expect(await request("pipkin_files_mkdir", root, "src", { name: "it's new" })).toMatchObject({ errorI18n: { key: "files_name_taken", args: { name: "it's new" } } });
-      expect(await request("pipkin_files_mkdir", root, "inside", { name: "main.ts" })).toMatchObject({ errorI18n: { key: "files_name_taken" } });
-      expect(await request("pipkin_files_mkdir", root, "pic.png", { name: "x" })).toMatchObject({ errorI18n: { key: "not_a_folder" } });
-      expect(await request("pipkin_files_mkdir", root, "outside", { name: "x" })).toMatchObject({ errorI18n: { key: "files_outside_workspace" } });
-      expect(await request("pipkin_files_mkdir", root, ".", { name: "a/b" })).toMatchObject({ errorI18n: { key: "files_folder_name_invalid" } });
+      expect(await request("pigkin_files_mkdir", root, "src", { name: "it's new" })).toMatchObject({ errorI18n: { key: "files_name_taken", args: { name: "it's new" } } });
+      expect(await request("pigkin_files_mkdir", root, "inside", { name: "main.ts" })).toMatchObject({ errorI18n: { key: "files_name_taken" } });
+      expect(await request("pigkin_files_mkdir", root, "pic.png", { name: "x" })).toMatchObject({ errorI18n: { key: "not_a_folder" } });
+      expect(await request("pigkin_files_mkdir", root, "outside", { name: "x" })).toMatchObject({ errorI18n: { key: "files_outside_workspace" } });
+      expect(await request("pigkin_files_mkdir", root, ".", { name: "a/b" })).toMatchObject({ errorI18n: { key: "files_folder_name_invalid" } });
     });
 
     it("gives a failed connection's code", async () => {
       const down = await standIn(hosts.down, folder);
-      expect(await request("pipkin_files_list", down, ".")).toMatchObject({ entries: [], errorCode: "remote_unreachable", errorI18n: { key: "remote_unreachable" } });
+      expect(await request("pigkin_files_list", down, ".")).toMatchObject({ entries: [], errorCode: "remote_unreachable", errorI18n: { key: "remote_unreachable" } });
     });
   });
 
@@ -379,53 +379,53 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
     afterAll(() => git.close());
 
     it("detects the repo as locally, running git only for trusted roots", async () => {
-      const [local, remote] = await both("pipkin_git_detect", { trusted: true });
+      const [local, remote] = await both("pigkin_git_detect", { trusted: true });
       expect(remote).toEqual(local);
       expect(remote).toEqual({ repo: true, git: true });
-      expect(await git.request("pipkin_git_detect", { root, trusted: false })).toEqual({ repo: true, git: true });
+      expect(await git.request("pigkin_git_detect", { root, trusted: false })).toEqual({ repo: true, git: true });
       const plain = await standIn(hosts.main, path.join(dirs.base, "files"));
-      expect(await git.request("pipkin_git_detect", { root: plain, trusted: true })).toEqual({ repo: false, git: true });
-      expect(await git.request("pipkin_git_changes", { root: plain, mode: "uncommitted", ignoreWhitespace: false })).toMatchObject({ code: "not_repo" });
+      expect(await git.request("pigkin_git_detect", { root: plain, trusted: true })).toEqual({ repo: false, git: true });
+      expect(await git.request("pigkin_git_changes", { root: plain, mode: "uncommitted", ignoreWhitespace: false })).toMatchObject({ code: "not_repo" });
     });
 
     it("gives the same changes as locally, untracked files included and ignored ones not", async () => {
       for (const ignoreWhitespace of [false, true]) {
         for (const mode of ["uncommitted", "base"]) {
-          const [local, remote] = await both("pipkin_git_changes", { mode, ignoreWhitespace });
+          const [local, remote] = await both("pigkin_git_changes", { mode, ignoreWhitespace });
           expect(remote).toEqual(local);
         }
       }
-      const [, remote] = await both("pipkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false });
+      const [, remote] = await both("pigkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false });
       expect((remote.files as JsonObject[]).map((file) => file.path)).toEqual([".gitignore", "a.txt", "it's $x.txt", "ws.txt"]);
       expect(remote.branch).toBe("feature");
-      const [, hidden] = await both("pipkin_git_changes", { mode: "uncommitted", ignoreWhitespace: true });
+      const [, hidden] = await both("pigkin_git_changes", { mode: "uncommitted", ignoreWhitespace: true });
       expect((hidden.files as JsonObject[]).map((file) => file.path)).not.toContain("ws.txt");
       const known = remote.fingerprint;
-      expect(await git.request("pipkin_git_changes", { root, mode: "uncommitted", ignoreWhitespace: false, known })).toEqual({ fingerprint: known, unchanged: true });
+      expect(await git.request("pigkin_git_changes", { root, mode: "uncommitted", ignoreWhitespace: false, known })).toEqual({ fingerprint: known, unchanged: true });
     });
 
     it("leaves no temporary index behind on the remote", async () => {
-      await both("pipkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false });
+      await both("pigkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false });
       expect(await readdir(remoteTmp)).toEqual([]);
     });
 
     it("gives the same commits and commit diffs as locally", async () => {
-      const [local, remote] = await both("pipkin_git_commits");
+      const [local, remote] = await both("pigkin_git_commits");
       expect(remote).toEqual(local);
       expect(remote).toMatchObject({ baseRef: "main", total: 2 });
       for (const commit of remote.commits as JsonObject[]) {
         for (const ignoreWhitespace of [false, true]) {
-          const [localDiff, remoteDiff] = await both("pipkin_git_commit_diff", { sha: commit.sha, ignoreWhitespace });
+          const [localDiff, remoteDiff] = await both("pigkin_git_commit_diff", { sha: commit.sha, ignoreWhitespace });
           expect(remoteDiff).toEqual(localDiff);
         }
       }
-      expect(await git.request("pipkin_git_commit_diff", { root, sha: "abcdef0", ignoreWhitespace: false })).toMatchObject({ code: "commit_not_found" });
+      expect(await git.request("pigkin_git_commit_diff", { root, sha: "abcdef0", ignoreWhitespace: false })).toMatchObject({ code: "commit_not_found" });
     });
 
     it("says when the remote has no git", async () => {
       const without = await standIn(hosts.noGit, repo);
-      expect(await git.request("pipkin_git_detect", { root: without, trusted: true })).toEqual({ repo: true, git: false });
-      expect(await git.request("pipkin_git_changes", { root: without, mode: "uncommitted", ignoreWhitespace: false })).toEqual({
+      expect(await git.request("pigkin_git_detect", { root: without, trusted: true })).toEqual({ repo: true, git: false });
+      expect(await git.request("pigkin_git_changes", { root: without, mode: "uncommitted", ignoreWhitespace: false })).toEqual({
         error: "git isn't installed on nogit.",
         code: "no_git",
         errorI18n: { key: "remote_git_missing", args: { host: "nogit" } },
@@ -434,8 +434,8 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
 
     it("answers with the failure when the host can't be reached", async () => {
       const down = await standIn(hosts.down, repo);
-      expect(await git.request("pipkin_git_detect", { root: down, trusted: true })).toMatchObject({ code: "remote_unreachable" });
-      expect(await git.request("pipkin_git_commits", { root: down })).toMatchObject({ code: "remote_unreachable", errorI18n: { key: "remote_unreachable" } });
+      expect(await git.request("pigkin_git_detect", { root: down, trusted: true })).toMatchObject({ code: "remote_unreachable" });
+      expect(await git.request("pigkin_git_commits", { root: down })).toMatchObject({ code: "remote_unreachable", errorI18n: { key: "remote_unreachable" } });
     });
   });
 
@@ -443,14 +443,14 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
   async function terminal(cwd: string, input: string): Promise<{ output: string; exit: JsonObject }> {
     const { run } = await startHost("terminal", dirs);
     await run.next();
-    run.send({ type: "pipkin_request", params: { cwd, rows: 24, cols: 80 } });
+    run.send({ type: "pigkin_request", params: { cwd, rows: 24, cols: 80 } });
     run.send({ type: "input", data: Buffer.from(input).toString("base64") });
     let output = "";
     for (;;) {
       const message = await run.next();
       if (message === undefined) throw new Error(`The terminal closed without exiting; it showed ${output}`);
       if (message.type === "output") output += Buffer.from(String(message.data), "base64").toString("utf8");
-      if (message.type === "pipkin_exit") return { output, exit: message };
+      if (message.type === "pigkin_exit") return { output, exit: message };
     }
   }
 
@@ -476,9 +476,9 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
     });
 
     it("says the connection was lost when the master ends under the shell", async () => {
-      const ssh = path.join(dirs.base, "pipkin", "ssh");
+      const ssh = path.join(dirs.base, "pigkin", "ssh");
       // The remote is this machine, so the shell can end the master its own session runs over.
-      const end = [path.join(dirs.prefix, "bin", "ssh"), "-F", path.join(ssh, "config"), "-o", `ControlPath=${path.join(ssh, "s", hosts.main)}`, "-O", "exit", `pipkin-${hosts.main}`];
+      const end = [path.join(dirs.prefix, "bin", "ssh"), "-F", path.join(ssh, "config"), "-o", `ControlPath=${path.join(ssh, "s", hosts.main)}`, "-O", "exit", `pigkin-${hosts.main}`];
       const { output, exit } = await terminal(await standIn(hosts.main, "/"), `${end.map(quote).join(" ")}; sleep 5\n`);
       expect(output).toContain("Couldn't reach main: Connection lost");
       expect(exit).toMatchObject({
@@ -497,11 +497,11 @@ describe.skipIf(unavailable !== null)(`remote workspaces against a throwaway ssh
 
 /** Runs [block] with sessions waiting at most a second for the server to have one free. */
 async function briefWait<T>(block: () => Promise<T>): Promise<T> {
-  process.env.PIPKIN_REMOTE_SESSION_WAIT_MS = "1000";
+  process.env.PIGKIN_REMOTE_SESSION_WAIT_MS = "1000";
   try {
     return await block();
   } finally {
-    delete process.env.PIPKIN_REMOTE_SESSION_WAIT_MS;
+    delete process.env.PIGKIN_REMOTE_SESSION_WAIT_MS;
   }
 }
 
@@ -529,7 +529,7 @@ describe.skipIf(unavailable !== null)(`a frozen server${unavailable === null ? "
     sshd = await startSshd(path.join(dirs.base, "sshd"), { authorizedKeys: key });
     const host = { name: "frozen", auth: "key", address: `${user}@127.0.0.1`, port: sshd.port };
     id = stringAt(await runOp("remote_host_save", dirs, { host }), "data", "host", "id");
-    await writeFile(path.join(dirs.base, "pipkin", "ssh", "known_hosts"), `[127.0.0.1]:${sshd.port} ${sshd.hostKey}\n`);
+    await writeFile(path.join(dirs.base, "pigkin", "ssh", "known_hosts"), `[127.0.0.1]:${sshd.port} ${sshd.hostKey}\n`);
   });
 
   afterAll(async () => {
@@ -540,15 +540,15 @@ describe.skipIf(unavailable !== null)(`a frozen server${unavailable === null ? "
   });
 
   it("fails a listing soon instead of waiting on the stuck master, and ends that master", async () => {
-    const browser = await ModeHost.start("browse", dirs, { hostId: id }, { PIPKIN_REMOTE_IDLE_MS: "1000" });
+    const browser = await ModeHost.start("browse", dirs, { hostId: id }, { PIGKIN_REMOTE_IDLE_MS: "1000" });
     try {
-      expect(await browser.run.next()).toMatchObject({ type: "pipkin_places", places: [{ kind: "remote_home" }, { kind: "remote_root" }] });
-      const socket = path.join(dirs.base, "pipkin", "ssh", "s", id);
+      expect(await browser.run.next()).toMatchObject({ type: "pigkin_places", places: [{ kind: "remote_home" }, { kind: "remote_root" }] });
+      const socket = path.join(dirs.base, "pigkin", "ssh", "s", id);
       await expect(stat(socket)).resolves.toBeDefined();
       // As `docker pause` does: the server and the connection's sshd stop answering, and the master can't tell yet.
       frozen = signalEach(await processTree(sshd.pid), "SIGSTOP");
       const started = Date.now();
-      expect(await browser.request("pipkin_list", { path: "/" })).toMatchObject({
+      expect(await browser.request("pigkin_list", { path: "/" })).toMatchObject({
         dirs: [],
         errorCode: "remote_unreachable",
         errorI18n: { key: "remote_unreachable", args: { host: "frozen", detail: "Connection timed out" } },
@@ -576,7 +576,7 @@ describe.skipIf(unavailable !== null)(`a server at its session limit${unavailabl
     sshd = await startSshd(path.join(dirs.base, "sshd"), { authorizedKeys: key, maxSessions: 1 });
     const host = { name: "busy", auth: "key", address: `${user}@127.0.0.1`, port: sshd.port };
     id = stringAt(await runOp("remote_host_save", dirs, { host }), "data", "host", "id");
-    await writeFile(path.join(dirs.base, "pipkin", "ssh", "known_hosts"), `[127.0.0.1]:${sshd.port} ${sshd.hostKey}\n`);
+    await writeFile(path.join(dirs.base, "pigkin", "ssh", "known_hosts"), `[127.0.0.1]:${sshd.port} ${sshd.hostKey}\n`);
     const paths = remotePaths(dirs.configDir, dirs.prefix, dirs.home);
     remote = { paths, host: await findHost(paths, id) };
     // Opens the master.
@@ -678,7 +678,7 @@ describe.skipIf(unavailable !== null)(`a server at its session limit${unavailabl
   });
 
   it("runs a session once though a killed process left its fallback file behind under the same pid", async () => {
-    const sockets = path.join(dirs.base, "pipkin", "ssh", "s");
+    const sockets = path.join(dirs.base, "pigkin", "ssh", "s");
     const runs = path.join(dirs.base, "runs");
     await rm(runs, { force: true });
     // [runScript]'s files are numbered per call: some of the next ones, left by an earlier process with this pid.
@@ -730,15 +730,15 @@ describe.skipIf(unavailable !== null)(`a server at its session limit${unavailabl
 
 describe("remote terminal command", () => {
   it("runs ssh with a terminal, in batch mode, then the login shell in the folder", async () => {
-    const paths = remotePaths("/data/home/.pipkin/pi", "/data/usr", "/data/home");
+    const paths = remotePaths("/data/home/.pigkin/pi", "/data/usr", "/data/home");
     const host: Host = { id: "0123456789ab", name: "box", auth: "key", address: "me@box", port: 22, home: "/home/me" };
     const command = remoteShellCommand({ paths, host }, "/home/me/it's here");
     // Over the master only, then, once there is none, with a master of its own.
-    const ssh = `'/data/usr/bin/ssh' '-tt' '-F' '/data/home/.pipkin/ssh/config' '-o' 'ControlPath=/data/home/.pipkin/ssh/s/0123456789ab'`;
-    expect(command).toContain(`${ssh} '-o' 'ControlMaster=no' '-o' 'ProxyCommand=touch "$PIPKIN_SSH_FALLBACK"' '-o' 'LogLevel=QUIET'`);
+    const ssh = `'/data/usr/bin/ssh' '-tt' '-F' '/data/home/.pigkin/ssh/config' '-o' 'ControlPath=/data/home/.pigkin/ssh/s/0123456789ab'`;
+    expect(command).toContain(`${ssh} '-o' 'ControlMaster=no' '-o' 'ProxyCommand=touch "$PIGKIN_SSH_FALLBACK"' '-o' 'LogLevel=QUIET'`);
     expect(command).toContain(`exec ${ssh} '-o' 'ControlMaster=auto'`);
-    expect(command.match(/'BatchMode=yes' '-o' 'StrictHostKeyChecking=yes' 'pipkin-0123456789ab' -- "\$c"/g)).toHaveLength(2);
-    expect(command).toMatch(/^stty rows "\$PIPKIN_ROWS" cols "\$PIPKIN_COLS" && tty > "\$PIPKIN_TTY" && exec 2>"\$PIPKIN_SSH_ERRORS" && unset /);
+    expect(command.match(/'BatchMode=yes' '-o' 'StrictHostKeyChecking=yes' 'pigkin-0123456789ab' -- "\$c"/g)).toHaveLength(2);
+    expect(command).toMatch(/^stty rows "\$PIGKIN_ROWS" cols "\$PIGKIN_COLS" && tty > "\$PIGKIN_TTY" && exec 2>"\$PIGKIN_SSH_ERRORS" && unset /);
     await exec("/bin/sh", ["-n", "-c", command]);
     const encoded = /printf %s ([A-Za-z0-9+/=]+) \| base64 -d/.exec(command)?.[1] ?? "";
     expect(Buffer.from(encoded, "base64").toString("utf8")).toBe(`cd -- '/home/me/it'\\''s here' && exec "$SHELL" -l`);

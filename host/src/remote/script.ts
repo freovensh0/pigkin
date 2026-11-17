@@ -20,7 +20,7 @@ export function remoteScript(script: string): string {
  * A script that runs [command] with `bash` in [cwd] under a watchdog, for anything that can run long. Killing the local
  * `ssh` doesn't stop a remote command, as nothing tells it without a terminal. So the command runs as its own process
  * group (`set -m`), and a watcher kills the group once the script's standard input closes, which happens when the local
- * `ssh` dies or Pipkin closes the pipe. The watcher's output goes to `/dev/null`, as sshd holds a session open while
+ * `ssh` dies or Pigkin closes the pipe. The watcher's output goes to `/dev/null`, as sshd holds a session open while
  * anything still has its output. With `set -m`, bash also reports the command's end ("[1]+ Done …") on its own standard
  * error, so once `cd` has had its say that goes to `/dev/null`, and only the command gets the real one (on fd 3). Run
  * it with standard input held open until the command ends; it exits with the command's status.

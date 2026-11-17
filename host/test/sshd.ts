@@ -54,14 +54,14 @@ export async function shortTempDir(): Promise<string> {
 
 /**
  * Test folders as `makeDirs` gives them, under a short `/tmp` folder whose paths leave room for the control sockets
- * on macOS. Pipkin's SSH state is then `<base>/pipkin/ssh`.
+ * on macOS. Pigkin's SSH state is then `<base>/pigkin/ssh`.
  */
 export async function shortDirs(): Promise<Dirs> {
   const base = await shortTempDir();
   const dirs = {
     base,
     root: path.join(base, "root"),
-    configDir: path.join(base, "pipkin", "pi"),
+    configDir: path.join(base, "pigkin", "pi"),
     home: path.join(base, "home"),
     prefix: path.join(base, "prefix"),
     shared: path.join(base, "shared"),

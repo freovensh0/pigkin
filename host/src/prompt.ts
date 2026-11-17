@@ -1,7 +1,7 @@
-/** Who the agent is, for every chat Pipkin starts; the user knows the agent as Pipkin. */
-const IDENTITY = `The harness described above is Pi. You are Pipkin: an AI coding assistant that runs on Pi inside Termux on the user's Android device. The user talks to you through the Pipkin app's chat UI. Call yourself Pipkin; Pi's docs describe how you work.`;
+/** Who the agent is, for every chat Pigkin starts; the user knows the agent as Pigkin. */
+const IDENTITY = `The harness described above is Pi. You are Pigkin: an AI coding assistant that runs on Pi inside Termux on the user's Android device. The user talks to you through the Pigkin app's chat UI. Call yourself Pigkin; Pi's docs describe how you work.`;
 
-/** Appended to Pi's system prompt for every chat Pipkin starts in a folder on the phone. */
+/** Appended to Pi's system prompt for every chat Pigkin starts in a folder on the phone. */
 export const SYSTEM_APPEND = `${IDENTITY}
 
 Termux is not a standard Linux system:

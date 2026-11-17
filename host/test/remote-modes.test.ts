@@ -21,16 +21,16 @@ async function connect(
 ): Promise<{ prompts: JsonObject[]; result: JsonObject }> {
   const { run: host } = await startHost("remote_connect", dirs);
   await host.next();
-  host.send({ type: "pipkin_request", params: { hostId, ...params } });
+  host.send({ type: "pigkin_request", params: { hostId, ...params } });
   const prompts: JsonObject[] = [];
   for (;;) {
     const message = await host.next();
     if (message === undefined) throw new Error("remote_connect closed without a result");
-    if (message.type === "pipkin_remote_prompt") {
+    if (message.type === "pigkin_remote_prompt") {
       prompts.push(message);
-      host.send({ type: "pipkin_remote_answer", id: message.id, answer: answer(message) });
+      host.send({ type: "pigkin_remote_answer", id: message.id, answer: answer(message) });
     }
-    if (message.type === "pipkin_result") {
+    if (message.type === "pigkin_result") {
       await host.exited;
       return { prompts, result: message };
     }
@@ -68,14 +68,14 @@ describe("remote host operations", () => {
 
   it("saves hosts, keeps stand-ins of removed ones, and reports a missing OpenSSH", async () => {
     expect(await runOp("remote_hosts", dirs, {})).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: { sshInstalled: false, publicKey: null, hosts: [], workspaces: [] },
     });
     const id = await saveHost(dirs, { name: "devbox", auth: "key", address: "me@devbox.lan", port: 22 });
     const workspace = await runOp("remote_workspace", dirs, { hostId: id, path: "/home/me/src/api" });
     const cwd = stringAt(workspace, "data", "cwd");
-    expect(path.dirname(path.dirname(cwd))).toBe(path.join(dirs.base, "pipkin", "remotes"));
+    expect(path.dirname(path.dirname(cwd))).toBe(path.join(dirs.base, "pigkin", "remotes"));
     expect(await runOp("remote_host_remove", dirs, { id })).toMatchObject({ ok: true });
     expect(await runOp("remote_hosts", dirs, {})).toMatchObject({ data: { hosts: [], workspaces: [{ cwd, hostId: id, path: "/home/me/src/api" }] } });
     expect(await runOp("remote_workspace", dirs, { hostId: id, path: "/x" })).toMatchObject({ ok: false, code: "remote_host_unknown" });
@@ -89,7 +89,7 @@ describe("remote host operations", () => {
       i18n: { key: "remote_address_invalid", args: { field: "address", address: "me@" } },
     });
     const id = await saveHost(dirs, { name: "a", auth: "key", address: "me@a", port: 22 });
-    const file = path.join(dirs.base, "pipkin", "ssh", "hosts.json");
+    const file = path.join(dirs.base, "pigkin", "ssh", "hosts.json");
     const saved: unknown = JSON.parse(await readFile(file, "utf8"));
     const hosts = isObject(saved) && Array.isArray(saved.hosts) ? saved.hosts.filter(isObject) : [];
     await writeFile(file, JSON.stringify({ version: 1, hosts: hosts.map((host) => ({ ...host, home: "/home/me" })) }));
@@ -102,13 +102,13 @@ describe("remote host operations", () => {
     });
   });
 
-  it("makes Pipkin's key once, private, and named after the device", async () => {
+  it("makes Pigkin's key once, private, and named after the device", async () => {
     await linkSshTools(dirs.prefix);
     const first = await runOp("remote_key", dirs, {});
     const line = stringAt(first, "data", "publicKey");
-    expect(line).toMatch(new RegExp(`^ssh-ed25519 \\S+ pipkin@${os.hostname().replaceAll(".", "\\.")}$`));
+    expect(line).toMatch(new RegExp(`^ssh-ed25519 \\S+ pigkin@${os.hostname().replaceAll(".", "\\.")}$`));
     expect(await runOp("remote_key", dirs, {})).toEqual(first);
-    expect((await stat(path.join(dirs.base, "pipkin", "ssh", "id_ed25519"))).mode & 0o777).toBe(0o600);
+    expect((await stat(path.join(dirs.base, "pigkin", "ssh", "id_ed25519"))).mode & 0o777).toBe(0o600);
     expect(await runOp("remote_hosts", dirs, {})).toMatchObject({ data: { sshInstalled: true, publicKey: line } });
   });
 
@@ -154,7 +154,7 @@ exit 255
     it("signs in with the password the app gives and saves the home", async () => {
       const id = await saveHost(dirs, { name: "box", auth: "password", address: "me@box", port: 22 });
       const { prompts, result } = await connect(dirs, id, () => "right");
-      expect(prompts).toEqual([{ type: "pipkin_remote_prompt", id: 1, kind: "password", text: "me@box's password: " }]);
+      expect(prompts).toEqual([{ type: "pigkin_remote_prompt", id: 1, kind: "password", text: "me@box's password: " }]);
       expect(result).toMatchObject({ ok: true, data: { home: "/home/me", tools: { bash: true, git: true, rg: false } } });
       expect(await runOp("remote_hosts", dirs, {})).toMatchObject({ data: { hosts: [{ id, home: "/home/me" }] } });
     });
@@ -177,7 +177,7 @@ describe.skipIf(unavailable !== null)(`remote_connect against a throwaway sshd${
   let dirs: Dirs;
   let sshd: TestSshd;
   let id: string;
-  const knownHosts = (): Promise<string> => readFile(path.join(dirs.base, "pipkin", "ssh", "known_hosts"), "utf8").catch(() => "");
+  const knownHosts = (): Promise<string> => readFile(path.join(dirs.base, "pigkin", "ssh", "known_hosts"), "utf8").catch(() => "");
 
   beforeEach(async () => {
     dirs = await shortDirs();
@@ -226,13 +226,13 @@ describe.skipIf(unavailable !== null)(`remote_connect against a throwaway sshd${
     expect(await connect(dirs, id, () => "yes", { unattended: true })).toMatchObject({ prompts: [], result: { ok: true } });
   });
 
-  it("replaces Pipkin's key, closing the old key's connection; the host refuses until it has the new line", async () => {
+  it("replaces Pigkin's key, closing the old key's connection; the host refuses until it has the new line", async () => {
     expect((await connect(dirs, id, () => "yes")).result).toMatchObject({ ok: true });
     const old = stringAt(await runOp("remote_key", dirs, {}), "data", "publicKey");
     const line = stringAt(await runOp("remote_key_new", dirs, {}), "data", "publicKey");
-    expect(line).toMatch(/^ssh-ed25519 \S+ pipkin@/);
+    expect(line).toMatch(/^ssh-ed25519 \S+ pigkin@/);
     expect(line.split(" ")[1]).not.toBe(old.split(" ")[1]);
-    expect((await stat(path.join(dirs.base, "pipkin", "ssh", "id_ed25519"))).mode & 0o777).toBe(0o600);
+    expect((await stat(path.join(dirs.base, "pigkin", "ssh", "id_ed25519"))).mode & 0o777).toBe(0o600);
     expect(await runOp("remote_hosts", dirs, {})).toMatchObject({ data: { publicKey: line } });
     expect(await runOp("remote_status", dirs, { ids: [id] })).toMatchObject({ data: { connected: { [id]: false } } });
 
@@ -242,7 +242,7 @@ describe.skipIf(unavailable !== null)(`remote_connect against a throwaway sshd${
   });
 
   it("asks for the key's passphrase, and refuses a wrong one without asking again", async () => {
-    await run("ssh-keygen", ["-q", "-p", "-P", "", "-N", "secret", "-f", path.join(dirs.base, "pipkin", "ssh", "id_ed25519")]);
+    await run("ssh-keygen", ["-q", "-p", "-P", "", "-N", "secret", "-f", path.join(dirs.base, "pigkin", "ssh", "id_ed25519")]);
     const wrong = await connect(dirs, id, (prompt) => (prompt.kind === "host_key" ? "yes" : "wrong"));
     expect(wrong.prompts.map((prompt) => prompt.kind)).toEqual(["host_key", "passphrase"]);
     expect(wrong.result).toMatchObject({ ok: false, code: "remote_auth_failed" });

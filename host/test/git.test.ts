@@ -114,7 +114,7 @@ describe("git mode", () => {
     await symlink(SYSTEM_GIT, path.join(dirs.prefix, "bin", "git"));
     ({ run } = await startHost("git", dirs, { ...ISOLATED, TMPDIR: tmp }));
     await run.next();
-    run.send({ type: "pipkin_request", params: {} });
+    run.send({ type: "pigkin_request", params: {} });
   });
 
   afterEach(async () => {
@@ -132,20 +132,20 @@ describe("git mode", () => {
     }
   }
 
-  const detect = (trusted: boolean, root = workspace) => request("pipkin_git_detect", { root, trusted });
-  const changes = (fields: JsonObject = {}) => request("pipkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false, ...fields });
-  const commits = (fields: JsonObject = {}) => request("pipkin_git_commits", fields);
-  const commitDiff = (sha: string, ignoreWhitespace = false) => request("pipkin_git_commit_diff", { sha, ignoreWhitespace });
+  const detect = (trusted: boolean, root = workspace) => request("pigkin_git_detect", { root, trusted });
+  const changes = (fields: JsonObject = {}) => request("pigkin_git_changes", { mode: "uncommitted", ignoreWhitespace: false, ...fields });
+  const commits = (fields: JsonObject = {}) => request("pigkin_git_commits", fields);
+  const commitDiff = (sha: string, ignoreWhitespace = false) => request("pigkin_git_commit_diff", { sha, ignoreWhitespace });
   const committed = () => changes({ mode: "base" });
 
   it("starts with a ready message", async () => {
-    expect(await run.next()).toEqual({ type: "pipkin_git_ready" });
+    expect(await run.next()).toEqual({ type: "pigkin_git_ready" });
   });
 
   describe("detect", () => {
     it("finds a repo only where .git sits in the root itself", async () => {
       await mkdir(workspace);
-      expect(await detect(true)).toEqual({ type: "pipkin_git_detected", id: nextId, repo: false, git: true });
+      expect(await detect(true)).toEqual({ type: "pigkin_git_detected", id: nextId, repo: false, git: true });
       await initRepo({ "sub/file.txt": "x\n" }, path.join(workspace, "nested"));
       expect(await detect(true)).toMatchObject({ repo: false });
       expect(await detect(false)).toMatchObject({ repo: false });
@@ -179,7 +179,7 @@ describe("git mode", () => {
       await unlink(path.join(dirs.prefix, "bin", "git"));
       expect(await detect(true)).toMatchObject({ repo: true, git: false });
       expect(await changes()).toEqual({
-        type: "pipkin_git_changes_result",
+        type: "pigkin_git_changes_result",
         id: nextId,
         error: "git isn't installed in Termux.",
         code: "no_git",
@@ -201,7 +201,7 @@ describe("git mode", () => {
       const index = await readFile(path.join(workspace, ".git", "index"));
 
       const reply = await changes();
-      expect(reply).toMatchObject({ type: "pipkin_git_changes_result", branch: "main", baseRef: "main", fingerprint: expect.any(String) });
+      expect(reply).toMatchObject({ type: "pigkin_git_changes_result", branch: "main", baseRef: "main", fingerprint: expect.any(String) });
       expect(filesOf(reply)).toEqual([
         {
           path: "a.txt",
@@ -352,8 +352,8 @@ describe("git mode", () => {
       await write("README.md", "edited\n");
       const first = await changes();
       const fingerprint = first?.fingerprint as string;
-      expect(await changes({ known: fingerprint })).toEqual({ type: "pipkin_git_changes_result", id: nextId, fingerprint, unchanged: true });
-      expect(await changes({ known: fingerprint, ignoreWhitespace: true })).toEqual({ type: "pipkin_git_changes_result", id: nextId, fingerprint, unchanged: true });
+      expect(await changes({ known: fingerprint })).toEqual({ type: "pigkin_git_changes_result", id: nextId, fingerprint, unchanged: true });
+      expect(await changes({ known: fingerprint, ignoreWhitespace: true })).toEqual({ type: "pigkin_git_changes_result", id: nextId, fingerprint, unchanged: true });
       await write("README.md", "edited again\n");
       const changed = await changes({ known: fingerprint });
       expect(changed?.fingerprint).not.toBe(fingerprint);
@@ -365,7 +365,7 @@ describe("git mode", () => {
       await mkdir(workspace);
       expect(await changes()).toMatchObject({ code: "not_repo", error: expect.stringContaining("not a git repository") });
       const nowhere = path.join(dirs.base, "nowhere");
-      expect(await request("pipkin_git_changes", { root: nowhere, mode: "uncommitted", ignoreWhitespace: false })).toMatchObject({
+      expect(await request("pigkin_git_changes", { root: nowhere, mode: "uncommitted", ignoreWhitespace: false })).toMatchObject({
         code: "not_repo",
         errorI18n: { key: "folder_not_found", args: { path: nowhere } },
       });
@@ -532,7 +532,7 @@ describe("git mode", () => {
       const second = await commitAll(workspace, "second");
       const reply = await commits();
       expect(reply).toEqual({
-        type: "pipkin_git_commits_result",
+        type: "pigkin_git_commits_result",
         id: nextId,
         fingerprint: expect.any(String),
         baseRef: "main",
@@ -542,7 +542,7 @@ describe("git mode", () => {
           { sha: first, subject: 'first: with "quotes" and ünïcode', authorTime: firstTime },
         ],
       });
-      expect(await commits({ known: reply?.fingerprint })).toEqual({ type: "pipkin_git_commits_result", id: nextId, fingerprint: reply?.fingerprint, unchanged: true });
+      expect(await commits({ known: reply?.fingerprint })).toEqual({ type: "pigkin_git_commits_result", id: nextId, fingerprint: reply?.fingerprint, unchanged: true });
 
       await git(workspace, "checkout", "-q", "--detach");
       expect(await commits()).toMatchObject({ baseRef: null, total: 0, commits: [] });
@@ -577,7 +577,7 @@ describe("git mode", () => {
       await write("a.txt", "one  \ntwo\n");
       const second = await commitAll(workspace, "second");
       expect(await commitDiff(second)).toEqual({
-        type: "pipkin_git_commit_diff_result",
+        type: "pigkin_git_commit_diff_result",
         id: nextId,
         files: [
           {
@@ -610,7 +610,7 @@ describe("git mode", () => {
     it("reports commits git can't find", async () => {
       await initRepo();
       expect(await commitDiff("0123456789abcdef0123456789abcdef01234567")).toEqual({
-        type: "pipkin_git_commit_diff_result",
+        type: "pigkin_git_commit_diff_result",
         id: nextId,
         error: "Commit 0123456789abcdef0123456789abcdef01234567 not found.",
         code: "commit_not_found",
@@ -627,7 +627,7 @@ describe("git mode", () => {
     const fifo = path.join(dirs.base, "started");
     await execFileAsync("mkfifo", [fifo]);
     await wrapGit(`[ -n "$GIT_INDEX_FILE" ] && { echo "$GIT_INDEX_FILE" > ${fifo}; exec sleep 30; }`);
-    run.send({ type: "pipkin_git_changes", id: ++nextId, root: workspace, mode: "uncommitted", ignoreWhitespace: false });
+    run.send({ type: "pigkin_git_changes", id: ++nextId, root: workspace, mode: "uncommitted", ignoreWhitespace: false });
     const tempIndex = (await readFile(fifo, "utf8")).trim();
     expect(path.dirname(path.dirname(tempIndex))).toBe(tmp);
     expect(await readdir(tmp)).toHaveLength(1);
@@ -641,9 +641,9 @@ describe("git mode", () => {
     beforeEach(async () => {
       run.socket.destroy();
       await run.exited;
-      ({ run } = await startHost("git", dirs, { ...ISOLATED, TMPDIR: tmp, PIPKIN_GIT_TIMEOUT_MS: "500" }));
+      ({ run } = await startHost("git", dirs, { ...ISOLATED, TMPDIR: tmp, PIGKIN_GIT_TIMEOUT_MS: "500" }));
       await run.next();
-      run.send({ type: "pipkin_request", params: {} });
+      run.send({ type: "pigkin_request", params: {} });
     });
 
     // The sleep is a separate process git's wrapper waits on, like a textconv filter, holding git's output open.
@@ -669,17 +669,17 @@ describe("git mode", () => {
 
   it("ignores malformed requests", async () => {
     await initRepo();
-    run.send({ type: "pipkin_git_changes", id: "1", root: workspace, mode: "uncommitted", ignoreWhitespace: false });
-    run.send({ type: "pipkin_git_changes", id: 1000, root: workspace, mode: "staged", ignoreWhitespace: false });
-    run.send({ type: "pipkin_git_detect", id: 1001, root: workspace });
-    run.send({ type: "pipkin_git_commit_diff", id: 1002, root: workspace, sha: "abc" });
-    run.send({ type: "pipkin_git_detect", id: 1003, root: workspace, trusted: false });
+    run.send({ type: "pigkin_git_changes", id: "1", root: workspace, mode: "uncommitted", ignoreWhitespace: false });
+    run.send({ type: "pigkin_git_changes", id: 1000, root: workspace, mode: "staged", ignoreWhitespace: false });
+    run.send({ type: "pigkin_git_detect", id: 1001, root: workspace });
+    run.send({ type: "pigkin_git_commit_diff", id: 1002, root: workspace, sha: "abc" });
+    run.send({ type: "pigkin_git_detect", id: 1003, root: workspace, trusted: false });
     const seen: unknown[] = [];
     for (;;) {
       const message = await run.next();
       if (message === undefined || message.id === 1003) break;
       seen.push(message.type);
     }
-    expect(seen).toEqual(["pipkin_git_ready"]);
+    expect(seen).toEqual(["pigkin_git_ready"]);
   });
 });

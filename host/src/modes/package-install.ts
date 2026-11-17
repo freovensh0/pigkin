@@ -14,7 +14,7 @@ import { commandFailed, forwardLines } from "./ensure.js";
 const ATTEMPTS = 2;
 
 /**
- * Runs `pi install <source>` in Pipkin's Pi, which adds the package to Pi's global settings. Each chat loads it the
+ * Runs `pi install <source>` in Pigkin's Pi, which adds the package to Pi's global settings. Each chat loads it the
  * next time its Pi starts. Pi's output arrives as progress lines; a failed attempt is retried once, and a second
  * failure reports Pi's last line.
  */
@@ -39,7 +39,7 @@ async function runPi(ctx: ModeContext, args: string[], env: NodeJS.ProcessEnv): 
   let lastLine = "";
   const send = (line: string): void => {
     if (line.trim().length > 0) lastLine = line;
-    ctx.conn.send({ type: "pipkin_progress", line });
+    ctx.conn.send({ type: "pigkin_progress", line });
   };
   const child = spawn(process.execPath, args, {
     cwd: ctx.env.home,

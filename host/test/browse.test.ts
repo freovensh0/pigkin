@@ -20,7 +20,7 @@ describe("browse mode", () => {
     await writeFile(path.join(dirs.home, "notes.txt"), "not a folder");
     ({ run } = await startHost("browse", dirs));
     await run.next();
-    run.send({ type: "pipkin_request", params: {} });
+    run.send({ type: "pigkin_request", params: {} });
   });
 
   afterEach(async () => {
@@ -30,27 +30,27 @@ describe("browse mode", () => {
 
   async function list(target: string): Promise<JsonObject | undefined> {
     const id = ++nextId;
-    run.send({ type: "pipkin_list", id, path: target });
+    run.send({ type: "pigkin_list", id, path: target });
     for (;;) {
       const message = await run.next();
-      if (message === undefined || (message.type === "pipkin_listing" && message.id === id)) return message;
+      if (message === undefined || (message.type === "pigkin_listing" && message.id === id)) return message;
     }
   }
 
-  /** The paths a `pipkin_search` for [query] answers with. */
+  /** The paths a `pigkin_search` for [query] answers with. */
   async function search(query: string): Promise<unknown> {
     const id = ++nextId;
-    run.send({ type: "pipkin_search", id, query });
+    run.send({ type: "pigkin_search", id, query });
     for (;;) {
       const message = await run.next();
       if (message === undefined) return undefined;
-      if (message.type === "pipkin_search_results" && message.id === id) return message.paths;
+      if (message.type === "pigkin_search_results" && message.id === id) return message.paths;
     }
   }
 
   it("starts with Termux home and shared storage", async () => {
     expect(await run.next()).toEqual({
-      type: "pipkin_places",
+      type: "pigkin_places",
       places: [
         { kind: "home", path: dirs.home },
         { kind: "shared", path: shared },
@@ -63,8 +63,8 @@ describe("browse mode", () => {
     const { run: denied } = await startHost("browse", dirs);
     try {
       await denied.next();
-      denied.send({ type: "pipkin_request", params: {} });
-      expect(await denied.next()).toEqual({ type: "pipkin_places", places: [{ kind: "home", path: dirs.home }] });
+      denied.send({ type: "pigkin_request", params: {} });
+      expect(await denied.next()).toEqual({ type: "pigkin_places", places: [{ kind: "home", path: dirs.home }] });
     } finally {
       denied.socket.destroy();
       await chmod(shared, 0o755);
@@ -73,7 +73,7 @@ describe("browse mode", () => {
 
   it("lists only folders, following links, with dot folders last", async () => {
     expect(await list("~")).toEqual({
-      type: "pipkin_listing",
+      type: "pigkin_listing",
       id: nextId,
       path: dirs.home,
       parent: path.dirname(dirs.home),
@@ -94,10 +94,10 @@ describe("browse mode", () => {
     const { run: linked } = await startHost("browse", { ...dirs, home: linkedHome });
     try {
       await linked.next();
-      linked.send({ type: "pipkin_request", params: {} });
+      linked.send({ type: "pigkin_request", params: {} });
       await linked.next();
-      linked.send({ type: "pipkin_list", id: 1, path: path.join(dirs.home, "alpha") });
-      expect(await linked.next()).toMatchObject({ type: "pipkin_listing", path: path.join(linkedHome, "alpha") });
+      linked.send({ type: "pigkin_list", id: 1, path: path.join(dirs.home, "alpha") });
+      expect(await linked.next()).toMatchObject({ type: "pigkin_listing", path: path.join(linkedHome, "alpha") });
     } finally {
       linked.socket.destroy();
     }
@@ -170,23 +170,23 @@ describe("browse mode", () => {
   it("drops a search overtaken by a newer one without answering it", async () => {
     // One write, so the host reads both before the first search's filesystem calls return.
     run.socket.write(
-      encodeLine({ type: "pipkin_search", id: 1001, query: "proj" }) +
-        encodeLine({ type: "pipkin_search", id: 1002, query: "alpha" }),
+      encodeLine({ type: "pigkin_search", id: 1001, query: "proj" }) +
+        encodeLine({ type: "pigkin_search", id: 1002, query: "alpha" }),
     );
     const answered: JsonObject[] = [];
     const readUntil = async (done: (message: JsonObject) => boolean): Promise<void> => {
       for (;;) {
         const message = await run.next();
         if (message === undefined) return;
-        if (message.type === "pipkin_search_results") answered.push(message);
+        if (message.type === "pigkin_search_results") answered.push(message);
         if (done(message)) return;
       }
     };
     await readUntil((message) => message.id === 1002);
     // The round trip for a listing gives a late answer to the first search time to show up.
-    run.send({ type: "pipkin_list", id: 1003, path: "~" });
-    await readUntil((message) => message.type === "pipkin_listing");
-    expect(answered).toEqual([{ type: "pipkin_search_results", id: 1002, paths: [path.join(dirs.home, "alpha")] }]);
+    run.send({ type: "pigkin_list", id: 1003, path: "~" });
+    await readUntil((message) => message.type === "pigkin_listing");
+    expect(answered).toEqual([{ type: "pigkin_search_results", id: 1002, paths: [path.join(dirs.home, "alpha")] }]);
   });
 
   it("exits once the app hangs up", async () => {

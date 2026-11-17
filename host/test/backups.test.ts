@@ -32,7 +32,7 @@ function file(entryPath: string, content: string): TarEntry {
   return { type: "file", path: entryPath, mode: 0o644, mtime: 0, size: Buffer.byteLength(content), content: Readable.from([Buffer.from(content)]) };
 }
 
-const MANIFEST = JSON.stringify({ format: "pipkin-config-backup", version: 1, createdAt: "2026-01-01T00:00:00.000Z", piVersion: null });
+const MANIFEST = JSON.stringify({ format: "pigkin-config-backup", version: 1, createdAt: "2026-01-01T00:00:00.000Z", piVersion: null });
 
 describe("configuration backups", () => {
   let dirs: Dirs;
@@ -85,7 +85,7 @@ describe("configuration backups", () => {
   it("restores the configuration as it was backed up, leaving sessions, caches and logs alone", async () => {
     const backedUp = await snapshot(dirs.configDir);
     const name = await backUp();
-    expect(name).toMatch(/^pipkin-config-\d{8}T\d{6}Z\.tar\.gz$/);
+    expect(name).toMatch(/^pigkin-config-\d{8}T\d{6}Z\.tar\.gz$/);
 
     // An agent breaks the configuration, while chats and Pi's own files carry on changing.
     await writeFile(path.join(dirs.configDir, "settings.json"), "{ broken");
@@ -97,7 +97,7 @@ describe("configuration backups", () => {
     await writeFile(path.join(dirs.configDir, "bin/rg"), "updated binary");
     await writeFile(path.join(dirs.configDir, "pi-debug.log"), "more log");
 
-    expect(await runMode("backup_restore", dirs, { name })).toEqual({ type: "pipkin_result", ok: true, data: {} });
+    expect(await runMode("backup_restore", dirs, { name })).toEqual({ type: "pigkin_result", ok: true, data: {} });
     expect(await snapshot(dirs.configDir)).toEqual({
       ...backedUp,
       "sessions/--home--/a.jsonl": "file 644 session a\nnewer message\n",
@@ -191,13 +191,13 @@ describe("configuration backups", () => {
     expect((await readdir(dirs.base)).toSorted()).toEqual(["backups", "config", "home", "prefix", "root", "shared"]);
   });
 
-  it("refuses an archive without Pipkin's manifest", async () => {
+  it("refuses an archive without Pigkin's manifest", async () => {
     await writeArchive("other.tar.gz", [file("config/settings.json", "{}")]);
     expect(await runMode("backup_restore", dirs, { name: "other.tar.gz" })).toMatchObject({ ok: false, code: "not_backup" });
   });
 
   it("refuses a backup from a newer backup format", async () => {
-    await writeArchive("newer.tar.gz", [file("manifest.json", JSON.stringify({ format: "pipkin-config-backup", version: 2 }))]);
+    await writeArchive("newer.tar.gz", [file("manifest.json", JSON.stringify({ format: "pigkin-config-backup", version: 2 }))]);
     expect(await runMode("backup_restore", dirs, { name: "newer.tar.gz" })).toMatchObject({ ok: false, code: "backup_version" });
   });
 
@@ -256,7 +256,7 @@ describe("configuration backups", () => {
 
   it("removes a backup a crash left half-written", async () => {
     await mkdir(backups);
-    await writeFile(path.join(backups, ".pipkin-config-x.tar.gz.partial-123"), "half");
+    await writeFile(path.join(backups, ".pigkin-config-x.tar.gz.partial-123"), "half");
     const name = await backUp();
     expect(await readdir(backups)).toEqual([name]);
   });
@@ -283,7 +283,7 @@ describe("configuration backups", () => {
     it("waits for Pi to exit before swapping the configuration in", async () => {
       const name = await backUp();
       await writeFile(path.join(dirs.configDir, "settings.json"), "{ broken");
-      const restore = runMode("backup_restore", dirs, { name }, { PIPKIN_PROC_DIR: proc });
+      const restore = runMode("backup_restore", dirs, { name }, { PIGKIN_PROC_DIR: proc });
       await sleep(1000);
       expect(await readFile(path.join(dirs.configDir, "settings.json"), "utf8")).toBe("{ broken");
       await rm(path.join(proc, "4242"), { recursive: true });
@@ -297,11 +297,11 @@ describe("configuration backups", () => {
       await writeFile(path.join(staging, "settings.json"), '{"restored":true}');
       await writeFile(`${staging}.complete`, "");
       // A backup runs beside open chats, so it leaves the swap alone rather than wait for them.
-      const name = await backUp({ PIPKIN_PROC_DIR: proc });
+      const name = await backUp({ PIGKIN_PROC_DIR: proc });
       expect(await readFile(path.join(dirs.configDir, "settings.json"), "utf8")).toBe('{"theme":"dark"}');
       await access(`${staging}.complete`);
       // A restore waits for Pi to exit, then finishes the earlier restore before unpacking its own.
-      const restore = runMode("backup_restore", dirs, { name }, { PIPKIN_PROC_DIR: proc });
+      const restore = runMode("backup_restore", dirs, { name }, { PIGKIN_PROC_DIR: proc });
       await sleep(1000);
       expect(await readFile(path.join(dirs.configDir, "settings.json"), "utf8")).toBe('{"theme":"dark"}');
       await rm(path.join(proc, "4242"), { recursive: true });
@@ -316,13 +316,13 @@ describe("configuration backups", () => {
       await writeFile(path.join(proc, "4343/cmdline"), "bash\0");
       await writeFile(path.join(proc, "4343/environ"), `PI_CODING_AGENT_DIR=${dirs.configDir}\0`);
       const name = await backUp();
-      expect(await runMode("backup_restore", dirs, { name }, { PIPKIN_PROC_DIR: proc })).toMatchObject({ ok: true });
+      expect(await runMode("backup_restore", dirs, { name }, { PIGKIN_PROC_DIR: proc })).toMatchObject({ ok: true });
     });
 
     it("gives up, changing nothing, when Pi does not exit", { timeout: 40_000 }, async () => {
       const name = await backUp();
       await writeFile(path.join(dirs.configDir, "settings.json"), "{ broken");
-      expect(await runMode("backup_restore", dirs, { name }, { PIPKIN_PROC_DIR: proc })).toMatchObject({
+      expect(await runMode("backup_restore", dirs, { name }, { PIGKIN_PROC_DIR: proc })).toMatchObject({
         ok: false,
         code: "pi_running",
         i18n: { key: "pi_running", args: { processes: expect.any(String) } },

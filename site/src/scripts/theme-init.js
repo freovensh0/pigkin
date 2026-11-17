@@ -1,12 +1,12 @@
 // Inlined at the top of every page, on the landing page by Base.astro and in the guide by DocsThemeProvider.astro, so a
 // picked theme applies before the page paints instead of flashing the system's first. The theme menu
-// (scripts/theme-select.ts) changes it through window.pipkinTheme.
+// (scripts/theme-select.ts) changes it through window.pigkinTheme.
 //
 // The themes are the app's. System, the default, leaves data-palette unset so the CSS follows the system between
 // Porcelain and Stone, as the app does. data-theme always holds the resolved light or dark, which the guide's Starlight
 // styles key on.
-window.pipkinTheme = (() => {
-  const key = "pipkin-theme";
+window.pigkinTheme = (() => {
+  const key = "pigkin-theme";
   /**
    * Each theme's scheme, its page color, which also tints the browser's address bar, and its launcher icon as the
    * favicon.

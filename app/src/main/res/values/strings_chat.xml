@@ -12,23 +12,23 @@
     <string name="chat_save">Save</string>
     <string name="chat_cancel">Cancel</string>
     <string name="chat_reload_confirm_title">Stop and reload?</string>
-    <string name="chat_reload_confirm_text">Pipkin is working or running background tasks. Reloading stops them.</string>
+    <string name="chat_reload_confirm_text">Pigkin is working or running background tasks. Reloading stops them.</string>
     <string name="chat_reload_confirm">Stop and reload</string>
 
     <!-- Stream -->
     <string name="chat_starting">Starting…</string>
     <string name="chat_loading">Loading…</string>
-    <string name="chat_installing">Installing the Pipkin agent…</string>
+    <string name="chat_installing">Installing the Pigkin agent…</string>
     <string name="chat_retry">Retry</string>
     <string name="chat_set_up_termux">Set up Termux</string>
     <string name="chat_open_termux">Open Termux</string>
-    <string name="chat_open_termux_hint">Termux shows why Pipkin\'s helper didn\'t start. Once it\'s running, Pipkin switches back on its own. If Termux asks for the setup command, tap Set up Termux.</string>
+    <string name="chat_open_termux_hint">Termux shows why Pigkin\'s helper didn\'t start. Once it\'s running, Pigkin switches back on its own. If Termux asks for the setup command, tap Set up Termux.</string>
     <string name="chat_exit_code">Agent stopped (exit %1$d)</string>
     <string name="chat_agent_stopped">Agent stopped</string>
     <string name="chat_show_details">Show details</string>
     <string name="chat_hide_details">Hide details</string>
     <string name="chat_restart">Restart</string>
-    <string name="chat_empty">Message Pipkin to start</string>
+    <string name="chat_empty">Message Pigkin to start</string>
     <string name="chat_no_model">No model available</string>
     <string name="chat_sign_in">Sign in</string>
     <string name="chat_scroll_to_bottom">Scroll to bottom</string>
@@ -95,7 +95,7 @@
     <string name="chat_steps_collapse">Hide steps</string>
 
     <!-- Composer -->
-    <string name="chat_placeholder">Message Pipkin…</string>
+    <string name="chat_placeholder">Message Pigkin…</string>
     <string name="chat_attach">Attach</string>
     <string name="chat_attach_photos">Photos</string>
     <string name="chat_attach_files">Files</string>
@@ -121,7 +121,7 @@
     <string name="chat_model_search_empty">No matching models</string>
     <string name="chat_reasoning">Reasoning effort</string>
 
-    <!-- Slash commands; descriptions follow Pi's own where Pipkin does the same thing -->
+    <!-- Slash commands; descriptions follow Pi's own where Pigkin does the same thing -->
     <string name="chat_commands_loading">Loading commands…</string>
     <string name="chat_commands_empty">No commands found</string>
     <!-- Where a slash-menu command comes from, at the end of its row. Shown in capitals. -->
@@ -177,14 +177,14 @@
     <!-- Extension dialogs -->
     <string name="chat_choose">Choose an option</string>
     <string name="chat_confirm_title">Confirm</string>
-    <string name="chat_input_title">Pipkin needs input</string>
+    <string name="chat_input_title">Pigkin needs input</string>
     <string name="chat_submit">Submit</string>
     <string name="chat_dismiss">Dismiss</string>
     <string name="chat_yes">Yes</string>
     <string name="chat_no">No</string>
     <string name="chat_dialog_counter">%1$d of %2$d</string>
     <string name="chat_dialog_seconds_left">%1$ds</string>
-    <!-- Above a dialog's title when one of several subagents asked it and Pipkin can't tell which. -->
+    <!-- Above a dialog's title when one of several subagents asked it and Pigkin can't tell which. -->
     <string name="chat_dialog_from_subagents">From a subagent</string>
     <!-- Read by screen readers for the label above a dialog's title naming the subagent that asked it; %1$s is the
          agent's name and the few words describing its task, such as "General · fix users.ts". -->

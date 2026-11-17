@@ -1,11 +1,11 @@
 import { dirname, join } from "node:path";
 
 /**
- * Where Pipkin keeps its SSH state and which OpenSSH it runs: everything a remote operation needs from Termux. Built
+ * Where Pigkin keeps its SSH state and which OpenSSH it runs: everything a remote operation needs from Termux. Built
  * from plain values, so Pi extensions can use it as well as host modes.
  */
 export interface RemotePaths {
-  /** `ssh/` beside Pi's config folder: `hosts.json`, the generated config, Pipkin's key, known hosts, sockets. */
+  /** `ssh/` beside Pi's config folder: `hosts.json`, the generated config, Pigkin's key, known hosts, sockets. */
   ssh: string;
   /** `remotes/` beside Pi's config folder: the stand-in folders of remote workspaces. */
   remotes: string;

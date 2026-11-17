@@ -12,7 +12,7 @@ export interface RemoteFolder {
   path: string;
 }
 
-/** Pipkin's SSH paths in [env]. */
+/** Pigkin's SSH paths in [env]. */
 export function envRemotePaths(env: HostEnv): RemotePaths {
   return remotePaths(env.configDir, env.prefix, env.home);
 }

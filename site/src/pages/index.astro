@@ -8,9 +8,9 @@ import Base from "../layouts/Base.astro";
 import { GITHUB_URL, PI_URL, TERMUX_URL } from "../site";
 
 
-const title = "Pipkin: a coding agent that lives on your Android phone";
+const title = "Pigkin: a coding agent that lives on your Android phone";
 const description =
-  "Pipkin is a native Android app for agentic coding. Built on the Pi harness and powered by Termux, it reads your code, runs commands, edits files, and checks its work, all on your phone.";
+  "Pigkin is a native Android app for agentic coding. Built on the Pi harness and powered by Termux, it reads your code, runs commands, edits files, and checks its work, all on your phone.";
 
 const extras: { icon: IconName; title: string; text: string }[] = [
   {
@@ -31,12 +31,12 @@ const extras: { icon: IconName; title: string; text: string }[] = [
   {
     icon: "key_round",
     title: "Your model, your plan",
-    text: "Sign in with a Claude or OpenAI subscription, add a Gemini, Z.ai, Kimi or OpenRouter key, or point Pipkin at any OpenAI-compatible API.",
+    text: "Sign in with a Claude or OpenAI subscription, add a Gemini, Z.ai, Kimi or OpenRouter key, or point Pigkin at any OpenAI-compatible API.",
   },
   {
     icon: "search",
     title: "Tailored extensions included for the best experience",
-    text: "Pipkin comes with extensions tailored to it for the best experience.",
+    text: "Pigkin comes with extensions tailored to it for the best experience.",
   },
   {
     icon: "refresh_cw",
@@ -54,7 +54,7 @@ const faqs: { question: string; answer: string; link?: { href: string; text: str
   {
     question: "Do I need a computer?",
     answer:
-      "No. The agent, your files, git, and a terminal all run on your phone. Pipkin was built so a phone can be your only development machine.",
+      "No. The agent, your files, git, and a terminal all run on your phone. Pigkin was built so a phone can be your only development machine.",
   },
   {
     question: "Which AI models can I use?",
@@ -67,12 +67,12 @@ const faqs: { question: string; answer: string; link?: { href: string; text: str
       "The agent and every command it runs are on your phone. The model's thinking happens at the provider you connect, so you need a network connection while a chat is working. Local LLM support is on the roadmap though!",
   },
   {
-    question: "Which phones does Pipkin support?",
-    answer: "Phones running Android 10 or newer. Pipkin also adapts to tablets and foldables.",
+    question: "Which phones does Pigkin support?",
+    answer: "Phones running Android 10 or newer. Pigkin also adapts to tablets and foldables.",
   },
   {
-    question: "Is Pipkin open source?",
-    answer: "Yes. Pipkin is open source under the MIT license.",
+    question: "Is Pigkin open source?",
+    answer: "Yes. Pigkin is open source under the MIT license.",
     link: { href: GITHUB_URL, text: "View the source on GitHub." },
   },
 ];
@@ -81,7 +81,7 @@ const structuredData = [
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Pipkin",
+    name: "Pigkin",
     description,
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Android 10 or later",
@@ -113,7 +113,7 @@ const structuredData = [
         </p>
         <h1 class="intro" style="--i: 1">An agent native to your phone.</h1>
         <p class="lede intro" style="--i: 2">
-          Pipkin is a native Android AI agent. Tell it what to build or fix, and it reads your code, runs commands, edits
+          Pigkin is a native Android AI agent. Tell it what to build or fix, and it reads your code, runs commands, edits
           files, and checks its own work, all on your phone. No remotely running computer required.
         </p>
         <div class="actions intro" style="--i: 3">
@@ -134,12 +134,12 @@ const structuredData = [
           <h2 id="on-device-title">Just your Android device.</h2>
           <p>
             Most agents you use from a phone are remotes. The real work happens on a laptop or cloud server
-            somewhere else. Pipkin runs directly on your phone, so your code, your tools, and every command run in your
+            somewhere else. Pigkin runs directly on your phone, so your code, your tools, and every command run in your
             pocket. There's no other machine to set up, pay for, or keep awake.
           </p>
           <p>
-            Pipkin is powered by <a href={TERMUX_URL} rel="noopener">Termux</a>, a Linux-like environment for Android. It
-            allows Pipkin to run programs just like on a desktop or server. Thousands of programs, from compilers to
+            Pigkin is powered by <a href={TERMUX_URL} rel="noopener">Termux</a>, a Linux-like environment for Android. It
+            allows Pigkin to run programs just like on a desktop or server. Thousands of programs, from compilers to
             databases, install natively with <code>pkg</code>. For everything else,
             <code>proot-distro</code> simulates Debian or Ubuntu, no root required.
           </p>
@@ -167,15 +167,15 @@ Setting up git ...</span>
           <p class="eyebrow">Powered by Pi</p>
           <h2 id="pi-title">Vast ecosystem included</h2>
           <p>
-            Pipkin is built on <a href={PI_URL} rel="noopener">Pi</a>, the open-source agentic harness, and compatible
+            Pigkin is built on <a href={PI_URL} rel="noopener">Pi</a>, the open-source agentic harness, and compatible
             with Pi's ecosystem of skills, tools, prompt templates, and extensions.
           </p>
           <p>
-            Extensions render beautifully and natively in Pipkin's UI using native controls and displays. Questions,
+            Extensions render beautifully and natively in Pigkin's UI using native controls and displays. Questions,
             statuses, and widgets feel like a part of the app.
           </p>
           <ul class="checks">
-            <li>Install extensions the usual Pi way and Pipkin picks them up</li>
+            <li>Install extensions the usual Pi way and Pigkin picks them up</li>
             <li>Choices, confirmations, and text fields appear as cards above the composer</li>
             <li>Status lines, notices, and widgets, like the bundled to-do list, each get a home</li>
           </ul>
@@ -202,18 +202,18 @@ Setting up git ...</span>
           <p class="eyebrow">Android Native</p>
           <h2 id="android-title">Made for Android. Not shrunk down to fit.</h2>
           <p>
-            Pipkin is written using Android's own UI toolkit. There's no web view or JavaScript rendering, so scrolling,
+            Pigkin is written using Android's own UI toolkit. There's no web view or JavaScript rendering, so scrolling,
             typing, and streaming replies stay smooth, even in long chats.
           </p>
           <p>
-            Work continues in your pocket. Pipkin notifies you when it's done. On a foldable or tablet, split screen lets
+            Work continues in your pocket. Pigkin notifies you when it's done. On a foldable or tablet, split screen lets
             you see things side by side.
           </p>
         </div>
         <div class="feature-media captioned-media" data-reveal style="--reveal-delay: 0.1s">
           <Screenshot
             name="file-view"
-            alt="A Python file open in Pipkin's file viewer with syntax highlighting and line numbers"
+            alt="A Python file open in Pigkin's file viewer with syntax highlighting and line numbers"
           />
           <p class="media-caption">
             Code gets real syntax highlighting for more than twenty languages, from Python and TypeScript to Rust,
@@ -227,7 +227,7 @@ Setting up git ...</span>
           <p class="eyebrow">A real tool</p>
           <h2 id="real-title">Built for serious work. Handy for the small stuff.</h2>
           <p>
-            Pipkin is made for real software projects: real repositories, real toolchains, real test suites. Review
+            Pigkin is made for real software projects: real repositories, real toolchains, real test suites. Review
             every change in the built-in diff viewer, browse and edit files, and look back through your commits without
             leaving the app.
           </p>
@@ -240,12 +240,12 @@ Setting up git ...</span>
         <div class="feature-media stacked-media" data-reveal style="--reveal-delay: 0.1s">
           <Screenshot
             name="git-changes"
-            alt="Pipkin's Changes view showing uncommitted git changes across three files, with added lines highlighted"
+            alt="Pigkin's Changes view showing uncommitted git changes across three files, with added lines highlighted"
           />
           <Screenshot
             class="stacked-front"
             name="photos"
-            alt="Pipkin's reply after finding duplicate photos in the Camera folder and moving the extra copies to a Duplicates folder for review"
+            alt="Pigkin's reply after finding duplicate photos in the Camera folder and moving the extra copies to a Duplicates folder for review"
             sizes="(max-width: 720px) 70vw, 320px"
           />
         </div>
@@ -315,7 +315,7 @@ Setting up git ...</span>
     <div class="container footer-inner">
       <a class="footer-brand" href="/">
         <Logo size={20} />
-        Pipkin
+        Pigkin
       </a>
       <nav class="footer-links" aria-label="Footer">
         <a href="/docs/">Docs</a>
@@ -325,7 +325,7 @@ Setting up git ...</span>
         <a href="/licenses.txt">Licenses</a>
         <a href="/docs/privacy/">Privacy</a>
       </nav>
-      <p class="footer-note">An agent native to your phone. © 2026 Pipkin</p>
+      <p class="footer-note">An agent native to your phone. © 2026 Pigkin</p>
     </div>
   </footer>
 </Base>

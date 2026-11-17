@@ -58,7 +58,7 @@ function sharedCompat(builtin: readonly { api: string; thinkingLevelMap?: unknow
 export async function subscriptionSave(ctx: ModeContext): Promise<JsonObject> {
   const providerId = stringParam(ctx.params, "providerId");
   if (!BUILTIN_PROVIDERS.includes(providerId)) {
-    throw new HostError("bad_params", `${providerId} is not a provider Pipkin connects`);
+    throw new HostError("bad_params", `${providerId} is not a provider Pigkin connects`);
   }
   const enabled = stringArrayParam(ctx.params, "enabled");
   const models = modelDefsParam(ctx.params, "models");

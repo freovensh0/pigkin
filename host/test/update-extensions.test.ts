@@ -41,7 +41,7 @@ describe("update_extensions mode", () => {
     await removeDirs(dirs);
   });
 
-  it("installs the latest version of each unpinned package into Pipkin's config folder", async () => {
+  it("installs the latest version of each unpinned package into Pigkin's config folder", async () => {
     await configure(["npm:pi-example", "npm:pi-pinned@1.2.3"]);
 
     const result = await runMode("update_extensions", dirs, {});
@@ -101,7 +101,7 @@ describe("update_extensions mode", () => {
     await configure(["npm:pi-example"], "npm started", 0, true);
     const { run } = await startHost("update_extensions", dirs);
     await run.next();
-    run.send({ type: "pipkin_request", params: {} });
+    run.send({ type: "pigkin_request", params: {} });
     for (;;) {
       const message = await run.next();
       if (message === undefined) throw new Error("update_extensions closed before npm started");

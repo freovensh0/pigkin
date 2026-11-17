@@ -1,5 +1,5 @@
 /**
- * The client side of `pipkin-helper/1` (Pipkin's side, also used by the tests) and `node helper.mjs client`, a
+ * The client side of `pigkin-helper/1` (Pigkin's side, also used by the tests) and `node helper.mjs client`, a
  * developer CLI that launches a command through a running helper, e.g. over `adb forward`.
  */
 import { randomBytes } from "node:crypto";
@@ -21,10 +21,10 @@ import {
   sessionKeys,
 } from "./protocol.js";
 
-/** Something other than a Pipkin helper holds the port. */
+/** Something other than a Pigkin helper holds the port. */
 export class HelperForeignError extends Error {}
 
-/** A Pipkin helper answered, but with none of the client's keys. */
+/** A Pigkin helper answered, but with none of the client's keys. */
 export class HelperKeyMismatchError extends Error {}
 
 export interface HelperConnection {

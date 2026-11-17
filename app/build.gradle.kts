@@ -35,7 +35,7 @@ val hostInstall = tasks.register<Exec>("hostInstall") {
 }
 
 val hostBuild = tasks.register<HostBundle>("hostBuild") {
-  description = "Bundles the Termux host into the pipkin-host.mjs APK asset, and the Pi extensions Pipkin ships."
+  description = "Bundles the Termux host into the pigkin-host.mjs APK asset, and the Pi extensions Pigkin ships."
   dependsOn(hostInstall)
   workingDir = hostDir.asFile
   inputs.dir(hostDir.dir("src"))
@@ -409,16 +409,16 @@ tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("bui
 }
 
 android {
-  namespace = "io.jeph.pipkin"
+  namespace = "io.pigkin"
   compileSdk = 37
 
   defaultConfig {
-    applicationId = "io.jeph.pipkin"
+    applicationId = "io.pigkin"
     minSdk = 29
     targetSdk = 37
     // Release builds get both from .github/workflows/release.yml; local builds keep these placeholders.
-    versionCode = providers.gradleProperty("pipkin.versionCode").map(String::toInt).getOrElse(1)
-    versionName = providers.gradleProperty("pipkin.versionName").getOrElse("0.0.0-dev")
+    versionCode = providers.gradleProperty("pigkin.versionCode").map(String::toInt).getOrElse(1)
+    versionName = providers.gradleProperty("pigkin.versionName").getOrElse("0.0.0-dev")
     // 64-bit phones and the emulator; every ABI adds the grammars' and llama.cpp's whole native libraries, and arm64
     // also llama.cpp's OpenCL backend.
     ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
@@ -428,7 +428,7 @@ android {
         arguments += "-DLLAMA_SOURCES=${llamaSourcesDir.get().asFile}"
         arguments += "-DOPENCL_HEADERS=${llamaSourcesDir.get().dir("opencl-headers").asFile}"
         // Only the app's libraries: llama.cpp's tools and examples would build for nothing.
-        targets += listOf("pipkin-syntax", "pipkin-llama", "pipkin-opencl-probe")
+        targets += listOf("pigkin-syntax", "pigkin-llama", "pigkin-opencl-probe")
       }
     }
   }
@@ -450,14 +450,14 @@ android {
     compose = true
   }
 
-  // Android 13 and later list Pipkin under Settings › Apps › Language with every locale it has strings for, read from
+  // Android 13 and later list Pigkin under Settings › Apps › Language with every locale it has strings for, read from
   // the values-* folders; src/main/res/resources.properties names the locale of the unqualified values folder.
   androidResources { generateLocaleConfig = true }
 
   // Debug builds carry the en-XA and ar-XB pseudolocales: switched to one, any text that skips the string resources
   // stays plain English, and layouts show how they take longer or right-to-left text.
   //
-  // Debug builds are Pipkin Dev, installable beside the release: their own package here, and in src/debug their own
+  // Debug builds are Pigkin Dev, installable beside the release: their own package here, and in src/debug their own
   // name and folders in Termux and helper ports (TermuxBuild, with the release's in src/release), so both can share one
   // Termux without touching each other's state.
   buildTypes {

@@ -13,11 +13,11 @@ const KILL_AFTER_MS = 2000;
 
 /**
  * Runs `pi update --extensions`, which updates every package in the user's Pi settings that isn't pinned to a version,
- * and leaves Pi itself at the version Pipkin pins. It runs from the home folder, like a terminal's `pi update`, and
+ * and leaves Pi itself at the version Pigkin pins. It runs from the home folder, like a terminal's `pi update`, and
  * holds the config lock, so no backup, restore or starting Pi sees a package half-installed. Pi's output becomes
  * progress lines.
  *
- * Pi runs in its own process group. When Pipkin hangs up, the whole group is stopped, including the npm or git Pi
+ * Pi runs in its own process group. When Pigkin hangs up, the whole group is stopped, including the npm or git Pi
  * started, and the lock is released only once all of them have exited.
  */
 export async function updateExtensions(ctx: ModeContext): Promise<JsonObject> {
@@ -30,7 +30,7 @@ export async function updateExtensions(ctx: ModeContext): Promise<JsonObject> {
     const send = (line: string): void => {
       offline ||= isNpmNetworkError(line);
       piError = PI_ERROR.exec(line)?.[1] ?? piError;
-      ctx.conn.send({ type: "pipkin_progress", line });
+      ctx.conn.send({ type: "pigkin_progress", line });
     };
     const env = { ...(await termuxSessionEnv(ctx.env)), NPM_CONFIG_UPDATE_NOTIFIER: "false" };
     const child = spawn(process.execPath, [await piEntry(ctx.env.root), "update", "--extensions"], {

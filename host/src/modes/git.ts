@@ -24,7 +24,7 @@ const COMMITS_LIMIT = 500;
 /** Keeps a reply well under the app's 16 MiB line limit. */
 const REPLY_LIMIT = 8 * 1024 * 1024;
 /** How long one git run may take; tests shorten it so they needn't wait. */
-const GIT_TIMEOUT_MS = Number(process.env.PIPKIN_GIT_TIMEOUT_MS ?? 30_000);
+const GIT_TIMEOUT_MS = Number(process.env.PIGKIN_GIT_TIMEOUT_MS ?? 30_000);
 /** Enough of git's stderr to explain a failure. */
 const STDERR_LIMIT = 64 * 1024;
 
@@ -231,7 +231,7 @@ function localLauncher(binary: string, root: string, safeArgs: string[]): GitLau
     },
     readText: (path) => readFile(resolve(root, path), "utf8"),
     async makeScratch(index) {
-      const dir = await mkdtemp(join(os.tmpdir(), "pipkin-git-"));
+      const dir = await mkdtemp(join(os.tmpdir(), "pigkin-git-"));
       await mkdir(join(dir, "objects"));
       try {
         await copyFile(index, join(dir, "index"));
@@ -246,8 +246,8 @@ function localLauncher(binary: string, root: string, safeArgs: string[]): GitLau
 }
 
 /** What a remote git command writes to stderr, with status [REMOTE_SETUP_FAILED], when it can't start git. */
-const REMOTE_NO_FOLDER = "pipkin: no such folder";
-const REMOTE_NO_GIT = "pipkin: no git";
+const REMOTE_NO_FOLDER = "pigkin: no such folder";
+const REMOTE_NO_GIT = "pigkin: no git";
 const REMOTE_SETUP_FAILED = 127;
 
 function remoteGitMissing(folder: RemoteFolder): GitError {
@@ -295,7 +295,7 @@ function remoteLauncher(folder: RemoteFolder): GitLauncher {
     async makeScratch(index) {
       const script = [
         `i=${quote(index)}`,
-        `d=$(mktemp -d "\${TMPDIR:-/tmp}/pipkin-git-XXXXXX") || exit 1`,
+        `d=$(mktemp -d "\${TMPDIR:-/tmp}/pigkin-git-XXXXXX") || exit 1`,
         `mkdir -- "$d/objects" || { rm -rf -- "$d"; exit 1; }`,
         // A fresh repo has no index until the first `git add`.
         `if [ -e "$i" ]; then cp -- "$i" "$d/index" || { rm -rf -- "$d"; exit 1; }; fi`,
@@ -905,25 +905,25 @@ async function commitDiff(ctx: ModeContext, root: string, sha: string, ignoreWhi
 }
 
 /**
- * Long-lived, read-only git for the app's Changes tab: sends `pipkin_git_ready`, then answers
+ * Long-lived, read-only git for the app's Changes tab: sends `pigkin_git_ready`, then answers
  * concurrently, echoing each request's `id`, until the app hangs up. Every request names the absolute
  * workspace `root`; git runs there with the repo's own config, killed after 30 s or on hang-up.
- * - `pipkin_git_detect {trusted}` with `pipkin_git_detected {repo, git}`: whether `$PREFIX/bin/git` is
+ * - `pigkin_git_detect {trusted}` with `pigkin_git_detected {repo, git}`: whether `$PREFIX/bin/git` is
  *   executable, and whether `.git` sits in the root (for trusted roots, also that git reads the root as
  *   its top level). Untrusted roots never run git.
- * - `pipkin_git_changes {mode: "uncommitted" | "base", ignoreWhitespace, known?}` with
- *   `pipkin_git_changes_result {fingerprint, branch, baseRef, files, tooLarge?}`, or
+ * - `pigkin_git_changes {mode: "uncommitted" | "base", ignoreWhitespace, known?}` with
+ *   `pigkin_git_changes_result {fingerprint, branch, baseRef, files, tooLarge?}`, or
  *   `{fingerprint, unchanged: true}` when `known` is the current fingerprint.
- * - `pipkin_git_commits {known?}` with `pipkin_git_commits_result {fingerprint, baseRef, total, commits}`
+ * - `pigkin_git_commits {known?}` with `pigkin_git_commits_result {fingerprint, baseRef, total, commits}`
  *   (at most 500 `{sha, subject, authorTime}`, newest first, of `total`), or `{fingerprint, unchanged: true}`.
- * - `pipkin_git_commit_diff {sha, ignoreWhitespace}` with `pipkin_git_commit_diff_result {files, tooLarge?}`.
+ * - `pigkin_git_commit_diff {sha, ignoreWhitespace}` with `pigkin_git_commit_diff_result {files, tooLarge?}`.
  * Failures are `{error, code, errorI18n?}` in the reply: `not_repo`, `no_git`, `commit_not_found` or `failed`.
  *
  * A remote workspace's stand-in as `root` runs git on the remote folder it names, with the same replies; a failed
  * connection is a failure under its own code (`remote_not_connected` and the like), detection's included.
  */
 export async function git(ctx: ModeContext): Promise<JsonObject> {
-  ctx.conn.send({ type: "pipkin_git_ready" });
+  ctx.conn.send({ type: "pigkin_git_ready" });
   // Returning exits the process, so a hang-up first waits for killed requests to remove their temporary index.
   const inFlight = new Set<Promise<void>>();
   const reply = (type: string, id: number, result: Promise<JsonObject>): void => {
@@ -938,14 +938,14 @@ export async function git(ctx: ModeContext): Promise<JsonObject> {
   ctx.conn.listen((message) => {
     const { id, root, ignoreWhitespace } = message;
     if (typeof id !== "number" || typeof root !== "string") return;
-    if (message.type === "pipkin_git_detect" && typeof message.trusted === "boolean") {
-      reply("pipkin_git_detected", id, detect(ctx, root, message.trusted));
-    } else if (message.type === "pipkin_git_changes" && (message.mode === "uncommitted" || message.mode === "base") && typeof ignoreWhitespace === "boolean") {
-      reply("pipkin_git_changes_result", id, changes(ctx, root, message.mode, ignoreWhitespace, message.known));
-    } else if (message.type === "pipkin_git_commits") {
-      reply("pipkin_git_commits_result", id, commits(ctx, root, message.known));
-    } else if (message.type === "pipkin_git_commit_diff" && typeof message.sha === "string" && typeof ignoreWhitespace === "boolean") {
-      reply("pipkin_git_commit_diff_result", id, commitDiff(ctx, root, message.sha, ignoreWhitespace));
+    if (message.type === "pigkin_git_detect" && typeof message.trusted === "boolean") {
+      reply("pigkin_git_detected", id, detect(ctx, root, message.trusted));
+    } else if (message.type === "pigkin_git_changes" && (message.mode === "uncommitted" || message.mode === "base") && typeof ignoreWhitespace === "boolean") {
+      reply("pigkin_git_changes_result", id, changes(ctx, root, message.mode, ignoreWhitespace, message.known));
+    } else if (message.type === "pigkin_git_commits") {
+      reply("pigkin_git_commits_result", id, commits(ctx, root, message.known));
+    } else if (message.type === "pigkin_git_commit_diff" && typeof message.sha === "string" && typeof ignoreWhitespace === "boolean") {
+      reply("pigkin_git_commit_diff_result", id, commitDiff(ctx, root, message.sha, ignoreWhitespace));
     }
   });
   if (!ctx.signal.aborted) {

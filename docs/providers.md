@@ -3,7 +3,7 @@ title: Connect a model
 description: Sign in with a Claude or OpenAI subscription, add a Gemini, Z.ai, Kimi or OpenRouter API key or an OpenAI-compatible API, and choose models per chat.
 ---
 
-The agent runs on your phone, but the AI model it talks to runs at a provider. Pipkin supports these:
+The agent runs on your phone, but the AI model it talks to runs at a provider. Pigkin supports these:
 
 | Choice | What you need |
 | --- | --- |
@@ -22,27 +22,27 @@ To run a small model on the phone itself instead, with no provider, see [Local m
 ## Sign in with a subscription
 
 1. Choose **Claude** or **OpenAI**.
-2. Pick **Browser login (default)**. Pipkin opens the sign-in page in your browser.
-3. Sign in. When the browser sends you back, Pipkin shows **Signed in**.
+2. Pick **Browser login (default)**. Pigkin opens the sign-in page in your browser.
+3. Sign in. When the browser sends you back, Pigkin shows **Signed in**.
 
-If the browser doesn't come back to Pipkin on its own, copy the code or the full address the browser ends up on, paste it into the sign-in sheet, and tap **Continue**.
+If the browser doesn't come back to Pigkin on its own, copy the code or the full address the browser ends up on, paste it into the sign-in sheet, and tap **Continue**.
 
 The other options are useful when the browser flow doesn't work on your phone:
 
 - **Copy code login** (Claude): sign in, then paste the code Anthropic shows you.
-- **Device code login** (OpenAI): Pipkin shows a code; open the link, enter the code, and Pipkin finishes on its own.
+- **Device code login** (OpenAI): Pigkin shows a code; open the link, enter the code, and Pigkin finishes on its own.
 
 To sign out, open the subscription in **Settings → Providers and models**, tap **Sign out**, and confirm.
 
 ## Add a Gemini, Z.ai, Kimi or OpenRouter key
 
 1. Choose **Gemini**, **Z.ai**, **Kimi** or **OpenRouter**.
-2. Paste your API key and tap **Continue**. Pipkin saves the key and opens **Add models** for the provider.
+2. Paste your API key and tap **Continue**. Pigkin saves the key and opens **Add models** for the provider.
 3. Search the list and tap the models you want, then tap **Done** and **Save**.
 
-For Z.ai, Kimi and OpenRouter, **Add models** lists the models the provider says your key can use, so new models show up there before Pi knows them, and no models are switched on until you pick some. OpenRouter offers hundreds of models; free ones end in `:free`. If you add an OpenRouter key and pick no models, Pi starts new chats on its own OpenRouter default, a paid model, so check the model chip before you send. If the provider's list can't be read, Pipkin explains why and shows the models Pi knows instead. Gemini always shows the models Pi knows, all switched on.
+For Z.ai, Kimi and OpenRouter, **Add models** lists the models the provider says your key can use, so new models show up there before Pi knows them, and no models are switched on until you pick some. OpenRouter offers hundreds of models; free ones end in `:free`. If you add an OpenRouter key and pick no models, Pi starts new chats on its own OpenRouter default, a paid model, so check the model chip before you send. If the provider's list can't be read, Pigkin explains why and shows the models Pi knows instead. Gemini always shows the models Pi knows, all switched on.
 
-Pipkin uses Pi's built-in support for these providers, so the models Pi knows come with their context windows and reasoning levels filled in. Usage counts against your Gemini API billing, your GLM Coding Plan, your Kimi Code membership, or your OpenRouter credits. Pipkin doesn't check the key when you save it; a wrong key shows up when Pipkin lists the provider's models, or as an error in the first chat.
+Pigkin uses Pi's built-in support for these providers, so the models Pi knows come with their context windows and reasoning levels filled in. Usage counts against your Gemini API billing, your GLM Coding Plan, your Kimi Code membership, or your OpenRouter credits. Pigkin doesn't check the key when you save it; a wrong key shows up when Pigkin lists the provider's models, or as an error in the first chat.
 
 Google doesn't let third-party apps use a Google AI Pro or Ultra subscription, so Gemini needs an API key rather than a Google sign-in.
 
@@ -56,13 +56,13 @@ To remove a key, open the provider in **Settings → Providers and models**, tap
    - **Base URL**: the API's address, which usually ends in `/v1`, such as `https://api.example.com/v1`.
    - **API key**: the key from your provider. Leave it empty for a server that needs none, such as Ollama or llama.cpp running on your network.
    - **API type**: **Chat Completions** works almost everywhere. Choose **Responses** if your provider supports OpenAI's newer Responses API.
-3. Tap **Check**. Pipkin asks the API for its list of models and shows **Connected** when it answers.
+3. Tap **Check**. Pigkin asks the API for its list of models and shows **Connected** when it answers.
 4. Tap **Add models** and tap the models you want. To add one the API doesn't list, type its full ID in the search and tap **Add "…" as a custom model**.
 5. Tap **Save**.
 
-Pipkin fills in what it knows about popular models. Tap a model to adjust its settings: whether it **Accepts images**, whether it **Supports thinking** and at which levels, its **Context window** and **Max output tokens**, and its cost per million tokens if you want Pipkin to show what a chat costs.
+Pigkin fills in what it knows about popular models. Tap a model to adjust its settings: whether it **Accepts images**, whether it **Supports thinking** and at which levels, its **Context window** and **Max output tokens**, and its cost per million tokens if you want Pigkin to show what a chat costs.
 
-If the check fails, Pipkin explains why. The most common fixes:
+If the check fails, Pigkin explains why. The most common fixes:
 
 - **API key not accepted**: check the key is complete and still active.
 - **This server needs an API key**: the server turned down a check without a key. Enter the key it expects.
@@ -70,9 +70,9 @@ If the check fails, Pipkin explains why. The most common fixes:
 - **Not an OpenAI-compatible API**: the URL points at a website rather than the API.
 - **Couldn't reach the server** or **No response**: check the address and that your phone is online.
 
-If the check connects but Pipkin says **The server lists no models**, the server has no model to offer yet. Download or load one on it, for example with `ollama pull`, then tap **Check** again, or type a model's ID in the search on **Add models** and add it as a custom model.
+If the check connects but Pigkin says **The server lists no models**, the server has no model to offer yet. Download or load one on it, for example with `ollama pull`, then tap **Check** again, or type a model's ID in the search on **Add models** and add it as a custom model.
 
-To remove a provider, open it and tap **Remove provider**. Pipkin forgets the provider, its models, and its API key.
+To remove a provider, open it and tap **Remove provider**. Pigkin forgets the provider, its models, and its API key.
 
 ## Choose a model for a chat
 
@@ -82,7 +82,7 @@ Whatever you pick applies to the current chat and becomes the default for new ch
 
 ## Where it's stored
 
-Pipkin saves providers in Pi's own configuration files, in Termux under `~/.pipkin/pi`:
+Pigkin saves providers in Pi's own configuration files, in Termux under `~/.pigkin/pi`:
 
 - `auth.json` holds subscription sign-ins and the Gemini, Z.ai, Kimi and OpenRouter keys.
 - `models.json` holds OpenAI-compatible providers, their models, and their API keys.
@@ -92,7 +92,7 @@ These files contain your keys and sign-in tokens, so keep them private. A [backu
 
 ### Other providers
 
-Pipkin's screens cover the choices above, but Pi reads `models.json` directly, so you can add any provider Pi supports by editing the file. For example, a local [Ollama](https://ollama.com) server:
+Pigkin's screens cover the choices above, but Pi reads `models.json` directly, so you can add any provider Pi supports by editing the file. For example, a local [Ollama](https://ollama.com) server:
 
 ```json
 {
@@ -107,4 +107,4 @@ Pipkin's screens cover the choices above, but Pi reads `models.json` directly, s
 }
 ```
 
-Pipkin keeps anything it doesn't manage when it saves the file. Pi's [models documentation](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md) covers every option. After editing, use **Chat actions → Reload agent** in an open chat to load the change.
+Pigkin keeps anything it doesn't manage when it saves the file. Pi's [models documentation](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md) covers every option. After editing, use **Chat actions → Reload agent** in an open chat to load the change.

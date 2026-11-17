@@ -10,9 +10,9 @@ describe("utility mode", () => {
     await installRealPi(dirs);
     ({ run } = await startHost("utility", dirs));
     await run.next();
-    run.send({ type: "pipkin_request", params: {} });
+    run.send({ type: "pigkin_request", params: {} });
     const ready = await run.next();
-    if (ready?.type !== "pipkin_utility_ready") throw new Error(`utility sent ${JSON.stringify(ready)} instead of its ready line`);
+    if (ready?.type !== "pigkin_utility_ready") throw new Error(`utility sent ${JSON.stringify(ready)} instead of its ready line`);
   });
 
   afterEach(async () => {
@@ -32,21 +32,21 @@ describe("utility mode", () => {
   }
 
   it("answers requests sent together, each under its own id, and keeps serving after a refusal", async () => {
-    run.send({ type: "pipkin_utility_request", id: 1, op: "sessions", params: {} });
-    run.send({ type: "pipkin_utility_request", id: 2, op: "session_messages", params: { path: "/gone.jsonl" } });
-    run.send({ type: "pipkin_utility_request", id: 3, op: "backups", params: {} });
+    run.send({ type: "pigkin_utility_request", id: 1, op: "sessions", params: {} });
+    run.send({ type: "pigkin_utility_request", id: 2, op: "session_messages", params: { path: "/gone.jsonl" } });
+    run.send({ type: "pigkin_utility_request", id: 3, op: "backups", params: {} });
     const first = await replies(3);
-    expect(first.get(1)).toEqual({ type: "pipkin_result", id: 1, ok: true, data: { sessions: [] } });
-    expect(first.get(2)).toMatchObject({ type: "pipkin_result", id: 2, ok: false, code: "not_found" });
-    expect(first.get(3)).toMatchObject({ type: "pipkin_result", id: 3, ok: true, data: { backups: [] } });
+    expect(first.get(1)).toEqual({ type: "pigkin_result", id: 1, ok: true, data: { sessions: [] } });
+    expect(first.get(2)).toMatchObject({ type: "pigkin_result", id: 2, ok: false, code: "not_found" });
+    expect(first.get(3)).toMatchObject({ type: "pigkin_result", id: 3, ok: true, data: { backups: [] } });
 
-    run.send({ type: "pipkin_utility_request", id: 4, op: "sessions", params: {} });
-    expect((await replies(1)).get(4)).toEqual({ type: "pipkin_result", id: 4, ok: true, data: { sessions: [] } });
+    run.send({ type: "pigkin_utility_request", id: 4, op: "sessions", params: {} });
+    expect((await replies(1)).get(4)).toEqual({ type: "pigkin_result", id: 4, ok: true, data: { sessions: [] } });
   });
 
   it("refuses an operation that needs a host of its own, and malformed params", async () => {
-    run.send({ type: "pipkin_utility_request", id: 1, op: "login", params: {} });
-    run.send({ type: "pipkin_utility_request", id: 2, op: "sessions", params: "all" });
+    run.send({ type: "pigkin_utility_request", id: 1, op: "login", params: {} });
+    run.send({ type: "pigkin_utility_request", id: 2, op: "sessions", params: "all" });
     const answered = await replies(2);
     expect(answered.get(1)).toMatchObject({ ok: false, code: "unknown_op" });
     expect(answered.get(2)).toMatchObject({ ok: false, code: "bad_request" });

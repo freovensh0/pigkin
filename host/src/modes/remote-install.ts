@@ -21,7 +21,7 @@ export async function remoteInstall(ctx: ModeContext): Promise<JsonObject> {
   const send = (line: string): void => {
     busy ||= BUSY.test(line);
     offline ||= OFFLINE.test(line);
-    ctx.conn.send({ type: "pipkin_progress", line });
+    ctx.conn.send({ type: "pigkin_progress", line });
   };
   const child = spawn(join(ctx.env.prefix, "bin", "pkg"), ["install", "-y", "openssh"], {
     cwd: ctx.env.home,

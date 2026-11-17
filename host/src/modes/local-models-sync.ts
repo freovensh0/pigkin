@@ -8,12 +8,12 @@ import { createRuntime } from "../runtime.js";
 import { dropProvider, keepProviderInScope, replaceProviderModels, scopeResolver, scopeUniverse } from "../scope.js";
 import { openSettingsIfValid, type PiSettings, saveEnabledModels } from "../settings.js";
 
-/** The provider id Pipkin's on-device models are served under. */
-export const LOCAL_PROVIDER = "pipkin-local";
+/** The provider id Pigkin's on-device models are served under. */
+export const LOCAL_PROVIDER = "pigkin-local";
 
 /**
- * How pi-ai talks to Pipkin's local endpoint. `x-session-affinity` tells the app which chat a request belongs to, which
- * its queue keys model reservations on; the rest are what llama.cpp's server and Pipkin's LiteRT-LM bridge accept.
+ * How pi-ai talks to Pigkin's local endpoint. `x-session-affinity` tells the app which chat a request belongs to, which
+ * its queue keys model reservations on; the rest are what llama.cpp's server and Pigkin's LiteRT-LM bridge accept.
  */
 const COMPAT = {
   sendSessionAffinityHeaders: true,
@@ -51,7 +51,7 @@ interface CompactionWriter {
 }
 
 /**
- * Makes `models.json`'s `pipkin-local` provider list exactly the given models, served at `baseUrl` with `apiKey`, with
+ * Makes `models.json`'s `pigkin-local` provider list exactly the given models, served at `baseUrl` with `apiKey`, with
  * compaction overrides sized to each model's context; no models removes the provider. Keeps the models in scope when
  * settings.json `enabledModels` limits the model list. Writes only what differs and answers `changed` when it wrote
  * anything, since the app syncs on every start and restarts idle chats only after a change.

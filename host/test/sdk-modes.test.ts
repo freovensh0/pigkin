@@ -18,7 +18,7 @@ describe("modes backed by the Pi SDK", () => {
   });
 
   it("lists no sessions in a fresh config", async () => {
-    expect(await runOp("sessions", dirs, {})).toEqual({ type: "pipkin_result", ok: true, data: { sessions: [] } });
+    expect(await runOp("sessions", dirs, {})).toEqual({ type: "pigkin_result", ok: true, data: { sessions: [] } });
   });
 
   /** Writes a Pi session file for [cwd] holding [messages], one entry each in a single branch. */
@@ -85,7 +85,7 @@ describe("modes backed by the Pi SDK", () => {
     const file = await writeSession(dirs.home, "s1", [USER, ASSISTANT]);
     const before = await readFile(file, "utf8");
     expect(await runOp("session_messages", dirs, { path: file })).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: { messages: [USER, ASSISTANT] },
     });
@@ -105,7 +105,7 @@ describe("modes backed by the Pi SDK", () => {
     expect(await runOp("session_messages", dirs, { path: gone })).toMatchObject({ ok: false, code: "not_found" });
   });
 
-  /** Writes a subagent transcript of [parent] the way Pipkin subagents saves one, started at [time]. */
+  /** Writes a subagent transcript of [parent] the way Pigkin subagents saves one, started at [time]. */
   async function writeSubagent(parent: string, parentId: string, id: string, time: string, messages: object[]) {
     const dir = path.join(path.dirname(parent), "subagents", parentId);
     await mkdir(dir, { recursive: true });
@@ -113,7 +113,7 @@ describe("modes backed by the Pi SDK", () => {
     const header = { type: "session", version: 3, id, timestamp: time, cwd: dirs.home, parentSession: parent };
     const link = {
       type: "custom",
-      customType: "pipkin-subagent",
+      customType: "pigkin-subagent",
       id: "c0",
       parentId: null,
       timestamp: time,
@@ -150,7 +150,7 @@ describe("modes backed by the Pi SDK", () => {
     const later = await writeSubagent(parent, "parent", "s2", "2026-10-12T00:00:03.000Z", [USER]);
     const earlier = await writeSubagent(parent, "parent", "s1", "2026-10-12T00:00:02.000Z", [USER, ASSISTANT]);
     expect(await runOp("subagent_sessions", dirs, { path: parent })).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: {
         sessions: [
@@ -180,7 +180,7 @@ describe("modes backed by the Pi SDK", () => {
   it("lists no subagents for a session that has none", async () => {
     const parent = await writeSession(dirs.home, "parent", [USER, ASSISTANT]);
     expect(await runOp("subagent_sessions", dirs, { path: parent })).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: { sessions: [] },
     });
@@ -197,7 +197,7 @@ describe("modes backed by the Pi SDK", () => {
     const parent = await writeSession(dirs.home, "parent", [USER, ASSISTANT]);
     const file = await writeSubagent(parent, "parent", "s1", "2026-10-12T00:00:02.000Z", [USER, ASSISTANT]);
     expect(await runOp("session_messages", dirs, { path: file })).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: { messages: [USER, ASSISTANT] },
     });
@@ -213,7 +213,7 @@ describe("modes backed by the Pi SDK", () => {
     enabled: null,
   }));
 
-  it("reports Pipkin's built-in providers and custom providers with their model settings", async () => {
+  it("reports Pigkin's built-in providers and custom providers with their model settings", async () => {
     const provider = {
       baseUrl: "https://example.test/v1",
       api: "openai-responses",
@@ -225,7 +225,7 @@ describe("modes backed by the Pi SDK", () => {
     };
     await writeFile(path.join(dirs.configDir, "models.json"), JSON.stringify({ providers: { "codex-lb": provider } }));
     expect(await runOp("auth_status", dirs, {})).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: {
         builtin: BUILTIN,
@@ -260,7 +260,7 @@ describe("modes backed by the Pi SDK", () => {
     };
     await writeFile(path.join(dirs.configDir, "models.json"), JSON.stringify({ providers: { local: provider } }));
     expect(await runOp("auth_status", dirs, {})).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: true,
       data: {
         builtin: BUILTIN,

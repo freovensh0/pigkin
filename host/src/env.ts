@@ -13,9 +13,9 @@ export type PiSdk = typeof PiModule;
 /** Values the Termux bootstrap exports before exec'ing node. */
 export interface HostEnv {
   token: string;
-  /** `$HOME/.local/share/pipkin` (`pipkin-dev` for the debug build): Pipkin-managed state, including the pinned Pi install. */
+  /** `$HOME/.local/share/pigkin` (`pigkin-dev` for the debug build): Pigkin-managed state, including the pinned Pi install. */
   root: string;
-  /** `PI_CODING_AGENT_DIR`, `$HOME/.pipkin/pi` (`.pipkin-dev` for the debug build): Pi's config, sessions and user-installed packages. */
+  /** `PI_CODING_AGENT_DIR`, `$HOME/.pigkin/pi` (`.pigkin-dev` for the debug build): Pi's config, sessions and user-installed packages. */
   configDir: string;
   home: string;
   /** Termux's `$PREFIX`, the root of its packages. */
@@ -35,7 +35,7 @@ export interface HostText {
   args?: Record<string, string | number | HostText>;
 }
 
-/** A failure with a machine-readable code, reported as `pipkin_result` `ok:false`; [i18n] names [message] for the app. */
+/** A failure with a machine-readable code, reported as `pigkin_result` `ok:false`; [i18n] names [message] for the app. */
 export class HostError extends Error {
   constructor(
     readonly code: string,
@@ -70,7 +70,7 @@ export async function piEntry(root: string): Promise<string> {
  * an install that was cut off counts as unfinished even though the manifests already match.
  */
 export function piInstallingMarker(root: string): string {
-  return join(root, "pi", ".pipkin-installing");
+  return join(root, "pi", ".pigkin-installing");
 }
 
 /** Whether the last install of the runtime finished and Pi's CLI script is still on disk. */
@@ -87,7 +87,7 @@ function exists(path: string): Promise<boolean> {
   );
 }
 
-/** The installed Pi version, or null when Pipkin has not installed Pi yet. */
+/** The installed Pi version, or null when Pigkin has not installed Pi yet. */
 export async function installedPiVersion(root: string): Promise<string | null> {
   try {
     const manifest = JSON.parse(await readFile(join(piPackageDir(root), "package.json"), "utf8")) as unknown;
@@ -106,8 +106,8 @@ export async function loadPi(root: string): Promise<PiSdk> {
 }
 
 export function readHostEnv(): HostEnv | undefined {
-  const token = process.env.PIPKIN_TOKEN;
-  const root = process.env.PIPKIN_ROOT;
+  const token = process.env.PIGKIN_TOKEN;
+  const root = process.env.PIGKIN_ROOT;
   const configDir = process.env.PI_CODING_AGENT_DIR;
   const prefix = process.env.PREFIX;
   if (!token || !root || !configDir || !prefix) return undefined;
@@ -138,11 +138,11 @@ export async function grantedSharedStorage(env: HostEnv): Promise<string | null>
 
 /** The host's own variables, which Pi, shells and the commands they run never inherit. */
 export function withoutHostVariables(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const { PIPKIN_TOKEN: _token, PIPKIN_ROOT: _root, PI_CODING_AGENT_DIR: _configDir, ...rest } = environment;
+  const { PIGKIN_TOKEN: _token, PIGKIN_ROOT: _root, PI_CODING_AGENT_DIR: _configDir, ...rest } = environment;
   return rest;
 }
 
-/** `~/.pipkin/backups` (`~/.pipkin-dev/backups` for the debug build): configuration backups, next to the config folder and on the same filesystem. */
+/** `~/.pigkin/backups` (`~/.pigkin-dev/backups` for the debug build): configuration backups, next to the config folder and on the same filesystem. */
 export function backupsDir(env: HostEnv): string {
   return join(dirname(env.configDir), "backups");
 }

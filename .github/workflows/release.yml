@@ -96,17 +96,17 @@ jobs:
       - name: Check and build
         run: >-
           ./gradlew check :app:assembleRelease :app:bundleRelease
-          -Ppipkin.versionName="$VERSION_NAME"
-          -Ppipkin.versionCode="$VERSION_CODE"
+          -Ppigkin.versionName="$VERSION_NAME"
+          -Ppigkin.versionCode="$VERSION_CODE"
 
       # play-upload checks the bundle's version against the one Google Play reads from it.
       - name: Verify APK version
         run: |
           mkdir dist
-          cp app/build/outputs/apk/release/app-release-unsigned.apk dist/pipkin-unsigned.apk
-          cp app/build/outputs/bundle/release/app-release.aab dist/pipkin-unsigned.aab
-          gzip -9c app/build/outputs/mapping/release/mapping.txt > "dist/pipkin-v$VERSION_NAME-mapping.txt.gz"
-          badging=$("$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/aapt2" dump badging dist/pipkin-unsigned.apk)
+          cp app/build/outputs/apk/release/app-release-unsigned.apk dist/pigkin-unsigned.apk
+          cp app/build/outputs/bundle/release/app-release.aab dist/pigkin-unsigned.aab
+          gzip -9c app/build/outputs/mapping/release/mapping.txt > "dist/pigkin-v$VERSION_NAME-mapping.txt.gz"
+          badging=$("$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/aapt2" dump badging dist/pigkin-unsigned.apk)
           if ! grep -q "versionCode='$VERSION_CODE' versionName='$VERSION_NAME'" <<< "$badging"; then
             echo "The APK doesn't carry version $VERSION_NAME ($VERSION_CODE)" >&2
             exit 1
@@ -115,23 +115,23 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-apk
-          path: dist/pipkin-unsigned.apk
+          path: dist/pigkin-unsigned.apk
           if-no-files-found: error
           retention-days: 7
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-aab
-          path: dist/pipkin-unsigned.aab
+          path: dist/pigkin-unsigned.aab
           if-no-files-found: error
           retention-days: 7
 
-      # R8 renames the release's classes; the mapping turns a stack trace from the GitHub APK back into Pipkin's names.
+      # R8 renames the release's classes; the mapping turns a stack trace from the GitHub APK back into Pigkin's names.
       # Google Play reads its copy from the app bundle.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mapping
-          path: dist/pipkin-v*-mapping.txt.gz
+          path: dist/pigkin-v*-mapping.txt.gz
           if-no-files-found: error
           retention-days: 7
 
@@ -169,12 +169,12 @@ jobs:
         run: |
           mkdir dist
           BUILD_TOOLS="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION" \
-            scripts/sign-release-apk.sh unsigned/pipkin-unsigned.apk "dist/pipkin-v$VERSION_NAME.apk"
+            scripts/sign-release-apk.sh unsigned/pigkin-unsigned.apk "dist/pigkin-v$VERSION_NAME.apk"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-apk
-          path: dist/pipkin-v*.apk
+          path: dist/pigkin-v*.apk
           if-no-files-found: error
           retention-days: 7
 
@@ -220,7 +220,7 @@ jobs:
             exit 0
           fi
           gh release create "v$VERSION_NAME" dist/*.apk dist/*-mapping.txt.gz dist/SHA256SUMS \
-            --title "Pipkin $VERSION_NAME" \
+            --title "Pigkin $VERSION_NAME" \
             --target "$GITHUB_SHA" \
             --generate-notes \
             --latest
@@ -255,12 +255,12 @@ jobs:
           PLAY_UPLOAD_CERT_SHA256: ${{ vars.PLAY_UPLOAD_CERT_SHA256 }}
         run: |
           mkdir dist
-          scripts/sign-play-bundle.sh unsigned/pipkin-unsigned.aab "dist/pipkin-v$VERSION_NAME.aab"
+          scripts/sign-play-bundle.sh unsigned/pigkin-unsigned.aab "dist/pigkin-v$VERSION_NAME.aab"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-aab
-          path: dist/pipkin-v*.aab
+          path: dist/pigkin-v*.aab
           if-no-files-found: error
           retention-days: 7
 
@@ -300,6 +300,6 @@ jobs:
       - name: Upload and release
         env:
           PLAY_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
-          PLAY_PACKAGE: io.jeph.pipkin
+          PLAY_PACKAGE: io.pigkin
           PLAY_TRACK: ${{ vars.PLAY_TRACK }}
-        run: scripts/upload-play-bundle.sh "dist/pipkin-v$VERSION_NAME.aab"
+        run: scripts/upload-play-bundle.sh "dist/pigkin-v$VERSION_NAME.aab"

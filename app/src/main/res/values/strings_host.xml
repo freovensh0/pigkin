@@ -9,25 +9,25 @@
     <string name="host_rejected_without_reason">The Termux helper failed.</string>
 
     <!-- Configuration changes -->
-    <string name="host_config_busy">Pipkin is backing up, restoring or updating the configuration; try again in a moment</string>
+    <string name="host_config_busy">Pigkin is backing up, restoring or updating the configuration; try again in a moment</string>
     <string name="host_config_lock_busy">Another backup, restore or extension update is running.</string>
     <!-- %1$s: the ids of the running Pi processes, such as "4242, 4343". "pi" is the command the user started in a terminal. -->
     <string name="host_pi_running">Pi is still running (process <xliff:g id="processes" example="4242">%1$s</xliff:g>). Stop it, for example by quitting <xliff:g id="command">pi</xliff:g> in a terminal, and try again.</string>
     <!-- %1$s: the path of the chat's session file in Termux. -->
-    <string name="host_session_not_found">Session not found: <xliff:g id="path" example="/data/data/com.termux/files/home/.pipkin/pi/sessions/a.jsonl">%1$s</xliff:g></string>
+    <string name="host_session_not_found">Session not found: <xliff:g id="path" example="/data/data/com.termux/files/home/.pigkin/pi/sessions/a.jsonl">%1$s</xliff:g></string>
     <string name="host_models_invalid"><xliff:g id="file">models.json</xliff:g> is not valid JSON. Ask the agent to fix it.</string>
     <string name="host_settings_invalid"><xliff:g id="file">settings.json</xliff:g> is not valid. Ask the agent to fix it.</string>
     <!-- %1$s: the folder's path in Termux. -->
     <string name="host_folder_not_found">Folder not found: <xliff:g id="path" example="/sdcard/projects/app">%1$s</xliff:g></string>
 
-    <!-- The agent (Pi) Pipkin installs in Termux -->
+    <!-- The agent (Pi) Pigkin installs in Termux -->
     <string name="host_agent_not_installed">The agent is not installed</string>
-    <!-- %1$s: the agent version this Pipkin needs, such as 1.3.0. -->
-    <string name="host_agent_not_installed_needs">The agent is not installed; Pipkin needs <xliff:g id="version" example="1.3.0">%1$s</xliff:g></string>
-    <!-- %1$s: the agent version installed in Termux; %2$s: the version this Pipkin needs. -->
-    <string name="host_agent_version_mismatch">Agent <xliff:g id="installed" example="1.2.0">%1$s</xliff:g> is installed; Pipkin needs <xliff:g id="expected" example="1.3.0">%2$s</xliff:g></string>
+    <!-- %1$s: the agent version this Pigkin needs, such as 1.3.0. -->
+    <string name="host_agent_not_installed_needs">The agent is not installed; Pigkin needs <xliff:g id="version" example="1.3.0">%1$s</xliff:g></string>
+    <!-- %1$s: the agent version installed in Termux; %2$s: the version this Pigkin needs. -->
+    <string name="host_agent_version_mismatch">Agent <xliff:g id="installed" example="1.2.0">%1$s</xliff:g> is installed; Pigkin needs <xliff:g id="expected" example="1.3.0">%2$s</xliff:g></string>
     <string name="host_agent_packages_outdated">The agent\'s packages are out of date</string>
-    <string name="host_agent_install_incomplete">The agent\'s install is incomplete. Reinstall the Pipkin agent in Settings.</string>
+    <string name="host_agent_install_incomplete">The agent\'s install is incomplete. Reinstall the Pigkin agent in Settings.</string>
     <string name="host_agent_extensions_outdated">The agent\'s bundled extensions are out of date</string>
     <string name="host_agent_download_offline">Couldn\'t download the agent. Check your internet connection, then retry.</string>
     <string name="host_extensions_download_offline">Couldn\'t download the extensions. Check your internet connection, then retry.</string>
@@ -48,7 +48,7 @@
     <string name="host_provider_http_status">HTTP <xliff:g id="status" example="401">%1$s</xliff:g></string>
     <!-- %1$s: the HTTP status code the server answered with; %2$s: the error message the server sent, in its own language. -->
     <string name="host_provider_http_status_said">HTTP <xliff:g id="status" example="401">%1$s</xliff:g>: <xliff:g id="message" example="Invalid API key">%2$s</xliff:g></string>
-    <!-- %1$s: the URL Pipkin asked for its list of models, ending in /models. -->
+    <!-- %1$s: the URL Pigkin asked for its list of models, ending in /models. -->
     <string name="host_provider_web_page"><xliff:g id="url" example="https://example.com/models">%1$s</xliff:g> returned a web page, not JSON</string>
     <!-- %1$s: the start of what the server answered instead. -->
     <string name="host_provider_not_json">The server did not return JSON: <xliff:g id="body" example="Not Found">%1$s</xliff:g></string>
@@ -67,8 +67,8 @@
         <item quantity="one">Restored %1$d item</item>
         <item quantity="other">Restored %1$d items</item>
     </plurals>
-    <string name="host_backup_not_pipkin">This file is not a Pipkin configuration backup</string>
-    <string name="host_backup_from_newer_pipkin">This backup is from a newer Pipkin; update Pipkin to restore it</string>
+    <string name="host_backup_not_pigkin">This file is not a Pigkin configuration backup</string>
+    <string name="host_backup_from_newer_pigkin">This backup is from a newer Pigkin; update Pigkin to restore it</string>
     <string name="host_backup_unreadable">This file can\'t be read as a backup</string>
     <string name="host_backup_missing">This backup no longer exists</string>
     <!-- %1$s: a path inside the backup file. -->
@@ -137,7 +137,7 @@
     <string name="host_remote_auth_failed"><xliff:g id="host" example="devbox">%1$s</xliff:g> refused the sign-in.</string>
     <!-- %2$s: what ssh said, in English, such as "Connection timed out". -->
     <string name="host_remote_unreachable">Couldn\'t reach <xliff:g id="host" example="devbox">%1$s</xliff:g>: <xliff:g id="detail" example="Connection timed out">%2$s</xliff:g></string>
-    <string name="host_remote_bash_missing"><xliff:g id="host" example="devbox">%1$s</xliff:g> has no <xliff:g id="command">bash</xliff:g>, which Pipkin needs to work there.</string>
+    <string name="host_remote_bash_missing"><xliff:g id="host" example="devbox">%1$s</xliff:g> has no <xliff:g id="command">bash</xliff:g>, which Pigkin needs to work there.</string>
     <!-- %1$s: the remote host's name. Its SSH server allows a limited number of sessions at once, and all are in use. -->
     <string name="host_remote_sessions_full"><xliff:g id="host" example="devbox">%1$s</xliff:g> has no free sessions. Close a terminal or stop a background task, then try again.</string>
     <!-- %2$s: what ssh said, in English. -->

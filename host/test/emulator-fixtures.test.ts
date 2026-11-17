@@ -1,6 +1,6 @@
 /**
  * The emulator test fixtures in `fixtures/emulator/`, loaded by a real Pi from their files the way Pi loads them from
- * `~/.pipkin-dev/pi/extensions/`, with Pipkin subagents.
+ * `~/.pigkin-dev/pi/extensions/`, with Pigkin subagents.
  */
 import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -18,29 +18,29 @@ import {
   makeDir,
   makeParent,
   messageText,
-  pipkinSubagents,
+  pigkinSubagents,
   removeChannel,
   removeDir,
   subagentResults,
 } from "./subagents-harness.js";
 
 const FIXTURES = path.join(import.meta.dirname, "fixtures/emulator");
-const MODEL = path.join(FIXTURES, "pipkin-test-model/index.ts");
-const GATE = path.join(FIXTURES, "pipkin-test-gate/index.ts");
+const MODEL = path.join(FIXTURES, "pigkin-test-model/index.ts");
+const GATE = path.join(FIXTURES, "pigkin-test-gate/index.ts");
 
 let dir: Dir;
 let channel: FakeChannel;
 
 beforeEach(async () => {
   dir = await makeDir();
-  process.env.PIPKIN_TEST_MODEL_FAST = "1";
+  process.env.PIGKIN_TEST_MODEL_FAST = "1";
   channel = installChannel();
 });
 
 afterEach(async () => {
   removeChannel();
-  delete process.env.PIPKIN_TEST_GATE_SUBAGENT;
-  delete process.env.PIPKIN_TEST_MODEL_FAST;
+  delete process.env.PIGKIN_TEST_GATE_SUBAGENT;
+  delete process.env.PIGKIN_TEST_MODEL_FAST;
   await removeDir(dir);
 });
 
@@ -59,7 +59,7 @@ const askUser: ExtensionFactory = (pi) => {
 };
 
 /** A parent on the scripted model, with the fixtures Pi loads from their files. */
-async function scripted(ui: FakeUi, paths: string[], extensions: ExtensionFactory[] = [pipkinSubagents]): Promise<AgentSession> {
+async function scripted(ui: FakeUi, paths: string[], extensions: ExtensionFactory[] = [pigkinSubagents]): Promise<AgentSession> {
   // The faux model only starts the session; every request goes to the scripted model.
   const { session } = await makeParent(dir, () => fauxAssistantMessage("wrong model"), {
     ui,
@@ -67,8 +67,8 @@ async function scripted(ui: FakeUi, paths: string[], extensions: ExtensionFactor
     extensionPaths: paths,
     tools: ["read", "bash", "edit", "write", "subagent", "ask_user"],
   });
-  const model = session.modelRuntime.getModel("pipkin-test", "scripted");
-  if (!model) throw new Error("the pipkin-test provider didn't register its model");
+  const model = session.modelRuntime.getModel("pigkin-test", "scripted");
+  if (!model) throw new Error("the pigkin-test provider didn't register its model");
   await session.setModel(model);
   return session;
 }
@@ -78,7 +78,7 @@ function reply(session: AgentSession): string {
   return last && last.role === "assistant" ? messageText(last) : "";
 }
 
-describe("pipkin-test-model", () => {
+describe("pigkin-test-model", () => {
   it("answers in a real Pi session and drives an Explore subagent", async () => {
     await writeFile(path.join(dir.cwd, "README.md"), "Project readme\n");
     const session = await scripted(fakeUi(channel), [MODEL]);
@@ -93,7 +93,7 @@ describe("pipkin-test-model", () => {
   it("lists its keywords for a message without one", async () => {
     const session = await scripted(fakeUi(channel), [MODEL]);
     await session.prompt("hello");
-    expect(reply(session)).toMatch(/^Pipkin test model\. Send one of these keywords: sa-one-explore, /);
+    expect(reply(session)).toMatch(/^Pigkin test model\. Send one of these keywords: sa-one-explore, /);
     session.dispose();
   });
 
@@ -153,17 +153,17 @@ describe("pipkin-test-model", () => {
     const results = [...subagentResults(session).values()];
     expect(results).toHaveLength(8);
     expect(results.filter((result) => result.isError).map((result) => messageText(result))).toEqual([
-      "The subagent failed: Pipkin test model: scripted provider failure",
+      "The subagent failed: Pigkin test model: scripted provider failure",
     ]);
-    expect(channel.latest()[4]).toMatchObject({ status: "failed", error: "Pipkin test model: scripted provider failure" });
+    expect(channel.latest()[4]).toMatchObject({ status: "failed", error: "Pigkin test model: scripted provider failure" });
     session.dispose();
   });
 
   it("calls ask_user from a subagent", async () => {
     const ui = fakeUi(channel, (asked) => (asked.kind === "select" ? "Yes" : true));
-    const session = await scripted(ui, [MODEL], [askUser, pipkinSubagents]);
+    const session = await scripted(ui, [MODEL], [askUser, pigkinSubagents]);
     await session.prompt("sa-ask");
-    expect(ui.asked).toEqual([expect.objectContaining({ title: "Pipkin test question: which do you pick?" })]);
+    expect(ui.asked).toEqual([expect.objectContaining({ title: "Pigkin test question: which do you pick?" })]);
     expect(ui.asked[0]?.runs).toEqual([expect.objectContaining({ inFlight: 1 })]);
     const [result] = subagentResults(session).values();
     expect(messageText(result)).toBe("Subagent 1 finished (ok: The user picked Yes).");
@@ -181,15 +181,15 @@ describe("pipkin-test-model", () => {
   });
 });
 
-describe("pipkin-test-gate", () => {
+describe("pigkin-test-gate", () => {
   it("asks about a subagent's write, and 'for this chat' covers the next one", async () => {
     const ui = fakeUi(channel, () => "Yes, for this chat");
     const session = await scripted(ui, [MODEL, GATE]);
     await session.prompt("sa-general-edit");
     expect(ui.asked).toEqual([
-      expect.objectContaining({ title: "Allow write: pipkin-subagent-test.txt?", message: "Yes|Yes, for this chat|No" }),
+      expect.objectContaining({ title: "Allow write: pigkin-subagent-test.txt?", message: "Yes|Yes, for this chat|No" }),
     ]);
-    expect(readFileSync(path.join(dir.cwd, "pipkin-subagent-test.txt"), "utf8")).toBe("Written by a Pipkin test subagent.\n");
+    expect(readFileSync(path.join(dir.cwd, "pigkin-subagent-test.txt"), "utf8")).toBe("Written by a Pigkin test subagent.\n");
     await session.prompt("sa-general-edit");
     expect(ui.asked).toHaveLength(1);
     session.dispose();
@@ -205,9 +205,9 @@ describe("pipkin-test-gate", () => {
   });
 
   it("asks about subagent calls when switched on, after its delay", async () => {
-    process.env.PIPKIN_TEST_GATE_SUBAGENT = "1";
-    await mkdir(path.join(dir.agentDir, "pipkin-test-gate"), { recursive: true });
-    await writeFile(path.join(dir.agentDir, "pipkin-test-gate", "delay-ms"), "50");
+    process.env.PIGKIN_TEST_GATE_SUBAGENT = "1";
+    await mkdir(path.join(dir.agentDir, "pigkin-test-gate"), { recursive: true });
+    await writeFile(path.join(dir.agentDir, "pigkin-test-gate", "delay-ms"), "50");
     const ui = fakeUi(channel, () => "Yes");
     const session = await scripted(ui, [MODEL, GATE]);
     await session.prompt("sa-agent:General");

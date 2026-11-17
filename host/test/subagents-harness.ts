@@ -1,6 +1,6 @@
 /**
- * Real Pi SDK sessions for the Pipkin subagents tests: pi-ai's faux provider answers for the parent and its
- * subagents through a script, and a fake Pipkin channel records what the extension tells the app.
+ * Real Pi SDK sessions for the Pigkin subagents tests: pi-ai's faux provider answers for the parent and its
+ * subagents through a script, and a fake Pigkin channel records what the extension tells the app.
  */
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -24,13 +24,13 @@ import {
   SessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import pipkinSubagents from "../src/pi-extensions/pipkin-subagents/index.js";
-import type { RunView } from "../src/pi-extensions/pipkin-subagents/state.js";
+import pigkinSubagents from "../src/pi-extensions/pigkin-subagents/index.js";
+import type { RunView } from "../src/pi-extensions/pigkin-subagents/state.js";
 
-const CHANNEL = Symbol.for("pipkin.channel");
-const REGISTRY = Symbol.for("pipkin.subagents");
+const CHANNEL = Symbol.for("pigkin.channel");
+const REGISTRY = Symbol.for("pigkin.subagents");
 
-export { pipkinSubagents };
+export { pigkinSubagents };
 
 export interface RunsMessage {
   version: number;
@@ -49,7 +49,7 @@ export interface LiveMessage {
   unsteered?: { id: string; steering: string[] };
 }
 
-/** Stands in for Pipkin's channel: records what the extension sends on `subagents` and passes on the app's messages. */
+/** Stands in for Pigkin's channel: records what the extension sends on `subagents` and passes on the app's messages. */
 export interface FakeChannel {
   sent: RunsMessage[];
   /** The `live` logs and `event`s sent for followed runs, in order. */
@@ -180,13 +180,13 @@ export interface Dir {
 }
 
 export async function makeDir(): Promise<Dir> {
-  const base = await realpath(await mkdtemp(path.join(tmpdir(), "pipkin-subagents-")));
+  const base = await realpath(await mkdtemp(path.join(tmpdir(), "pigkin-subagents-")));
   const cwd = path.join(base, "project");
   const agentDir = path.join(base, "agent");
   await mkdir(cwd, { recursive: true });
   await mkdir(agentDir, { recursive: true });
   await writeFile(path.join(cwd, "hello.txt"), "hello from the project\n");
-  // The child reads Pi's config folder through getAgentDir(), as it does under Pipkin.
+  // The child reads Pi's config folder through getAgentDir(), as it does under Pigkin.
   process.env.PI_CODING_AGENT_DIR = agentDir;
   return { cwd, agentDir, sessionsDir: path.join(agentDir, "sessions", "--project--") };
 }
@@ -261,7 +261,7 @@ export interface Parent {
   runtime: ModelRuntime;
 }
 
-/** A parent session with Pipkin subagents loaded, bound to [options.ui] as Pipkin's RPC mode would be. */
+/** A parent session with Pigkin subagents loaded, bound to [options.ui] as Pigkin's RPC mode would be. */
 export async function makeParent(dir: Dir, script: Script, options: ParentOptions): Promise<Parent> {
   const faux = scriptedProvider(script);
   const runtime = await ModelRuntime.create({
@@ -280,7 +280,7 @@ export async function makeParent(dir: Dir, script: Script, options: ParentOption
     noPromptTemplates: true,
     noThemes: true,
     noContextFiles: true,
-    extensionFactories: options.extensions ?? [pipkinSubagents],
+    extensionFactories: options.extensions ?? [pigkinSubagents],
     additionalExtensionPaths: options.extensionPaths ?? [],
   });
   await resourceLoader.reload();

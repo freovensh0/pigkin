@@ -3,7 +3,7 @@ import { loadPi } from "./env.js";
 import type { ModeContext } from "./mode.js";
 
 /**
- * Pi's own providers Pipkin connects, and how: OAuth for the Claude and ChatGPT subscriptions, an
+ * Pi's own providers Pigkin connects, and how: OAuth for the Claude and ChatGPT subscriptions, an
  * API key for Gemini, the Z.ai Coding Plan, Kimi Code and OpenRouter.
  */
 const LOGIN_TYPES: Record<string, "oauth" | "api_key"> = {
@@ -18,13 +18,13 @@ const LOGIN_TYPES: Record<string, "oauth" | "api_key"> = {
 export const BUILTIN_PROVIDERS: readonly string[] = Object.keys(LOGIN_TYPES);
 
 /**
- * Where the providers Pipkin connects with an API key list the models their key may use, under their base
+ * Where the providers Pigkin connects with an API key list the models their key may use, under their base
  * URL. Gemini's list has its own shape, so it has none here. These providers' models stay out of scope
  * after sign-in until the user picks some from the list.
  */
 const MODEL_LIST_PATHS: Record<string, string> = { zai: "/models", "kimi-coding": "/models", openrouter: "/models/user" };
 
-/** How Pipkin signs in to one of `BUILTIN_PROVIDERS`; undefined for any other provider. */
+/** How Pigkin signs in to one of `BUILTIN_PROVIDERS`; undefined for any other provider. */
 export function loginType(providerId: string): "oauth" | "api_key" | undefined {
   return Object.hasOwn(LOGIN_TYPES, providerId) ? LOGIN_TYPES[providerId] : undefined;
 }

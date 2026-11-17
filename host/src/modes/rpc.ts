@@ -15,7 +15,7 @@ import { folderNotFound, HostError, installedPiVersion, loadPi, piEntry, piInsta
 import { isObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
 import { nullableStringParam, stringParam } from "../params.js";
-import { installedPipkinExtensionFiles, pipkinExtensionFingerprintsParam, REMOTE_EXTENSION } from "../pipkin-extensions.js";
+import { installedPigkinExtensionFiles, pigkinExtensionFingerprintsParam, REMOTE_EXTENSION } from "../pigkin-extensions.js";
 import { remoteSystemAppend, SYSTEM_APPEND } from "../prompt.js";
 import { findHost } from "../remote/hosts.js";
 import { remotePaths } from "../remote/paths.js";
@@ -28,13 +28,13 @@ const STDERR_TAIL = 16 * 1024;
 const TERM_AFTER_MS = 5000;
 const KILL_AFTER_MS = 5000;
 /**
- * Pi output the host holds while Pipkin is not reading, for example while the phone has frozen Pipkin with the screen
- * off. Below this Pi never waits on Pipkin; above it Pi waits until Pipkin reads again, so the host's memory stays
+ * Pi output the host holds while Pigkin is not reading, for example while the phone has frozen Pigkin with the screen
+ * off. Below this Pi never waits on Pigkin; above it Pi waits until Pigkin reads again, so the host's memory stays
  * bounded.
  */
 const OUTPUT_BACKLOG_LIMIT = 32 * 1024 * 1024;
-/** Pipkin's copy of pi-web-access, and the npm package a user can install in its place. */
-const WEB_ACCESS_EXTENSION = "pipkin-web-access";
+/** Pigkin's copy of pi-web-access, and the npm package a user can install in its place. */
+const WEB_ACCESS_EXTENSION = "pigkin-web-access";
 const WEB_ACCESS_NPM_PACKAGE = "pi-web-access";
 
 /** Keeps only the newest bytes of Pi's stderr for the exit report. */
@@ -52,21 +52,21 @@ class TailBuffer {
 }
 
 /**
- * One timestamped line on the host's stderr. Termux returns it to Pipkin once the host exits, which logs it, so a
+ * One timestamped line on the host's stderr. Termux returns it to Pigkin once the host exits, which logs it, so a
  * dropped connection can be traced to its side.
  */
 function note(message: string): void {
-  process.stderr.write(`pipkin-host rpc ${new Date().toISOString()}: ${message}\n`);
+  process.stderr.write(`pigkin-host rpc ${new Date().toISOString()}: ${message}\n`);
 }
 
-/** Notes a channel line from [from] that the host dropped, which only a bug in Pipkin sends. */
+/** Notes a channel line from [from] that the host dropped, which only a bug in Pigkin sends. */
 function droppedChannelLine(from: string): (reason: string) => void {
   return (reason) => note(`dropped a channel line from ${from}: ${reason}`);
 }
 
 /**
  * Copies Pi's stdout through [merger] to the socket like `pipe`, but lets up to `OUTPUT_BACKLOG_LIMIT` bytes queue in
- * the socket instead of pipe's 16 KiB, so Pi keeps working while Pipkin is not reading. Never ends the socket: the exit
+ * the socket instead of pipe's 16 KiB, so Pi keeps working while Pigkin is not reading. Never ends the socket: the exit
  * line follows Pi's output. Once the socket is gone the output is dropped, so a Pi waiting to write gets going again
  * and sees its stdin close instead of waiting for SIGTERM.
  */
@@ -81,7 +81,7 @@ function forwardOutput(output: Readable, socket: Socket, merger: OutputMerger): 
 }
 
 /**
- * Sets pipkin-web-access's `toolActivation` to `eager` in its `web-search.json` unless the user chose one, so every
+ * Sets pigkin-web-access's `toolActivation` to `eager` in its `web-search.json` unless the user chose one, so every
  * chat has the web tools from its first request instead of behind a `web_enable` call some models only make
  * sometimes. A file that is not a JSON object is left alone; the extension reports it itself. So is one with
  * `toolExposure: "deferred"`, which the extension refuses to load beside `eager`.
@@ -101,7 +101,7 @@ async function defaultWebToolsToEager(configDir: string): Promise<void> {
 
 /**
  * Sets Pi's `steeringMode` to `all` unless the user chose one, so every steer sent during a turn reaches the model
- * together, as Pipkin's single steering box shows them. Writes through Pi's locked `SettingsManager`, since another
+ * together, as Pigkin's single steering box shows them. Writes through Pi's locked `SettingsManager`, since another
  * chat's Pi may be saving settings too; Pi itself reports settings it cannot read. A failed write only leaves Pi's
  * one-at-a-time default, which the steering box follows as well.
  */
@@ -113,21 +113,21 @@ async function defaultSteeringToAll(ctx: ModeContext, settings: unknown): Promis
   await current.manager.flush();
 }
 
-/** Error results for rpc; success has no result line, only `pipkin_exit`. */
+/** Error results for rpc; success has no result line, only `pigkin_exit`. */
 function fail(ctx: ModeContext, refusal: HostError): void {
-  ctx.conn.send({ type: "pipkin_result", ok: false, error: refusal.message, code: refusal.code, i18n: refusal.i18n });
+  ctx.conn.send({ type: "pigkin_result", ok: false, error: refusal.message, code: refusal.code, i18n: refusal.i18n });
   ctx.conn.finish();
 }
 
-/** What a remote chat's Pi starts with instead of a local one's: `pipkin-remote`, and a prompt naming the remote. */
+/** What a remote chat's Pi starts with instead of a local one's: `pigkin-remote`, and a prompt naming the remote. */
 interface RemoteChat {
   extension: string;
   prompt: string;
 }
 
 /**
- * The remote chat in [cwd], or null when it's a local folder; the refusal to send when its host was removed or Pipkin's
- * `pipkin-remote` isn't among the installed [extensionFiles], which only an out-of-date app leaves out.
+ * The remote chat in [cwd], or null when it's a local folder; the refusal to send when its host was removed or Pigkin's
+ * `pigkin-remote` isn't among the installed [extensionFiles], which only an out-of-date app leaves out.
  */
 async function remoteChat(ctx: ModeContext, cwd: string, extensionFiles: { name: string; path: string }[]): Promise<RemoteChat | HostError | null> {
   const paths = remotePaths(ctx.env.configDir, ctx.env.prefix, ctx.env.home);
@@ -155,23 +155,23 @@ export async function rpc(ctx: ModeContext): Promise<void> {
   const sessionPath = nullableStringParam(ctx.params, "sessionPath");
   const expectedVersion = stringParam(ctx.params, "expectedVersion");
   const packageJson = stringParam(ctx.params, "packageJson");
-  const pipkinExtensions = pipkinExtensionFingerprintsParam(ctx.params);
+  const pigkinExtensions = pigkinExtensionFingerprintsParam(ctx.params);
   const installed = await installedPiVersion(ctx.env.root);
   if (installed !== expectedVersion) {
     const refusal =
       installed === null
-        ? new HostError("pi_version", `The agent is not installed; Pipkin needs ${expectedVersion}`, {
+        ? new HostError("pi_version", `The agent is not installed; Pigkin needs ${expectedVersion}`, {
             key: "agent_not_installed_needs",
             args: { expected: expectedVersion },
           })
-        : new HostError("pi_version", `Agent ${installed} is installed; Pipkin needs ${expectedVersion}`, {
+        : new HostError("pi_version", `Agent ${installed} is installed; Pigkin needs ${expectedVersion}`, {
             key: "agent_version_mismatch",
             args: { installed, expected: expectedVersion },
           });
     fail(ctx, refusal);
     return;
   }
-  // The runtime's packages and Pipkin's extensions can change while Pi's version stays put; ensure installs both.
+  // The runtime's packages and Pigkin's extensions can change while Pi's version stays put; ensure installs both.
   const installedPackageJson = await readFile(join(ctx.env.root, "pi", "package.json"), "utf8").catch(() => null);
   if (installedPackageJson !== packageJson) {
     fail(ctx, new HostError("pi_version", "The agent's packages are out of date", { key: "agent_packages_outdated" }));
@@ -181,7 +181,7 @@ export async function rpc(ctx: ModeContext): Promise<void> {
     fail(ctx, new HostError("pi_version", "The agent's install is incomplete", { key: "agent_install_incomplete" }));
     return;
   }
-  const extensionFiles = await installedPipkinExtensionFiles(ctx.env.root, pipkinExtensions);
+  const extensionFiles = await installedPigkinExtensionFiles(ctx.env.root, pigkinExtensions);
   if (extensionFiles === null) {
     fail(ctx, new HostError("pi_version", "The agent's bundled extensions are out of date", { key: "agent_extensions_outdated" }));
     return;
@@ -208,10 +208,10 @@ export async function rpc(ctx: ModeContext): Promise<void> {
 
   const args = [await piEntry(ctx.env.root), "--mode", "rpc"];
   if (sessionPath !== null) args.push("--session", sessionPath);
-  if (pipkinExtensions.some(({ name }) => name === WEB_ACCESS_EXTENSION)) await defaultWebToolsToEager(ctx.env.configDir);
+  if (pigkinExtensions.some(({ name }) => name === WEB_ACCESS_EXTENSION)) await defaultWebToolsToEager(ctx.env.configDir);
   const settings = await readGlobalSettings(ctx.env.configDir);
   await defaultSteeringToAll(ctx, settings);
-  // Pi exits when two copies of one extension register the same tools, so pi-web-access from npm replaces Pipkin's copy.
+  // Pi exits when two copies of one extension register the same tools, so pi-web-access from npm replaces Pigkin's copy.
   const replacedByNpm = userNpmPackages(settings).has(WEB_ACCESS_NPM_PACKAGE);
   for (const { name, path } of extensionFiles) {
     if (name !== REMOTE_EXTENSION && !(replacedByNpm && name === WEB_ACCESS_EXTENSION)) args.push("--extension", path);
@@ -243,7 +243,7 @@ export async function rpc(ctx: ModeContext): Promise<void> {
     reported = true;
     note(`pi exited: code=${code} signal=${signal} socketWritable=${socket.writable}`);
     merger.end();
-    ctx.conn.send({ type: "pipkin_exit", code, signal, stderr: stderr.text() });
+    ctx.conn.send({ type: "pigkin_exit", code, signal, stderr: stderr.text() });
     ctx.conn.finish();
   };
   // `close` fires only after stdout and the channel ended, so the exit line follows everything Pi sent.
@@ -273,7 +273,7 @@ export async function rpc(ctx: ModeContext): Promise<void> {
   socket.resume();
   forwardOutput(child.stdout, socket, merger);
   socket.on("end", () => {
-    note("Pipkin ended the connection");
+    note("Pigkin ended the connection");
   });
   socket.on("error", (error) => {
     note(`socket error: ${error.message}`);

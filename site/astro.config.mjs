@@ -14,10 +14,10 @@ export default defineConfig({
     sitemap(),
     // The guide under /docs/. Its pages come from the repository's docs/ folder; see src/content.config.ts.
     starlight({
-      title: "Pipkin",
-      description: "How to set up Pipkin, connect a model, and configure the Pi agent on your Android phone.",
+      title: "Pigkin",
+      description: "How to set up Pigkin, connect a model, and configure the Pi agent on your Android phone.",
       favicon: "/favicon.svg",
-      social: [{ icon: "github", label: "GitHub", href: "https://github.com/jeph/pipkin" }],
+      social: [{ icon: "github", label: "GitHub", href: "https://github.com/freovensh0/pigkin" }],
       // Link previews of guide pages use the landing page's share image.
       head: [
         { tag: "meta", attrs: { property: "og:image", content: new URL("/og.png", site).href } },

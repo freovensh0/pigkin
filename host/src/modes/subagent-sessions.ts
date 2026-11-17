@@ -5,8 +5,8 @@ import { stringParam } from "../params.js";
 import { sessionFile } from "../session-file.js";
 import { containedFolder, sessionId, subagentFolder, transcriptFiles } from "../subagent-folders.js";
 
-/** The custom entry the Pipkin subagents extension writes into each transcript, linking it to the parent's call. */
-const ENTRY_TYPE = "pipkin-subagent";
+/** The custom entry the Pigkin subagents extension writes into each transcript, linking it to the parent's call. */
+const ENTRY_TYPE = "pigkin-subagent";
 
 /** What one transcript says about its run, or undefined when it isn't a subagent's. */
 async function describe(path: string): Promise<JsonObject | undefined> {

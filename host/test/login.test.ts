@@ -8,16 +8,16 @@ import { type Dirs, installRealPi, makeDirs, removeDirs, runMode, runOp, startHo
 async function login(dirs: Dirs, providerId: string, answer: string): Promise<{ prompts: unknown[]; result: JsonObject }> {
   const { run } = await startHost("login", dirs);
   await run.next();
-  run.send({ type: "pipkin_request", params: { providerId } });
+  run.send({ type: "pigkin_request", params: { providerId } });
   const prompts: unknown[] = [];
   for (;;) {
     const message = await run.next();
     if (message === undefined) throw new Error("login closed without a result");
-    if (message.type === "pipkin_auth_prompt") {
+    if (message.type === "pigkin_auth_prompt") {
       prompts.push(message.prompt);
-      run.send({ type: "pipkin_auth_response", id: message.id, value: answer });
+      run.send({ type: "pigkin_auth_response", id: message.id, value: answer });
     }
-    if (message.type === "pipkin_result") {
+    if (message.type === "pigkin_result") {
       await run.exited;
       return { prompts, result: message };
     }
@@ -112,7 +112,7 @@ describe("login", () => {
     expect(JSON.parse(await readFile(settingsPath, "utf8"))).toMatchObject({ enabledModels: ["openrouter/google/gemma-4-31b-it:free"] });
   });
 
-  it("rejects a provider Pipkin does not connect", async () => {
+  it("rejects a provider Pigkin does not connect", async () => {
     expect(await runMode("login", dirs, { providerId: "vercel-ai-gateway" })).toMatchObject({ ok: false, code: "bad_params" });
   });
 });

@@ -414,35 +414,35 @@ async function remoteMakeFolder(folder: RemoteFolder, parent: string, name: stri
 }
 
 /**
- * Long-lived workspace file access for the app's file browser: sends `pipkin_files_ready`, then answers
+ * Long-lived workspace file access for the app's file browser: sends `pigkin_files_ready`, then answers
  * concurrently, echoing each request's `id`, until the app hangs up:
- * - `pipkin_files_list {root, path}` with `pipkin_files_listing {path, entries}`, each entry
+ * - `pigkin_files_list {root, path}` with `pigkin_files_listing {path, entries}`, each entry
  *   `{name, path, kind: "file" | "directory", size, modified}` (epoch ms), folders first. Links are
  *   followed; dangling ones and those leading out of the workspace are left out.
- * - `pipkin_files_read {root, path}` with `pipkin_files_file {path, size, kind, content?}`: `image`
+ * - `pigkin_files_read {root, path}` with `pigkin_files_file {path, size, kind, content?}`: `image`
  *   (base64), `text` (UTF-8), `binary` or `too_large`, the last two without content.
- * - `pipkin_files_mkdir {root, path, name}` with `pipkin_files_made {path}` naming the new folder.
+ * - `pigkin_files_mkdir {root, path, name}` with `pigkin_files_made {path}` naming the new folder.
  * `root` is absolute; every other path is relative to it, `/`-separated, `.` for the root itself, and
  * may not leave it. Failures are an `error` in the reply, with its `errorI18n`, so the browser can show them in place.
  * A remote workspace's stand-in as `root` works on the remote folder it names, with the same rules; a failed
  * connection adds its code as `errorCode`.
  */
 export async function files(ctx: ModeContext): Promise<JsonObject> {
-  ctx.conn.send({ type: "pipkin_files_ready" });
+  ctx.conn.send({ type: "pigkin_files_ready" });
   ctx.conn.listen((message) => {
     const { id, root, path } = message;
     if (typeof id !== "number" || typeof root !== "string" || typeof path !== "string") return;
-    if (message.type === "pipkin_files_list") {
+    if (message.type === "pigkin_files_list") {
       void list(ctx.env, root, path).then((result) => {
-        ctx.conn.send({ type: "pipkin_files_listing", id, ...result });
+        ctx.conn.send({ type: "pigkin_files_listing", id, ...result });
       });
-    } else if (message.type === "pipkin_files_read") {
+    } else if (message.type === "pigkin_files_read") {
       void read(ctx.env, root, path).then((result) => {
-        ctx.conn.send({ type: "pipkin_files_file", id, ...result });
+        ctx.conn.send({ type: "pigkin_files_file", id, ...result });
       });
-    } else if (message.type === "pipkin_files_mkdir" && typeof message.name === "string") {
+    } else if (message.type === "pigkin_files_mkdir" && typeof message.name === "string") {
       void makeFolder(ctx.env, root, path, message.name).then((result) => {
-        ctx.conn.send({ type: "pipkin_files_made", id, ...result });
+        ctx.conn.send({ type: "pigkin_files_made", id, ...result });
       });
     }
   });

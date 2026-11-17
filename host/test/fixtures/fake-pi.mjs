@@ -5,7 +5,7 @@
 // stdout backpressure, then {"type":"flood_end","count":...}, and creates `done` once the last line
 // was handed to the host. Pi's writes to a pipe block on Linux, so stdin EOF during a flood is only
 // acted on once the flood finished.
-// Pipkin's channel on fd 3: with FAKE_PI_CHANNEL set, each line read there is reported as
+// Pigkin's channel on fd 3: with FAKE_PI_CHANNEL set, each line read there is reported as
 // {"type":"channel_received","message":...}; {"type":"channel_send","line":...} writes `line` and a newline to it.
 import { once } from "node:events";
 import { writeFileSync } from "node:fs";
@@ -36,7 +36,7 @@ async function flood(bytes, done) {
 }
 
 process.stderr.write("fake-pi ready\n");
-const REPORTED_ENV = ["PIPKIN_TOKEN", "PIPKIN_ROOT", "PI_CODING_AGENT_DIR", "SESSION_VAR"];
+const REPORTED_ENV = ["PIGKIN_TOKEN", "PIGKIN_ROOT", "PI_CODING_AGENT_DIR", "SESSION_VAR"];
 const env = Object.fromEntries(REPORTED_ENV.filter((name) => name in process.env).map((name) => [name, process.env[name]]));
 process.stdout.write(`${JSON.stringify({ type: "ready", argv: process.argv.slice(2), cwd: process.cwd(), env })}\n`);
 

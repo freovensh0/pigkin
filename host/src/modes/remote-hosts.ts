@@ -14,7 +14,7 @@ function pathsOf(ctx: ModeContext): RemotePaths {
 }
 
 /**
- * `{ sshInstalled, publicKey, hosts, workspaces }`: whether Termux has OpenSSH, Pipkin's public key line (null until
+ * `{ sshInstalled, publicKey, hosts, workspaces }`: whether Termux has OpenSSH, Pigkin's public key line (null until
  * made), the saved hosts, and every stand-in, those of removed hosts included so their chats keep a label.
  */
 export async function remoteHosts(ctx: ModeContext): Promise<JsonObject> {
@@ -66,14 +66,14 @@ export async function remoteHostRemove(ctx: ModeContext): Promise<JsonObject> {
   return {};
 }
 
-/** `{ publicKey }`, making Pipkin's key first if needed. */
+/** `{ publicKey }`, making Pigkin's key first if needed. */
 export async function remoteKey(ctx: ModeContext): Promise<JsonObject> {
   return { publicKey: await ensureKey(pathsOf(ctx)) };
 }
 
 /**
- * `{ publicKey }` of a new key that replaces Pipkin's key. Every host that signs in with the key is disconnected, so
- * nothing keeps using a connection the old key opened; each refuses Pipkin until the user adds the new line.
+ * `{ publicKey }` of a new key that replaces Pigkin's key. Every host that signs in with the key is disconnected, so
+ * nothing keeps using a connection the old key opened; each refuses Pigkin until the user adds the new line.
  */
 export async function remoteKeyNew(ctx: ModeContext): Promise<JsonObject> {
   const paths = pathsOf(ctx);
@@ -106,7 +106,7 @@ export async function remoteDisconnect(ctx: ModeContext): Promise<JsonObject> {
   return {};
 }
 
-/** Forgets host `id`'s key in Pipkin's `known_hosts`, after the app warned that it changed. */
+/** Forgets host `id`'s key in Pigkin's `known_hosts`, after the app warned that it changed. */
 export async function remoteForgetHostKey(ctx: ModeContext): Promise<JsonObject> {
   const paths = pathsOf(ctx);
   await forgetHostKey({ paths, host: await findHost(paths, stringParam(ctx.params, "id")) });

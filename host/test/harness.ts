@@ -28,7 +28,7 @@ export interface Dirs {
 }
 
 export async function makeDirs(): Promise<Dirs> {
-  const base = await realpath(await mkdtemp(path.join(os.tmpdir(), "pipkin-host-test-")));
+  const base = await realpath(await mkdtemp(path.join(os.tmpdir(), "pigkin-host-test-")));
   const dirs = {
     base,
     root: path.join(base, "root"),
@@ -69,7 +69,7 @@ export function piDir(dirs: Dirs): string {
 /** A runtime `pi/package.json` pinning Pi and the given packages. */
 export function runtimeManifest(packages: string[]): string {
   const dependencies = Object.fromEntries([["@earendil-works/pi-coding-agent", PI_VERSION], ...packages.map((name) => [name, "1.0.0"])]);
-  return JSON.stringify({ name: "pipkin-pi-runtime", private: true, dependencies });
+  return JSON.stringify({ name: "pigkin-pi-runtime", private: true, dependencies });
 }
 
 /** Writes the runtime `pi/package.json` the way `ensure` leaves it after an install. */
@@ -166,8 +166,8 @@ export async function startHost(
     env: {
       // Provider credentials in the developer's environment would change which models Pi offers.
       ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !PROVIDER_CREDENTIAL.test(key))),
-      PIPKIN_TOKEN: token,
-      PIPKIN_ROOT: dirs.root,
+      PIGKIN_TOKEN: token,
+      PIGKIN_ROOT: dirs.root,
       PI_CODING_AGENT_DIR: dirs.configDir,
       HOME: dirs.home,
       PREFIX: dirs.prefix,
@@ -183,7 +183,7 @@ export async function startHost(
   return { run: new HostRun(socket, child, exited.promise), token };
 }
 
-/** Runs a non-rpc mode to completion and returns its `pipkin_result`; progress lines go to `progress`. */
+/** Runs a non-rpc mode to completion and returns its `pigkin_result`; progress lines go to `progress`. */
 export async function runMode(
   mode: string,
   dirs: Dirs,
@@ -193,12 +193,12 @@ export async function runMode(
 ): Promise<JsonObject> {
   const { run } = await startHost(mode, dirs, extraEnv);
   await run.next();
-  run.send({ type: "pipkin_request", params });
+  run.send({ type: "pigkin_request", params });
   for (;;) {
     const message = await run.next();
     if (message === undefined) throw new Error(`${mode} closed without a result`);
-    if (message.type === "pipkin_progress") progress.push(String(message.line));
-    if (message.type === "pipkin_result") {
+    if (message.type === "pigkin_progress") progress.push(String(message.line));
+    if (message.type === "pigkin_result") {
       await run.exited;
       return message;
     }
@@ -207,15 +207,15 @@ export async function runMode(
 
 /**
  * Runs one-off operation [op] on a `utility` host the way the app's shared host asks it, and returns its
- * `pipkin_result` without the `id` that matched it to the request.
+ * `pigkin_result` without the `id` that matched it to the request.
  */
 export async function runOp(op: string, dirs: Dirs, params: JsonObject, extraEnv: Record<string, string> = {}): Promise<JsonObject> {
   const { run } = await startHost("utility", dirs, extraEnv);
   await run.next();
-  run.send({ type: "pipkin_request", params: {} });
+  run.send({ type: "pigkin_request", params: {} });
   const ready = await run.next();
-  if (ready?.type !== "pipkin_utility_ready") throw new Error(`utility sent ${JSON.stringify(ready)} instead of its ready line`);
-  run.send({ type: "pipkin_utility_request", id: 1, op, params });
+  if (ready?.type !== "pigkin_utility_ready") throw new Error(`utility sent ${JSON.stringify(ready)} instead of its ready line`);
+  run.send({ type: "pigkin_utility_request", id: 1, op, params });
   const reply = await run.next();
   if (reply === undefined) throw new Error(`utility closed without answering ${op}`);
   run.socket.end();

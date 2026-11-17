@@ -32,10 +32,10 @@ describe("npm network errors", () => {
   });
 });
 
-const PACKAGE_LOCK = JSON.stringify({ name: "pipkin-pi-runtime", lockfileVersion: 3 });
+const PACKAGE_LOCK = JSON.stringify({ name: "pigkin-pi-runtime", lockfileVersion: 3 });
 
 function installRequest(params: { reinstall?: boolean } = {}): JsonObject {
-  return { packageJson: PACKAGE_JSON, packageLock: PACKAGE_LOCK, expectedVersion: PI_VERSION, pipkinExtensions: [], ...params };
+  return { packageJson: PACKAGE_JSON, packageLock: PACKAGE_LOCK, expectedVersion: PI_VERSION, pigkinExtensions: [], ...params };
 }
 
 /**
@@ -54,8 +54,8 @@ describe("ensure mode", () => {
   let dirs: Dirs;
 
   /** Runs ensure against the matching install from `beforeEach`, so it skips npm. */
-  function ensure(pipkinExtensions: unknown[] = []): Promise<unknown> {
-    return runMode("ensure", dirs, { packageJson: PACKAGE_JSON, packageLock: PACKAGE_LOCK, expectedVersion: PI_VERSION, pipkinExtensions });
+  function ensure(pigkinExtensions: unknown[] = []): Promise<unknown> {
+    return runMode("ensure", dirs, { packageJson: PACKAGE_JSON, packageLock: PACKAGE_LOCK, expectedVersion: PI_VERSION, pigkinExtensions });
   }
 
   /** Puts a stand-in `npm` that runs [script] in `pi/` first on the host's PATH, and returns that PATH. */
@@ -104,21 +104,21 @@ describe("ensure mode", () => {
 
   it("installs an extension that uses runtime packages inside the runtime, and any other outside it", async () => {
     const result = await ensure([
-      { name: "pipkin-todo", source: "todo\n", usesRuntimePackages: false },
-      { name: "pipkin-web-access", source: "web\n", usesRuntimePackages: true },
+      { name: "pigkin-todo", source: "todo\n", usesRuntimePackages: false },
+      { name: "pigkin-web-access", source: "web\n", usesRuntimePackages: true },
     ]);
 
     expect(result).toMatchObject({ ok: true });
-    expect(await readFile(path.join(dirs.root, "extensions/pipkin-todo/index.js"), "utf8")).toBe("todo\n");
-    expect(await readFile(path.join(dirs.root, "pi/extensions/pipkin-web-access/index.js"), "utf8")).toBe("web\n");
+    expect(await readFile(path.join(dirs.root, "extensions/pigkin-todo/index.js"), "utf8")).toBe("todo\n");
+    expect(await readFile(path.join(dirs.root, "pi/extensions/pigkin-web-access/index.js"), "utf8")).toBe("web\n");
   });
 
-  it("replaces an extension an older Pipkin installed", async () => {
-    const file = path.join(dirs.root, "extensions/pipkin-todo/index.js");
+  it("replaces an extension an older Pigkin installed", async () => {
+    const file = path.join(dirs.root, "extensions/pigkin-todo/index.js");
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, "old\n");
 
-    await ensure([{ name: "pipkin-todo", source: "new\n", usesRuntimePackages: false }]);
+    await ensure([{ name: "pigkin-todo", source: "new\n", usesRuntimePackages: false }]);
 
     expect(await readFile(file, "utf8")).toBe("new\n");
   });
@@ -133,7 +133,7 @@ describe("ensure mode", () => {
   describe("with remote hosts saved", () => {
     const host = { id: "0123456789ab", name: "devbox", auth: "key", address: "me@devbox", port: 22, home: null };
 
-    it("rewrites ssh/config an older Pipkin wrote, so its settings reach saved hosts", async () => {
+    it("rewrites ssh/config an older Pigkin wrote, so its settings reach saved hosts", async () => {
       const ssh = path.join(path.dirname(dirs.configDir), "ssh");
       await mkdir(ssh, { recursive: true });
       await writeFile(path.join(ssh, "hosts.json"), JSON.stringify({ version: 1, hosts: [host] }));
@@ -143,7 +143,7 @@ describe("ensure mode", () => {
 
       const config = await readFile(path.join(ssh, "config"), "utf8");
       expect(config).toContain("ServerAliveCountMax 2");
-      expect(config).toContain("Host pipkin-0123456789ab");
+      expect(config).toContain("Host pigkin-0123456789ab");
     });
 
     it("still succeeds when the hosts file can't be read", async () => {
@@ -163,12 +163,12 @@ describe("ensure mode", () => {
 
     it.each([
       ["Pi's CLI script is missing", (target: Dirs) => rm(path.join(piDir(target), "dist/bundle/cli.js"))],
-      ["an earlier install was cut off", (target: Dirs) => writeFile(path.join(target.root, "pi/.pipkin-installing"), "")],
+      ["an earlier install was cut off", (target: Dirs) => writeFile(path.join(target.root, "pi/.pigkin-installing"), "")],
     ])("installs again when %s, though the manifests match", async (_, damage) => {
       await damage(dirs);
       expect(await ensureWithNpm()).toMatchObject({ ok: true });
       expect(await npmRuns()).toBe(1);
-      await expect(readFile(path.join(dirs.root, "pi/.pipkin-installing"))).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(readFile(path.join(dirs.root, "pi/.pigkin-installing"))).rejects.toMatchObject({ code: "ENOENT" });
     });
 
     it("installs a complete runtime again when asked to reinstall", async () => {
@@ -186,12 +186,12 @@ describe("ensure mode", () => {
     });
 
     it("starts an install only once the npm of a cancelled one has exited", async () => {
-      await writeFile(path.join(dirs.root, "pi/.pipkin-installing"), "");
+      await writeFile(path.join(dirs.root, "pi/.pigkin-installing"), "");
       const env = await stubNpm(ROLLING_BACK_NPM);
       const runs = path.join(dirs.root, "pi/npm-runs");
       const { run } = await startHost("ensure", dirs, { ...env, NPM_SECONDS: "30" });
       await run.next();
-      run.send({ type: "pipkin_request", params: installRequest() });
+      run.send({ type: "pigkin_request", params: installRequest() });
       while (!(await readFile(runs, "utf8").catch(() => "")).includes("start")) await sleep(50);
       run.socket.destroy();
 

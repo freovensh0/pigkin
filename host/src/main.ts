@@ -26,7 +26,7 @@ const ABORT_GRACE_MS = 5000;
 const EXIT_USAGE = 64;
 const EXIT_NO_REQUEST = 2;
 
-/** Runs a non-rpc mode and reports its outcome as the single `pipkin_result` line. */
+/** Runs a non-rpc mode and reports its outcome as the single `pigkin_result` line. */
 async function respond(ctx: ModeContext, run: (ctx: ModeContext) => Promise<JsonObject>): Promise<void> {
   ctx.signal.addEventListener(
     "abort",
@@ -37,7 +37,7 @@ async function respond(ctx: ModeContext, run: (ctx: ModeContext) => Promise<Json
   );
   try {
     const data = await run(ctx);
-    ctx.conn.send({ type: "pipkin_result", ok: true, data });
+    ctx.conn.send({ type: "pigkin_result", ok: true, data });
   } catch (error) {
     if (ctx.signal.aborted) process.exit(1);
     ctx.conn.send(failure(error));
@@ -52,14 +52,14 @@ async function main(): Promise<void> {
   const env = readHostEnv();
   const port = Number(portArg);
   if (mode === undefined || env === undefined || !Number.isInteger(port) || port <= 0 || port > 65_535) {
-    process.stderr.write("usage: PIPKIN_TOKEN=… PIPKIN_ROOT=… PI_CODING_AGENT_DIR=… PREFIX=… host.mjs <mode> <port>\n");
+    process.stderr.write("usage: PIGKIN_TOKEN=… PIGKIN_ROOT=… PI_CODING_AGENT_DIR=… PREFIX=… host.mjs <mode> <port>\n");
     process.exit(EXIT_USAGE);
   }
 
   const socket = connect({ host: "127.0.0.1", port, allowHalfOpen: true });
   const conn = new Connection(socket);
   conn.send({
-    type: "pipkin_hello",
+    type: "pigkin_hello",
     protocol: PROTOCOL,
     token: env.token,
     mode,
@@ -73,8 +73,8 @@ async function main(): Promise<void> {
   const request = await conn.firstMessage(mode === "rpc", REQUEST_TIMEOUT_MS);
   if (request === "timeout") process.exit(EXIT_NO_REQUEST);
   if (request === "closed") process.exit(1);
-  if (request.type !== "pipkin_request" || !isObject(request.params)) {
-    conn.send({ type: "pipkin_result", ok: false, error: "Expected a pipkin_request", code: "bad_request" });
+  if (request.type !== "pigkin_request" || !isObject(request.params)) {
+    conn.send({ type: "pigkin_result", ok: false, error: "Expected a pigkin_request", code: "bad_request" });
     conn.finish();
     return;
   }
@@ -125,7 +125,7 @@ async function main(): Promise<void> {
       // Answers with nothing: the hello is the point, so the app can re-read what it reports after a settings change.
       return respond(ctx, async () => ({}));
     default:
-      conn.send({ type: "pipkin_result", ok: false, error: `Unknown mode ${mode}`, code: "unknown_mode" });
+      conn.send({ type: "pigkin_result", ok: false, error: `Unknown mode ${mode}`, code: "unknown_mode" });
       conn.finish();
   }
 }

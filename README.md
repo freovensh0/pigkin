@@ -1,28 +1,31 @@
 <p align="center">
-  <img src="site/public/favicon.svg" alt="Pipkin logo" width="128" height="128">
+  <img src="site/public/favicon.svg" alt="Pigkin logo" width="128" height="128">
 </p>
 
-<h1 align="center">Pipkin</h1>
+<h1 align="center">Pigkin</h1>
 
 <p align="center">
-  <a href="https://github.com/jeph/pipkin/actions/workflows/release.yml"><img src="https://github.com/jeph/pipkin/actions/workflows/release.yml/badge.svg" alt="Release"></a>
-  <a href="https://github.com/jeph/pipkin/releases/latest"><img src="https://img.shields.io/github/v/release/jeph/pipkin" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/jeph/pipkin" alt="License"></a>
+  <a href="https://github.com/freovensh0/pigkin/actions/workflows/release.yml"><img src="https://github.com/freovensh0/pigkin/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+  <a href="https://github.com/freovensh0/pigkin/releases/latest"><img src="https://img.shields.io/github/v/release/freovensh0/pigkin" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/freovensh0/pigkin" alt="License"></a>
 </p>
 
 <p align="center">
   <a href="https://pipkin.jeph.io">Website</a> · <a href="https://pipkin.jeph.io/docs/">Docs</a>
 </p>
 
-**Pipkin** is a native Android app for agentic coding. Tell it what to build or fix, and it reads your
+**Pigkin** is a native Android app for agentic coding. Tell it what to build or fix, and it reads your
 code, runs commands, edits files, and checks its own work, all on your phone. It's built on the
 [Pi](https://pi.dev) agent harness and runs in [Termux](https://termux.dev), so there's no laptop or
 cloud server doing the work somewhere else.
 
+It is a fork of [jeph/pipkin](https://github.com/jeph/pipkin). The Termux backend is being ported to
+Go on top of [sky-valley/pi](https://github.com/sky-valley/pi); the app is unchanged.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="site/src/assets/screens/stone/photos.png">
-    <img src="site/src/assets/screens/porcelain/photos.png" alt="A finished chat in which Pipkin found and moved duplicate photos" height="320">
+    <img src="site/src/assets/screens/porcelain/photos.png" alt="A finished chat in which Pigkin found and moved duplicate photos" height="320">
   </picture>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="site/src/assets/screens/stone/git-changes.png">
@@ -47,18 +50,18 @@ cloud server doing the work somewhere else.
 
 ## Features
 
-Most agents you use from a phone are remotes for a computer somewhere else. Pipkin runs the agent,
+Most agents you use from a phone are remotes for a computer somewhere else. Pigkin runs the agent,
 your code, and every command it runs on the phone itself:
 
 - **No computer required.** The agent, your files, git, and terminals all live in Termux on your
   phone. Install compilers, runtimes, and databases with `pkg`, or run Debian or Ubuntu with
   `proot-distro`, no root required.
-- **Built on Pi.** Pipkin is compatible with Pi's ecosystem of skills, tools, prompt templates, and
-  extensions. Install extensions the usual Pi way and Pipkin picks them up.
+- **Built on Pi.** Pigkin is compatible with Pi's ecosystem of skills, tools, prompt templates, and
+  extensions. Install extensions the usual Pi way and Pigkin picks them up.
 - **Native extension UI.** Extensions that use Pi's RPC UI protocol render with native controls:
   choices, confirmations, and text fields appear as cards above the composer, and status lines,
   notices, and widgets each get a home.
-- **Android native.** Pipkin is written in Jetpack Compose with no web view, so scrolling, typing, and
+- **Android native.** Pigkin is written in Jetpack Compose with no web view, so scrolling, typing, and
   streaming replies stay smooth in long chats. On foldables and tablets, split panes put chats,
   files, diffs, and terminals side by side.
 - **A real workbench.** Review changes in the built-in git diff viewer, browse and read files with
@@ -68,11 +71,11 @@ your code, and every command it runs on the phone itself:
   subscription, add a Gemini, Z.ai Coding Plan, Kimi Code or OpenRouter API key, or add any OpenAI-compatible
   API, including hosted gateways and servers you run yourself. Add several and switch per chat.
 - **Runs in the background.** Lock your phone or switch apps; a notification tells you when the chat
-  is done or needs your answer. While you're in Pipkin, a small pill under the header tells you the
+  is done or needs your answer. While you're in Pigkin, a small pill under the header tells you the
   same about your other chats.
 - **Guided setup.** A step-by-step guide sets up Termux and installs Pi for you, explaining each
   permission it asks for.
-- **Bundled extensions.** Pipkin ships web search and page fetching (a vendored copy of
+- **Bundled extensions.** Pigkin ships web search and page fetching (a vendored copy of
   [pi-web-access](https://github.com/nicobailon/pi-web-access)) and a to-do list widget.
 - **Backups.** Save your settings, sign-ins, models, and extensions in one tap and restore them
   later.
@@ -90,7 +93,7 @@ your code, and every command it runs on the phone itself:
 
 ### Download a release
 
-[Download the latest APK](https://github.com/jeph/pipkin/releases/latest) from the releases page on
+[Download the latest APK](https://github.com/freovensh0/pigkin/releases/latest) from the releases page on
 your phone and open it to install. Android asks you to allow installs from your browser or file
 manager the first time. Later releases install over it as updates and keep your chats and settings.
 
@@ -99,7 +102,7 @@ Actions built it from this repository with the [GitHub CLI](https://cli.github.c
 
 ```sh
 sha256sum --check SHA256SUMS
-gh attestation verify pipkin-v<VERSION>.apk --repo jeph/pipkin
+gh attestation verify pigkin-v<VERSION>.apk --repo freovensh0/pigkin
 ```
 
 ### Build from source
@@ -108,8 +111,8 @@ The build needs a JDK, the Android SDK, and Node.js and pnpm on your `PATH`; see
 [Development](#development) for the exact toolchain.
 
 ```sh
-git clone https://github.com/jeph/pipkin.git
-cd pipkin
+git clone https://github.com/freovensh0/pigkin.git
+cd pigkin
 ./gradlew :app:installDebug
 ```
 
@@ -117,14 +120,14 @@ cd pipkin
 without installing it, run `./gradlew :app:assembleDebug` and find it in
 `app/build/outputs/apk/debug/`.
 
-A build from source is Pipkin Dev, a separate app that installs beside a downloaded release rather
-than over it. Both can use the same Termux: Pipkin Dev keeps its own state there, in `~/.pipkin-dev`
-and `~/.local/share/pipkin-dev` instead of the release's `~/.pipkin` and `~/.local/share/pipkin`, so
+A build from source is Pigkin Dev, a separate app that installs beside a downloaded release rather
+than over it. Both can use the same Termux: Pigkin Dev keeps its own state there, in `~/.pigkin-dev`
+and `~/.local/share/pigkin-dev` instead of the release's `~/.pigkin` and `~/.local/share/pigkin`, so
 it needs its own setup and sign-ins, and the two don't see each other's chats.
 
 ## Usage
 
-The [Pipkin guide](https://pipkin.jeph.io/docs/) covers using the app:
+The [Pigkin guide](https://pipkin.jeph.io/docs/) covers using the app:
 
 - [Get started](https://pipkin.jeph.io/docs/get-started/): install Termux, walk through setup, and
   start your first chat.
@@ -139,7 +142,7 @@ The [Pipkin guide](https://pipkin.jeph.io/docs/) covers using the app:
 
 ## Development
 
-Building Pipkin needs:
+Building Pigkin needs:
 
 - A JDK 17 or newer, through `JAVA_HOME` or `java` on your `PATH`, to start Gradle.
 - The Android SDK with API level 37, NDK `30.0.16248370`, and CMake `4.1.2`. Point Gradle at the SDK
@@ -174,7 +177,7 @@ pnpm run dev
 ## Contributing
 
 Pull requests are welcome. If you run into a bug, unexpected behavior, or a device-specific
-problem, please [open an issue](https://github.com/jeph/pipkin/issues) with your phone model,
+problem, please [open an issue](https://github.com/freovensh0/pigkin/issues) with your phone model,
 Android version, and Termux build. Reports from real-world use are especially helpful while the
 project is young.
 
@@ -183,12 +186,12 @@ Do not report suspected security vulnerabilities in public issues. Follow the
 
 ## Acknowledgements
 
-Pipkin's interface started out modelled on [Paseo](https://paseo.sh), an open-source app for running
+Pigkin's interface started out modelled on [Paseo](https://paseo.sh), an open-source app for running
 coding agents from your desktop and phone, and some of its code is adapted from
 [Paseo's](https://github.com/getpaseo/paseo): the folder search, and the file-type icon table and icon
 colours.
 
-Pipkin is built on [Pi](https://pi.dev) and [Termux](https://termux.dev), with Jetpack Compose,
+Pigkin is built on [Pi](https://pi.dev) and [Termux](https://termux.dev), with Jetpack Compose,
 [libghostty-android](https://github.com/SagerNet/libghostty-android) and
 [Ghostty](https://github.com/ghostty-org/ghostty) for the terminal,
 [tree-sitter](https://github.com/tree-sitter/tree-sitter) for syntax highlighting,
@@ -196,11 +199,11 @@ Pipkin is built on [Pi](https://pi.dev) and [Termux](https://termux.dev), with J
 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) for icons,
 and [pi-web-access](https://github.com/nicobailon/pi-web-access) for web search. The
 [acknowledgements page](https://pipkin.jeph.io/docs/acknowledgements/) credits the main open-source
-projects Pipkin uses.
+projects Pigkin uses.
 
 ## License
 
-Pipkin is released under the [MIT License](LICENSE). Third-party code, fonts, and icons that Pipkin
+Pigkin is released under the [MIT License](LICENSE). Third-party code, fonts, and icons that Pigkin
 includes keep their own licenses. The app lists them under **Settings → About → Open-source
 licenses**. Their texts are in [`app/src/main/assets/licenses/`](app/src/main/assets/licenses/), the
 bundled Pi extensions' folders, and the files they were copied into, and the website serves its own

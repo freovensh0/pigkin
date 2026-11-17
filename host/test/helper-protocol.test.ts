@@ -15,7 +15,7 @@ const nonceC = Buffer.alloc(32, 0xaa);
 const nonceS = Buffer.alloc(32, 0xbb);
 const { c2s, s2c } = sessionKeys(K, nonceC, nonceS);
 
-describe("pipkin-helper/1 vectors", () => {
+describe("pigkin-helper/1 vectors", () => {
   it("derives the handshake MACs and session keys", () => {
     expect(serverMac(K, nonceC, nonceS).toString("hex")).toBe(
       "c92c57837f8549ddfb5a965ace997642ce25f3e3b136a6bf561433663f3a1461",
@@ -82,7 +82,7 @@ describe("pairing vector", () => {
 
   it("rejects a body for another session", () => {
     expect(() => decryptPairingBody(body, token, "ffeeddccbbaa99887766554433221100")).toThrow(
-      "The key from Pipkin didn't match this setup command.",
+      "The key from Pigkin didn't match this setup command.",
     );
   });
 });

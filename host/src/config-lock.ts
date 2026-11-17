@@ -17,7 +17,7 @@ export async function isConfigLocked(env: HostEnv): Promise<boolean> {
 
 /** The refusal of a mode that must not run while [isConfigLocked], such as starting Pi or installing a package. */
 export function configBusy(): HostError {
-  return new HostError("config_busy", "Pipkin is backing up, restoring or updating the configuration; try again in a moment", {
+  return new HostError("config_busy", "Pigkin is backing up, restoring or updating the configuration; try again in a moment", {
     key: "config_busy",
   });
 }

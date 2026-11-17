@@ -24,7 +24,7 @@ export function hostUnknown(): HostError {
 }
 
 export function bashMissing(name: string): HostError {
-  return new HostError("remote_bash_missing", `${name} has no bash, which Pipkin needs to work there.`, {
+  return new HostError("remote_bash_missing", `${name} has no bash, which Pigkin needs to work there.`, {
     key: "remote_bash_missing",
     args: { host: name },
   });
@@ -34,12 +34,12 @@ export function connectCancelled(): HostError {
   return new HostError("remote_connect_cancelled", "Connecting was cancelled.", { key: "remote_connect_cancelled" });
 }
 
-/** The server refused Pipkin's key, the password, or the key whose passphrase was asked for. */
+/** The server refused Pigkin's key, the password, or the key whose passphrase was asked for. */
 export function authFailed(name: string): HostError {
   return new HostError("remote_auth_failed", `${name} refused the sign-in.`, { key: "remote_auth_failed", args: { host: name } });
 }
 
-/** A failure the app shows as is: the shape of `error` in `pipkin_places` and on the channel's `remote` topic. */
+/** A failure the app shows as is: the shape of `error` in `pigkin_places` and on the channel's `remote` topic. */
 export function errorJson(error: HostError): JsonObject {
   return { code: error.code, message: error.message, i18n: error.i18n };
 }
@@ -68,7 +68,7 @@ export function lastLine(stderr: string): string {
 /**
  * The [HostError] for an `ssh` run that exited with 255, from what it wrote to [stderr]; undefined when the 255 came
  * from the remote command instead, which `ssh` passes through. A refused sign-in in batch mode means the user is needed
- * (`remote_not_connected`) unless the host signs in with Pipkin's own key, which never needs them.
+ * (`remote_not_connected`) unless the host signs in with Pigkin's own key, which never needs them.
  */
 export function classifySshFailure(stderr: string, context: FailureContext): HostError | undefined {
   const host = context.name;

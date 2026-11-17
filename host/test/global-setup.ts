@@ -13,11 +13,11 @@ declare module "vitest" {
 
 /** Tests run the production bundle (`pnpm run build`) as a child process, as Termux would. */
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "pipkin-host-bundle-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "pigkin-host-bundle-"));
   await promisify(execFile)("pnpm", ["run", "--silent", "build"], {
     cwd: path.join(import.meta.dirname, ".."),
     env: { ...process.env, OUT: dir },
   });
-  project.provide("hostBundle", path.join(dir, "pipkin-host.mjs"));
+  project.provide("hostBundle", path.join(dir, "pigkin-host.mjs"));
   return () => rm(dir, { recursive: true, force: true });
 }

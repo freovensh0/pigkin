@@ -1,5 +1,5 @@
 /**
- * The `pipkin-helper/1` wire protocol between Pipkin and the helper daemon in Termux: an HMAC challenge-response
+ * The `pigkin-helper/1` wire protocol between Pigkin and the helper daemon in Termux: an HMAC challenge-response
  * handshake on the pairing key, then AES-256-GCM frames with per-direction counters, so a relay on the port sees only
  * ciphertext and can't inject, reorder or replay anything. Mirrored by the app's `HelperProtocol`; both assert the
  * spec's test vectors.
@@ -21,11 +21,11 @@ function hmac(key: Buffer, label: string, nonceC: Buffer, nonceS: Buffer): Buffe
 }
 
 export function serverMac(key: Buffer, nonceC: Buffer, nonceS: Buffer): Buffer {
-  return hmac(key, "pipkin-helper-server", nonceC, nonceS);
+  return hmac(key, "pigkin-helper-server", nonceC, nonceS);
 }
 
 export function clientMac(key: Buffer, nonceC: Buffer, nonceS: Buffer): Buffer {
-  return hmac(key, "pipkin-helper-client", nonceC, nonceS);
+  return hmac(key, "pigkin-helper-client", nonceC, nonceS);
 }
 
 export interface SessionKeys {
@@ -34,7 +34,7 @@ export interface SessionKeys {
 }
 
 export function sessionKeys(key: Buffer, nonceC: Buffer, nonceS: Buffer): SessionKeys {
-  return { c2s: hmac(key, "pipkin-helper-c2s", nonceC, nonceS), s2c: hmac(key, "pipkin-helper-s2c", nonceC, nonceS) };
+  return { c2s: hmac(key, "pigkin-helper-c2s", nonceC, nonceS), s2c: hmac(key, "pigkin-helper-s2c", nonceC, nonceS) };
 }
 
 export function macEquals(a: Buffer, b: Buffer): boolean {

@@ -1,5 +1,5 @@
 ---
-// A hand-built replay of a Pipkin chat, drawn with the app's own layout, labels, icons and the page's theme, so it
+// A hand-built replay of a Pigkin chat, drawn with the app's own layout, labels, icons and the page's theme, so it
 // stays sharp at any size and weighs a few kilobytes instead of a video. Without JavaScript, or with reduced motion,
 // it shows the finished chat.
 import Icon, { type IconName } from "./Icon.astro";
@@ -36,7 +36,7 @@ const replyHtml = reply.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   class="phone"
   data-demo
   role="img"
-  aria-label="Pipkin on an Android phone: the agent reads the code, edits files, writes a test, runs the tests, and reports back."
+  aria-label="Pigkin on an Android phone: the agent reads the code, edits files, writes a test, runs the tests, and reports back."
 >
   <div class="screen" aria-hidden="true">
     <div class="status">
@@ -51,7 +51,7 @@ const replyHtml = reply.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     <div class="notification" data-part="notify">
       <div class="notification-icon"><Logo size={14} /></div>
       <div class="notification-body">
-        <div class="notification-head">Pipkin · now</div>
+        <div class="notification-head">Pigkin · now</div>
         <div class="notification-title">Agent finished: Add a dark mode toggle</div>
         <div class="notification-text">Dark mode is in. All 18 tests pass.</div>
       </div>
@@ -71,7 +71,7 @@ const replyHtml = reply.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     <div class="timeline">
       <div class="empty" data-part="empty">
         <span class="empty-mark"><Logo size={40} simmer /></span>
-        <span>Message Pipkin to start</span>
+        <span>Message Pigkin to start</span>
       </div>
 
       <div class="step" data-part="sent">
@@ -150,7 +150,7 @@ const replyHtml = reply.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
       </div>
       <div class="field">
         <span><span class="typed" data-part="typed"></span><span class="caret"></span><span class="placeholder"
-            >Message Pipkin…</span
+            >Message Pigkin…</span
           ></span>
       </div>
       <div class="controls">
@@ -211,7 +211,7 @@ const replyHtml = reply.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   }
 
   .screen {
-    /* Sizes below are Pipkin's dp values, scaled to the mock's width as if the phone were 380dp wide. */
+    /* Sizes below are Pigkin's dp values, scaled to the mock's width as if the phone were 380dp wide. */
     --dp: calc(100cqi / 380);
     container-type: inline-size;
     position: relative;

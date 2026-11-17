@@ -22,10 +22,10 @@ function bridge(ctx: ModeContext): AuthInteraction {
   ctx.conn.listen((message) => {
     const prompt = typeof message.id === "number" ? pending.get(message.id) : undefined;
     if (prompt === undefined || typeof message.id !== "number") return;
-    if (message.type === "pipkin_auth_response" && typeof message.value === "string") {
+    if (message.type === "pigkin_auth_response" && typeof message.value === "string") {
       pending.delete(message.id);
       prompt.resolve(message.value);
-    } else if (message.type === "pipkin_auth_cancel") {
+    } else if (message.type === "pigkin_auth_cancel") {
       pending.delete(message.id);
       prompt.reject(new Error("cancelled"));
     }
@@ -42,7 +42,7 @@ function bridge(ctx: ModeContext): AuthInteraction {
   return {
     signal: ctx.signal,
     notify(event) {
-      ctx.conn.send({ type: "pipkin_auth_event", event });
+      ctx.conn.send({ type: "pigkin_auth_event", event });
     },
     prompt(prompt: AuthPrompt) {
       const id = nextId++;
@@ -56,7 +56,7 @@ function bridge(ctx: ModeContext): AuthInteraction {
       }
       const dismiss = (): void => {
         if (!pending.delete(id)) return;
-        ctx.conn.send({ type: "pipkin_auth_prompt_dismiss", id });
+        ctx.conn.send({ type: "pigkin_auth_prompt_dismiss", id });
         reject(new Error("dismissed"));
       };
       pending.set(id, {
@@ -69,7 +69,7 @@ function bridge(ctx: ModeContext): AuthInteraction {
           reject(error);
         },
       });
-      ctx.conn.send({ type: "pipkin_auth_prompt", id, prompt: description });
+      ctx.conn.send({ type: "pigkin_auth_prompt", id, prompt: description });
       if (prompt.signal?.aborted === true) dismiss();
       else prompt.signal?.addEventListener("abort", dismiss, { once: true });
       return promise;
@@ -80,10 +80,10 @@ function bridge(ctx: ModeContext): AuthInteraction {
 export async function login(ctx: ModeContext): Promise<JsonObject> {
   const providerId = stringParam(ctx.params, "providerId");
   const type = loginType(providerId);
-  if (type === undefined) throw new HostError("bad_params", `Pipkin cannot sign in to ${providerId}`);
+  if (type === undefined) throw new HostError("bad_params", `Pigkin cannot sign in to ${providerId}`);
   const pi = await loadPi(ctx.env.root);
   const runtime = await createRuntime(ctx);
-  // ChatGPT sign-in needs a stable device ID, kept in Pipkin's own Pi settings.
+  // ChatGPT sign-in needs a stable device ID, kept in Pigkin's own Pi settings.
   const settings = pi.SettingsManager.create(ctx.env.home, ctx.env.configDir);
   try {
     // An API-key login is Pi prompting for the key, which the app answers like any other prompt.

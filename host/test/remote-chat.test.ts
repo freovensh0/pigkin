@@ -7,9 +7,9 @@ import { fauxAssistantMessage, fauxToolCall, type Message, type ToolCall } from 
 import type { AgentSession, ExtensionFactory } from "@earendil-works/pi-coding-agent";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { isObject } from "../src/framing.js";
-import pipkinBackground from "../src/pi-extensions/pipkin-background/index.js";
-import { RESULT_TYPE } from "../src/pi-extensions/pipkin-background/tasks.js";
-import { createPipkinRemote } from "../src/pi-extensions/pipkin-remote/index.js";
+import pigkinBackground from "../src/pi-extensions/pigkin-background/index.js";
+import { RESULT_TYPE } from "../src/pi-extensions/pigkin-background/tasks.js";
+import { createPigkinRemote } from "../src/pi-extensions/pigkin-remote/index.js";
 import { remoteSystemAppend } from "../src/prompt.js";
 import { quote } from "../src/remote/script.js";
 import { runOp } from "./harness.js";
@@ -20,7 +20,7 @@ import {
   installChannel,
   makeParent,
   messageText,
-  pipkinSubagents,
+  pigkinSubagents,
   removeChannel,
   type Script,
   subagentResults,
@@ -28,8 +28,8 @@ import {
 } from "./subagents-harness.js";
 
 const unavailable = await sshdUnavailable();
-const CHANNEL = Symbol.for("pipkin.channel");
-const SHARED = [Symbol.for("pipkin.remote"), Symbol.for("pipkin.background")];
+const CHANNEL = Symbol.for("pigkin.channel");
+const SHARED = [Symbol.for("pigkin.remote"), Symbol.for("pigkin.background")];
 
 type ToolResult = Extract<Message, { role: "toolResult" }>;
 
@@ -113,7 +113,7 @@ describe.skipIf(unavailable !== null)(`a remote chat against a throwaway sshd${u
     await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
     session.dispose();
     // The stopped tasks' ssh exits a moment later; the next test starts once every one has.
-    const background = (globalThis as Record<symbol, { tasks: Map<string, { status: string }> } | undefined>)[Symbol.for("pipkin.background")];
+    const background = (globalThis as Record<symbol, { tasks: Map<string, { status: string }> } | undefined>)[Symbol.for("pigkin.background")];
     await eventually(() => ![...(background?.tasks.values() ?? [])].some((task) => task.status === "running"), 10_000);
     removeChannel();
     const global = globalThis as Record<symbol, unknown>;
@@ -122,7 +122,7 @@ describe.skipIf(unavailable !== null)(`a remote chat against a throwaway sshd${u
 
   describe("background tasks", () => {
     beforeEach(async () => {
-      await start([createPipkinRemote(fixture.standIn), pipkinBackground], ["read", "bash", "background"]);
+      await start([createPigkinRemote(fixture.standIn), pigkinBackground], ["read", "bash", "background"]);
     });
 
     it("run on the remote, in its folder, and bring their output back to the local log", async () => {
@@ -172,7 +172,7 @@ describe.skipIf(unavailable !== null)(`a remote chat against a throwaway sshd${u
 
   describe("subagents", () => {
     beforeEach(async () => {
-      await start([createPipkinRemote(fixture.standIn), pipkinSubagents], ["read", "bash", "subagent"]);
+      await start([createPigkinRemote(fixture.standIn), pigkinSubagents], ["read", "bash", "subagent"]);
     });
 
     it("run their tools on the remote and are told where it is, with the remote folder as their working directory", async () => {
@@ -201,7 +201,7 @@ describe.skipIf(unavailable !== null)(`a remote chat against a throwaway sshd${u
       const paths = isObject(result.data) && Array.isArray(result.data.paths) ? result.data.paths : [];
       expect(paths).toHaveLength(2);
       const [first, second] = paths.map(String);
-      expect(path.dirname(path.dirname(first ?? ""))).toBe(path.join(fixture.remoteCache, "pipkin", "attachments"));
+      expect(path.dirname(path.dirname(first ?? ""))).toBe(path.join(fixture.remoteCache, "pigkin", "attachments"));
       expect(path.basename(second ?? "")).toBe("notes-2.txt");
       expect(await readFile(first ?? "", "utf8")).toBe("hello remote");
       expect(await readFile(second ?? "", "utf8")).toBe("second");

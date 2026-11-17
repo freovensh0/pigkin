@@ -290,10 +290,10 @@ async function browseRemote(ctx: ModeContext, hostId: string): Promise<void> {
   let failure: HostError | undefined;
   try {
     opened = await remotePlaces(ctx.env, hostId);
-    ctx.conn.send({ type: "pipkin_places", places: opened.places });
+    ctx.conn.send({ type: "pigkin_places", places: opened.places });
   } catch (error) {
     failure = error instanceof HostError ? error : new HostError("remote_failed", error instanceof Error ? error.message : String(error));
-    ctx.conn.send({ type: "pipkin_places", places: [], error: errorJson(failure) });
+    ctx.conn.send({ type: "pigkin_places", places: [], error: errorJson(failure) });
   }
   /** A listing on a host that couldn't be reached says why, as the places did. */
   const unreached = (path: string): JsonObject => ({
@@ -306,31 +306,31 @@ async function browseRemote(ctx: ModeContext, hostId: string): Promise<void> {
   ctx.conn.listen((message) => {
     const { id } = message;
     if (typeof id !== "number") return;
-    if (message.type === "pipkin_list" && typeof message.path === "string") {
+    if (message.type === "pigkin_list" && typeof message.path === "string") {
       const reply = opened === undefined ? Promise.resolve(unreached(message.path)) : remoteListing(opened.remote, message.path, opened.home);
       void reply.then((result) => {
-        ctx.conn.send({ type: "pipkin_listing", id, ...result });
+        ctx.conn.send({ type: "pigkin_listing", id, ...result });
       });
-    } else if (message.type === "pipkin_search" && typeof message.query === "string") {
+    } else if (message.type === "pigkin_search" && typeof message.query === "string") {
       running?.abort();
       const current = new AbortController();
       running = current;
       const searched = opened === undefined ? Promise.resolve([]) : remoteSearch(opened.remote, message.query, opened.home, AbortSignal.any([current.signal, ctx.signal]));
       void searched.then((paths) => {
-        if (paths !== undefined && !current.signal.aborted) ctx.conn.send({ type: "pipkin_search_results", id, paths });
+        if (paths !== undefined && !current.signal.aborted) ctx.conn.send({ type: "pigkin_search_results", id, paths });
       });
     }
   });
 }
 
 /**
- * Long-lived folder listing for the app's folder browser: sends `pipkin_places` once, then answers
- * each `pipkin_list` with a `pipkin_listing` and each `pipkin_search` with `pipkin_search_results`
+ * Long-lived folder listing for the app's folder browser: sends `pigkin_places` once, then answers
+ * each `pigkin_list` with a `pigkin_listing` and each `pigkin_search` with `pigkin_search_results`
  * until the app hangs up. Listing failures are part of the listing, so the browser can show them in
  * place. A search still running when the next arrives stops without answering.
  *
  * With a `hostId`, it browses that remote host instead: its places are `remote_home` and `remote_root`, and a host that
- * can't be reached sends `pipkin_places` with no places and an `error` (`{code, message, i18n}`). A listing that fails
+ * can't be reached sends `pigkin_places` with no places and an `error` (`{code, message, i18n}`). A listing that fails
  * for the connection adds its code as `errorCode`.
  */
 export async function browse(ctx: ModeContext): Promise<JsonObject> {
@@ -349,19 +349,19 @@ export async function browse(ctx: ModeContext): Promise<JsonObject> {
 async function browseLocal(ctx: ModeContext): Promise<void> {
   const home = ctx.env.home;
   const found = await places(ctx.env);
-  ctx.conn.send({ type: "pipkin_places", places: found });
+  ctx.conn.send({ type: "pigkin_places", places: found });
   let latestSearch: number | undefined;
   ctx.conn.listen((message) => {
     const { id } = message;
     if (typeof id !== "number") return;
-    if (message.type === "pipkin_list" && typeof message.path === "string") {
+    if (message.type === "pigkin_list" && typeof message.path === "string") {
       void listing(message.path, home).then((result) => {
-        ctx.conn.send({ type: "pipkin_listing", id, ...result });
+        ctx.conn.send({ type: "pigkin_listing", id, ...result });
       });
-    } else if (message.type === "pipkin_search" && typeof message.query === "string") {
+    } else if (message.type === "pigkin_search" && typeof message.query === "string") {
       latestSearch = id;
       void search(message.query, found, home, () => latestSearch !== id).then((paths) => {
-        if (paths !== undefined && latestSearch === id) ctx.conn.send({ type: "pipkin_search_results", id, paths });
+        if (paths !== undefined && latestSearch === id) ctx.conn.send({ type: "pigkin_search_results", id, paths });
       });
     }
   });

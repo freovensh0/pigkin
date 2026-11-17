@@ -25,14 +25,14 @@ function chunks(data: Buffer, seed: number): Buffer[] {
 }
 
 const channelLine = (message: ChannelMessage): string =>
-  `{"type":"pipkin_channel","topic":"${message.topic}","data":${JSON.stringify(message.data)}}\n`;
+  `{"type":"pigkin_channel","topic":"${message.topic}","data":${JSON.stringify(message.data)}}\n`;
 
 describe("AppInputRouter", () => {
   const piLines = [
     `{"id":"1","type":"prompt","message":"hi"}\n`,
-    `{"type":"pipkin_request"}\n`,
+    `{"type":"pigkin_request"}\n`,
     "\n",
-    `{"type":"pipkin_chan"}\n`,
+    `{"type":"pigkin_chan"}\n`,
     `{"id":"2","type":"prompt","message":"${"x".repeat(200)}"}\n`,
   ];
   const stop: ChannelMessage = { topic: "background", data: { action: "stop" } };
@@ -86,9 +86,9 @@ describe("AppInputRouter", () => {
       (message) => received.push(message),
       (reason) => dropped.push(reason),
     );
-    router.push(Buffer.from(`{"type":"pipkin_channel","topic":"t","data":"${"z".repeat(MAX_CHANNEL_LINE)}"}\n`));
-    router.push(Buffer.from(`{"type":"pipkin_channel","topic":"Bad Topic"}\n`));
-    router.push(Buffer.from(`{"type":"pipkin_channel",broken\n`));
+    router.push(Buffer.from(`{"type":"pigkin_channel","topic":"t","data":"${"z".repeat(MAX_CHANNEL_LINE)}"}\n`));
+    router.push(Buffer.from(`{"type":"pigkin_channel","topic":"Bad Topic"}\n`));
+    router.push(Buffer.from(`{"type":"pigkin_channel",broken\n`));
     router.push(Buffer.from(`${channelLine({ topic: "t", data: 1 })}{"id":"3"}\n`));
 
     expect(dropped).toEqual([`Line exceeds ${MAX_CHANNEL_LINE} bytes`, "not a channel message", "not a channel message"]);
@@ -114,12 +114,12 @@ describe("OutputMerger", () => {
       merger.end();
 
       const lines = written.join("").split("\n").slice(0, -1);
-      const piLines = lines.filter((line) => !line.startsWith(`{"type":"pipkin_channel"`));
-      const channel = lines.filter((line) => line.startsWith(`{"type":"pipkin_channel"`));
+      const piLines = lines.filter((line) => !line.startsWith(`{"type":"pigkin_channel"`));
+      const channel = lines.filter((line) => line.startsWith(`{"type":"pigkin_channel"`));
       expect(`${piLines.join("\n")}\n`).toBe(piOutput.toString());
       expect(channel.map((line): unknown => JSON.parse(line))).toEqual(
         pieces.flatMap((_, index) =>
-          index % 3 === 0 ? [{ type: "pipkin_channel", topic: "background", data: { active: index } }] : [],
+          index % 3 === 0 ? [{ type: "pigkin_channel", topic: "background", data: { active: index } }] : [],
         ),
       );
     });
@@ -156,7 +156,7 @@ describe("ChannelReader", () => {
       (message) => received.push(message),
       (reason) => dropped.push(reason),
     );
-    reader.push(Buffer.from(`{"topic":"a","data":{"x":1}}\n{"type":"pipkin_exit","topic":"a"}\n`));
+    reader.push(Buffer.from(`{"topic":"a","data":{"x":1}}\n{"type":"pigkin_exit","topic":"a"}\n`));
     reader.push(Buffer.from(`{"topic":"b","data":"${"q".repeat(MAX_SOCKET_LINE)}"}\n`));
     reader.push(Buffer.from(`{"topic":"c"}\n`));
 

@@ -1,54 +1,54 @@
 ---
 title: Get started
-description: Install Pipkin and Termux, walk through setup, and start your first chat.
+description: Install Pigkin and Termux, walk through setup, and start your first chat.
 ---
 
-Setup takes a few minutes, and Pipkin does most of it for you. It checks off each step as it finishes and explains every permission it asks for.
+Setup takes a few minutes, and Pigkin does most of it for you. It checks off each step as it finishes and explains every permission it asks for.
 
 ## What you need
 
 - An Android phone or tablet running **Android 10 or newer**, with a 64-bit processor (almost every phone from the last few years).
-- **Termux** from [F-Droid](https://f-droid.org/packages/com.termux/) (version 0.118 or newer) or [Google Play](https://play.google.com/store/apps/details?id=com.termux) (needs Android 11 or newer). The F-Droid version is recommended. Pipkin only works with these two signed builds and refuses copies of Termux from anywhere else.
+- **Termux** from [F-Droid](https://f-droid.org/packages/com.termux/) (version 0.118 or newer) or [Google Play](https://play.google.com/store/apps/details?id=com.termux) (needs Android 11 or newer). The F-Droid version is recommended. Pigkin only works with these two signed builds and refuses copies of Termux from anywhere else.
 - **An AI model to talk to**: a Claude Pro or Max subscription, an OpenAI Codex subscription, a Gemini, Z.ai Coding Plan, Kimi Code or OpenRouter API key, or any OpenAI-compatible service, including one you run yourself. See [Connect a model](/docs/providers/).
 - **A network connection** while a chat is working.
 
-## Install Pipkin
+## Install Pigkin
 
-[Download the latest APK](https://github.com/jeph/pipkin/releases/latest) from the releases page on your phone and open it to install. Android asks you to allow installs from your browser or file manager the first time. Later releases install over it as updates and keep your chats and settings.
+[Download the latest APK](https://github.com/freovensh0/pigkin/releases/latest) from the releases page on your phone and open it to install. Android asks you to allow installs from your browser or file manager the first time. Later releases install over it as updates and keep your chats and settings.
 
 ### Build from source
 
 With the Android SDK set up and your phone connected over `adb`, run:
 
 ```sh
-git clone https://github.com/jeph/pipkin.git
-cd pipkin
+git clone https://github.com/freovensh0/pigkin.git
+cd pigkin
 ./gradlew :app:installDebug
 ```
 
 The repository's README lists the full toolchain.
 
-A build from source is named **Pipkin Dev** and installs beside a release. It keeps its files in Termux under `~/.pipkin-dev` instead of `~/.pipkin`, so wherever these docs say `~/.pipkin`, Pipkin Dev uses `~/.pipkin-dev`.
+A build from source is named **Pigkin Dev** and installs beside a release. It keeps its files in Termux under `~/.pigkin-dev` instead of `~/.pigkin`, so wherever these docs say `~/.pigkin`, Pigkin Dev uses `~/.pigkin-dev`.
 
 ## Walk through setup
 
-Open Pipkin and tap **Get started**. Each step shows **Done** once it's complete, and you can go back to any of them later from **Settings → Agent → Permissions**.
+Open Pigkin and tap **Get started**. Each step shows **Done** once it's complete, and you can go back to any of them later from **Settings → Agent → Permissions**.
 
-1. **Install Termux.** Pipkin links to F-Droid and Google Play. Install Termux, then come back to Pipkin. If you have a copy of Termux from somewhere else, Pipkin asks you to uninstall it first.
-2. **Let Pipkin use Termux** (F-Droid build only). Allow **Run commands in Termux environment** when Android asks. This is how Pipkin starts the agent in Termux.
-3. **Set up Termux.** Tap **Copy command & open Termux**. In Termux, long-press, tap **Paste**, and press Enter. The command installs Node.js and connects Termux to Pipkin, then switches back to Pipkin on its own. Android sometimes stops large installs partway; if that happens, paste the command again and it picks up where it left off.
-4. **Notifications** (optional but recommended). Pipkin lets you know when a chat finishes or needs your answer while you're away.
+1. **Install Termux.** Pigkin links to F-Droid and Google Play. Install Termux, then come back to Pigkin. If you have a copy of Termux from somewhere else, Pigkin asks you to uninstall it first.
+2. **Let Pigkin use Termux** (F-Droid build only). Allow **Run commands in Termux environment** when Android asks. This is how Pigkin starts the agent in Termux.
+3. **Set up Termux.** Tap **Copy command & open Termux**. In Termux, long-press, tap **Paste**, and press Enter. The command installs Node.js and connects Termux to Pigkin, then switches back to Pigkin on its own. Android sometimes stops large installs partway; if that happens, paste the command again and it picks up where it left off.
+4. **Notifications** (optional but recommended). Pigkin lets you know when a chat finishes or needs your answer while you're away.
 5. **Run in the background** (optional but recommended). Keeps a chat going while the screen is off or you're in another app.
-6. **Let Termux run in the background** (optional but recommended). The agent runs inside Termux, so Termux needs the same allowance. If Android can't ask directly, Pipkin shows where the setting is on your phone.
+6. **Let Termux run in the background** (optional but recommended). The agent runs inside Termux, so Termux needs the same allowance. If Android can't ask directly, Pigkin shows where the setting is on your phone.
 7. **Let Termux use phone storage** (optional but recommended). Lets the agent work on files outside Termux, such as in Downloads or Documents.
-8. **Install the agent.** Tap **Install**. Pipkin installs Pi and its bundled extensions in Termux. It takes a few minutes, and you can leave the screen while it runs.
+8. **Install the agent.** Tap **Install**. Pigkin installs Pi and its bundled extensions in Termux. It takes a few minutes, and you can leave the screen while it runs.
 9. **Connect a model** (optional here). Sign in with **Claude** or **OpenAI**, add a **Gemini**, **Z.ai**, **Kimi** or **OpenRouter** key and pick its models, or add an **OpenAI-compatible API**. You can also do this later in **Settings → Providers and models**.
 
-When you see **You're all set**, tap **Start using Pipkin**.
+When you see **You're all set**, tap **Start using Pigkin**.
 
 ## Start your first chat
 
-Pipkin organizes chats by **workspace**: a folder the agent works in, usually a project.
+Pigkin organizes chats by **workspace**: a folder the agent works in, usually a project.
 
 1. Open the sidebar and tap **Add workspace**.
 2. Pick a folder under **Termux home** or **Phone storage**, or type a path in the search box, then tap **Add as workspace**. To start fresh, create a folder for your project first.
@@ -65,10 +65,10 @@ A few things to know while it works:
 ## Check the agent's work
 
 - **Files**: open the file explorer from a chat to browse and read files, with syntax highlighting for more than twenty languages. The viewer is read-only; to change a file, ask the agent or use a terminal.
-- **Changes**: in a git repository, see exactly what the agent changed, file by file. Pipkin asks you to trust a repository before it runs git there, because a repository's own settings can run programs.
+- **Changes**: in a git repository, see exactly what the agent changed, file by file. Pigkin asks you to trust a repository before it runs git there, because a repository's own settings can run programs.
 - **Terminal**: tap the tabs button, the square with the tab count at the top of the chat, and choose **New terminal** to open a Termux shell right next to your chat.
 - **The tabs button** opens a sheet with the workspace's tabs, the one on screen first, and under them what that tab can do. For a chat: start another chat, rename it, reload the agent after changing its configuration, copy the session's file path, or archive it. Terminals, files, and commits have the same button.
-- **Auto-archive**: turn on **Settings → Chats → Auto-archive chats** to archive chats you haven't used for 1 to 30 days (7 by default). A chat counts as used when it gets a new message or you open it. Pipkin never archives a chat that's working, running background tasks, or on screen, and you can restore any chat from the archive.
+- **Auto-archive**: turn on **Settings → Chats → Auto-archive chats** to archive chats you haven't used for 1 to 30 days (7 by default). A chat counts as used when it gets a new message or you open it. Pigkin never archives a chat that's working, running background tasks, or on screen, and you can restore any chat from the archive.
 
 On a foldable or tablet, open chats, files, changes, and terminals side by side with **Open in split screen**.
 
@@ -76,10 +76,10 @@ On a foldable or tablet, open chats, files, changes, and terminals side by side 
 
 **The setup command stops partway.** Paste it into Termux again; it resumes where it left off. If it says Node.js couldn't be installed, check your internet connection, then paste the command again.
 
-**Android won't ask for the Termux permission again.** Grant it from Pipkin's app info: **Permissions → Additional permissions → Run commands in Termux environment → Allow**.
+**Android won't ask for the Termux permission again.** Grant it from Pigkin's app info: **Permissions → Additional permissions → Run commands in Termux environment → Allow**.
 
-**Chats stop when the phone is locked.** Allow background activity for both Pipkin and Termux in **Settings → Agent → Permissions**. Some phones name this setting differently, and the step shows where to find it. [Run in the background](/docs/background/) explains what else can stop a chat.
+**Chats stop when the phone is locked.** Allow background activity for both Pigkin and Termux in **Settings → Agent → Permissions**. Some phones name this setting differently, and the step shows where to find it. [Run in the background](/docs/background/) explains what else can stop a chat.
 
-**Pipkin says Termux isn't running or its helper didn't start.** Tap **Open Termux** to see why. Once Termux is running, Pipkin switches back on its own. If Termux asks for the setup command, tap **Set up Termux** in Pipkin.
+**Pigkin says Termux isn't running or its helper didn't start.** Tap **Open Termux** to see why. Once Termux is running, Pigkin switches back on its own. If Termux asks for the setup command, tap **Set up Termux** in Pigkin.
 
-**You reinstalled Termux.** Reinstalling removes Pipkin's setup, the agent, and its sign-ins from Termux. Pipkin walks you through setup again. A [backup](/docs/configure/#back-up-and-restore) brings back your settings, sign-ins, and models.
+**You reinstalled Termux.** Reinstalling removes Pigkin's setup, the agent, and its sign-ins from Termux. Pigkin walks you through setup again. A [backup](/docs/configure/#back-up-and-restore) brings back your settings, sign-ins, and models.

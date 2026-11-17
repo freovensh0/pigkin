@@ -8,11 +8,11 @@ import { rm } from "node:fs/promises";
 import { encodeLine, isObject, LineSplitter } from "../framing.js";
 
 /** Names the bridge's socket in the environment `ssh` passes to its askpass program. */
-export const ASKPASS_SOCKET_VARIABLE = "PIPKIN_ASKPASS_SOCKET";
+export const ASKPASS_SOCKET_VARIABLE = "PIGKIN_ASKPASS_SOCKET";
 
 export type PromptKind = "host_key" | "password" | "passphrase" | "other";
 
-/** A question from `ssh`, as `pipkin_remote_prompt` carries it to the app. */
+/** A question from `ssh`, as `pigkin_remote_prompt` carries it to the app. */
 export interface RemotePrompt {
   kind: PromptKind;
   /** `ssh`'s own text. */
@@ -43,7 +43,7 @@ export function describePrompt(text: string): RemotePrompt {
 }
 
 /**
- * The askpass role, run by `ssh` with its question in [prompt]: asks the bridge at `$PIPKIN_ASKPASS_SOCKET` and prints
+ * The askpass role, run by `ssh` with its question in [prompt]: asks the bridge at `$PIGKIN_ASKPASS_SOCKET` and prints
  * the answer. Returns the exit status, 1 when the question was cancelled, which `ssh` takes for no answer.
  */
 export async function askpass(prompt: string): Promise<number> {

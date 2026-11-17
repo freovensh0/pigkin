@@ -1,19 +1,19 @@
 ---
 title: Acknowledgements
-description: The projects that inspired Pipkin and the open-source software it's built on.
+description: The projects that inspired Pigkin and the open-source software it's built on.
 ---
 
-Pipkin stands on the work of many open-source projects. Thank you to everyone who builds and maintains them.
+Pigkin stands on the work of many open-source projects. Thank you to everyone who builds and maintains them.
 
-The license texts for everything Pipkin ships are in the app under **Settings → About → Open-source licenses**, and the website's are at [/licenses.txt](/licenses.txt).
+The license texts for everything Pigkin ships are in the app under **Settings → About → Open-source licenses**, and the website's are at [/licenses.txt](/licenses.txt).
 
 ## Inspiration
 
-- **[Paseo](https://paseo.sh)**, an open-source app for running coding agents from your desktop and phone. Pipkin's interface started out modelled on Paseo's, and some of its code is adapted from [Paseo's](https://github.com/getpaseo/paseo): the folder search, and the file-type icon table and icon colours.
+- **[Paseo](https://paseo.sh)**, an open-source app for running coding agents from your desktop and phone. Pigkin's interface started out modelled on Paseo's, and some of its code is adapted from [Paseo's](https://github.com/getpaseo/paseo): the folder search, and the file-type icon table and icon colours.
 
 ## The agent
 
-- **[Pi](https://pi.dev)** is the agent harness that does the work. Pipkin installs it in Termux and is compatible with its skills, prompt templates, and extensions.
+- **[Pi](https://pi.dev)** is the agent harness that does the work. Pigkin installs it in Termux and is compatible with its skills, prompt templates, and extensions.
 - **[Termux](https://termux.dev)** is the Linux environment on Android where the agent, your files, and your tools live.
 
 ## The app
@@ -28,11 +28,11 @@ The license texts for everything Pipkin ships are in the app under **Settings �
 ## Local models
 
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)**, with [ggml](https://github.com/ggml-org/ggml), [KleidiAI](https://github.com/ARM-software/kleidiai), and the [OpenCL headers](https://github.com/KhronosGroup/OpenCL-Headers), and **[LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM)** run [local models](/docs/local-models/) on the phone.
-- The models themselves come from **[Qwen](https://huggingface.co/Qwen)**, **[Google](https://huggingface.co/google)**, and **[Mistral AI](https://huggingface.co/mistralai)**, in builds by their makers and by **[Unsloth](https://huggingface.co/unsloth)**, **[LiteRT Community](https://huggingface.co/litert-community)**, and **[ggml](https://huggingface.co/ggml-org)**. Pipkin downloads them when you ask; their licenses are listed under [Model licenses](/docs/local-models/#model-licenses).
+- The models themselves come from **[Qwen](https://huggingface.co/Qwen)**, **[Google](https://huggingface.co/google)**, and **[Mistral AI](https://huggingface.co/mistralai)**, in builds by their makers and by **[Unsloth](https://huggingface.co/unsloth)**, **[LiteRT Community](https://huggingface.co/litert-community)**, and **[ggml](https://huggingface.co/ggml-org)**. Pigkin downloads them when you ask; their licenses are listed under [Model licenses](/docs/local-models/#model-licenses).
 
 ## The bundled extensions and host
 
-- **[pi-web-access](https://github.com/nicobailon/pi-web-access)**: Pipkin's web search and page fetching extension is a modified copy. It uses [Mozilla Readability](https://github.com/mozilla/readability), [Defuddle](https://github.com/kepano/defuddle), [linkedom](https://github.com/WebReflection/linkedom), [Turndown](https://github.com/mixmark-io/turndown), [undici](https://github.com/nodejs/undici), [unpdf](https://github.com/unjs/unpdf), the [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk), and [p-limit](https://github.com/sindresorhus/p-limit).
+- **[pi-web-access](https://github.com/nicobailon/pi-web-access)**: Pigkin's web search and page fetching extension is a modified copy. It uses [Mozilla Readability](https://github.com/mozilla/readability), [Defuddle](https://github.com/kepano/defuddle), [linkedom](https://github.com/WebReflection/linkedom), [Turndown](https://github.com/mixmark-io/turndown), [undici](https://github.com/nodejs/undici), [unpdf](https://github.com/unjs/unpdf), the [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk), and [p-limit](https://github.com/sindresorhus/p-limit).
 - **[rpiv-todo](https://github.com/juicesharp/rpiv-mono)**: the to-do list extension's tool texts come from it.
 - **[jsdiff](https://github.com/kpdecker/jsdiff)** parses diffs, and **[TypeBox](https://github.com/sinclairzx81/typebox)** builds the extensions' tool schemas.
 

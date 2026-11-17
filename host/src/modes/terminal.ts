@@ -18,22 +18,22 @@ import { remoteFolder } from "./remote-folder.js";
  * Termux's `login`, which starts the user's login shell the way a Termux session does.
  */
 const SHELL_COMMAND =
-  'stty rows "$PIPKIN_ROWS" cols "$PIPKIN_COLS" && tty > "$PIPKIN_TTY" && unset PIPKIN_ROWS PIPKIN_COLS PIPKIN_TTY && exec login';
+  'stty rows "$PIGKIN_ROWS" cols "$PIGKIN_COLS" && tty > "$PIGKIN_TTY" && unset PIGKIN_ROWS PIGKIN_COLS PIGKIN_TTY && exec login';
 /**
  * [SHELL_COMMAND] for a remote workspace: the same sizing and recording, then `ssh -tt` running the remote user's login
  * shell in remote folder [path] ([sessionScript], which waits while the server refuses the master a session), so
  * resizes reach it as `ssh` forwards the window size. `ssh` never prompts here, as in every background call; its own
- * messages go to the file named by `PIPKIN_SSH_ERRORS`, so a failed connection can be told from the shell's output.
+ * messages go to the file named by `PIGKIN_SSH_ERRORS`, so a failed connection can be told from the shell's output.
  * The remote shell's own errors come through the terminal, as `-tt` merges them there. Run by `sh`, whose quoting
  * [quote] writes.
  */
 export function remoteShellCommand(remote: Remote, path: string): string {
   const session = sessionScript(remote, remoteScript(`cd -- ${quote(path)} && exec "$SHELL" -l`), { flags: ["-tt"] });
   return [
-    'stty rows "$PIPKIN_ROWS" cols "$PIPKIN_COLS"',
-    'tty > "$PIPKIN_TTY"',
-    'exec 2>"$PIPKIN_SSH_ERRORS"',
-    "unset PIPKIN_ROWS PIPKIN_COLS PIPKIN_TTY PIPKIN_SSH_ERRORS",
+    'stty rows "$PIGKIN_ROWS" cols "$PIGKIN_COLS"',
+    'tty > "$PIGKIN_TTY"',
+    'exec 2>"$PIGKIN_SSH_ERRORS"',
+    "unset PIGKIN_ROWS PIGKIN_COLS PIGKIN_TTY PIGKIN_SSH_ERRORS",
     `{\n${session}\n}`,
   ].join(" && ");
 }
@@ -52,7 +52,7 @@ async function remoteFailure(remote: Remote, code: number | null, errors: string
   return classifySshFailure(errors, { name: remote.host.name, auth: remote.host.auth, interactive: false }) ?? unreachable(remote.host.name, "Connection lost");
 }
 
-/** Output the host holds while Pipkin is not reading; above it the shell waits until Pipkin reads again. */
+/** Output the host holds while Pigkin is not reading; above it the shell waits until Pigkin reads again. */
 const OUTPUT_BACKLOG_LIMIT = 4 * 1024 * 1024;
 const STDERR_TAIL = 16 * 1024;
 /** How long a resize waits for the shell to record its terminal, which it does as it starts. */
@@ -67,7 +67,7 @@ const BUSY_POLL_MS = 1000;
 const BUSY_POLLS = 2;
 /**
  * Polls in a row that must find no work before the host reports the shell idle, so a poll landing between two
- * commands of one command line doesn't let Pipkin's keep-alive go, which it may not get back from the background.
+ * commands of one command line doesn't let Pigkin's keep-alive go, which it may not get back from the background.
  */
 const IDLE_POLLS = 3;
 
@@ -225,7 +225,7 @@ class Resizer {
         if (device === undefined) return;
         await execFileAsync(this.stty, ["-F", device, "rows", String(rows), "cols", String(cols)]).catch(
           (error: unknown) => {
-            process.stderr.write(`pipkin-host terminal: resize failed: ${String(error)}\n`);
+            process.stderr.write(`pigkin-host terminal: resize failed: ${String(error)}\n`);
           },
         );
       }
@@ -246,13 +246,13 @@ class Resizer {
 
 /**
  * Runs the user's login shell on a pseudo-terminal in `cwd`, through util-linux's `script` from Termux's bootstrap.
- * After the request the connection stays JSONL both ways: Pipkin sends `input` (base64 bytes) and `resize`
+ * After the request the connection stays JSONL both ways: Pigkin sends `input` (base64 bytes) and `resize`
  * (`rows`, `cols`); the host sends `output` (base64 bytes), `busy` (`busy`) whenever work starts or stops running in
- * the shell, and, once the shell has gone, one `pipkin_exit`. Closing the connection ends the shell.
+ * the shell, and, once the shell has gone, one `pigkin_exit`. Closing the connection ends the shell.
  *
  * A remote workspace's stand-in as `cwd` runs the remote user's login shell in the remote folder over `ssh` instead.
  * Its busy flag stays idle, as the remote's processes can't be seen from here. When the connection fails, the
- * terminal shows why on a line of its own, and `pipkin_exit` carries it as `error` (`{code, message, i18n}`).
+ * terminal shows why on a line of its own, and `pigkin_exit` carries it as `error` (`{code, message, i18n}`).
  */
 export async function terminal(ctx: ModeContext): Promise<void> {
   const cwd = stringParam(ctx.params, "cwd");
@@ -273,12 +273,12 @@ export async function terminal(ctx: ModeContext): Promise<void> {
     ...base,
     TERM: "xterm-256color",
     COLORTERM: "truecolor",
-    PIPKIN_ROWS: String(rows),
-    PIPKIN_COLS: String(cols),
-    PIPKIN_TTY: deviceFile,
+    PIGKIN_ROWS: String(rows),
+    PIGKIN_COLS: String(cols),
+    PIGKIN_TTY: deviceFile,
   };
   // `script` runs its command with `$SHELL`, which may be fish; the remote command is quoted for `sh`.
-  if (folder !== null) Object.assign(env, { SHELL: join(ctx.env.prefix, "bin", "sh"), PIPKIN_SSH_ERRORS: errorsFile });
+  if (folder !== null) Object.assign(env, { SHELL: join(ctx.env.prefix, "bin", "sh"), PIGKIN_SSH_ERRORS: errorsFile });
   const command = folder === null ? SHELL_COMMAND : remoteShellCommand(folder.remote, folder.path);
   const child = spawn(join(ctx.env.prefix, "bin", "script"), ["-qfec", command, "/dev/null"], { cwd, env, stdio: ["pipe", "pipe", "pipe"] });
   const { conn } = ctx;
@@ -327,7 +327,7 @@ export async function terminal(ctx: ModeContext): Promise<void> {
     void (async () => {
       const failure = await connectionFailure(code).catch(() => ({}));
       await rm(deviceFile, { force: true }).catch(() => undefined);
-      conn.send({ type: "pipkin_exit", code, signal, stderr, ...failure });
+      conn.send({ type: "pigkin_exit", code, signal, stderr, ...failure });
       conn.finish();
     })();
   };

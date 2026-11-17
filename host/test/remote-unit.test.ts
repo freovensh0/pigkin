@@ -88,34 +88,34 @@ describe("hosts store", () => {
   });
 
   it("generates the config with a block per key or password host, and none for a config host", () => {
-    const paths = remotePaths("/data/home/.pipkin/pi", "/data/usr", "/data/home");
+    const paths = remotePaths("/data/home/.pigkin/pi", "/data/usr", "/data/home");
     const hosts = [
       host({ id: "aaaaaaaaaaaa", address: "me@devbox.lan", port: 2222 }),
       host({ id: "bbbbbbbbbbbb", name: "pw", auth: "password", address: "[::1]", port: 22 }),
       host({ id: "cccccccccccc", name: "cfg", auth: "config", address: "box", port: null }),
     ];
     const config = sshConfig(paths, hosts, true);
-    expect(config).toBe(`# Written by Pipkin from hosts.json; changes here are overwritten.
+    expect(config).toBe(`# Written by Pigkin from hosts.json; changes here are overwritten.
 Host *
   ServerAliveInterval 15
   ServerAliveCountMax 2
   ConnectTimeout 15
-  UserKnownHostsFile /data/home/.pipkin/ssh/known_hosts /data/home/.ssh/known_hosts
+  UserKnownHostsFile /data/home/.pigkin/ssh/known_hosts /data/home/.ssh/known_hosts
   HashKnownHosts no
   WarnWeakCrypto no
 
-Host pipkin-aaaaaaaaaaaa
+Host pigkin-aaaaaaaaaaaa
   HostName devbox.lan
   User me
   Port 2222
-  IdentityFile /data/home/.pipkin/ssh/id_ed25519
+  IdentityFile /data/home/.pigkin/ssh/id_ed25519
   IdentitiesOnly yes
   PreferredAuthentications publickey
 
-Host pipkin-bbbbbbbbbbbb
+Host pigkin-bbbbbbbbbbbb
   HostName ::1
   Port 22
-  IdentityFile /data/home/.pipkin/ssh/id_ed25519
+  IdentityFile /data/home/.pigkin/ssh/id_ed25519
   IdentitiesOnly yes
   PreferredAuthentications password,keyboard-interactive
 
@@ -124,7 +124,7 @@ Match all
 `);
     // An OpenSSH older than 10.1 would refuse the whole file over an option it doesn't know.
     expect(sshConfig(paths, hosts, false)).not.toContain("WarnWeakCrypto");
-    expect(sshConfig(remotePaths("/data/home/.pipkin/pi", "/data/usr", "/my home"), [], false)).toContain('Include "/my home/.ssh/config"');
+    expect(sshConfig(remotePaths("/data/home/.pigkin/pi", "/data/usr", "/my home"), [], false)).toContain('Include "/my home/.ssh/config"');
   });
 
   it("keeps both of two saves made at once, writes private files, and drops hand-broken entries on load", async () => {
@@ -136,7 +136,7 @@ Match all
     expect((await loadHosts(paths)).map((saved) => saved.name)).toEqual(["a", "b"]);
     expect((await stat(path.join(paths.ssh, "hosts.json"))).mode & 0o777).toBe(0o600);
     expect((await stat(paths.ssh)).mode & 0o777).toBe(0o700);
-    expect(await readFile(path.join(paths.ssh, "config"), "utf8")).toContain("Host pipkin-bbbbbbbbbbbb");
+    expect(await readFile(path.join(paths.ssh, "config"), "utf8")).toContain("Host pigkin-bbbbbbbbbbbb");
 
     const file = path.join(paths.ssh, "hosts.json");
     const good = await loadHosts(paths);
@@ -257,7 +257,7 @@ describe("ssh failure classification", () => {
   });
 
   it("asks for a connect when batch mode can't sign in to a password or config host", () => {
-    const denied = "pipkin@10.0.2.2: Permission denied (password,keyboard-interactive).\n";
+    const denied = "pigkin@10.0.2.2: Permission denied (password,keyboard-interactive).\n";
     expect(classifySshFailure(denied, { ...batch, auth: "password" })?.code).toBe("remote_not_connected");
     expect(classifySshFailure(denied, { ...batch, auth: "config" })?.code).toBe("remote_not_connected");
     expect(classifySshFailure(denied, { ...batch, auth: "password", interactive: true })?.code).toBe("remote_auth_failed");
@@ -296,10 +296,10 @@ describe("askpass prompts", () => {
   });
 
   it.each([
-    ["pipkin@10.0.2.2's password: ", "password"],
-    ["(pipkin@10.0.2.2) Password: ", "password"],
+    ["pigkin@10.0.2.2's password: ", "password"],
+    ["(pigkin@10.0.2.2) Password: ", "password"],
     ["Enter passphrase for key '/data/home/.ssh/id_ed25519': ", "passphrase"],
-    ["(pipkin@10.0.2.2) Verification code: ", "other"],
+    ["(pigkin@10.0.2.2) Verification code: ", "other"],
     ["Allow shared connection to box? ", "other"],
     ["The host's key is new to us.\nAre you sure you want to continue connecting (yes/no)? ", "host_key"],
   ])("calls %j a %s prompt", (text, kind) => {

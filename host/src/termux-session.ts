@@ -50,7 +50,7 @@ async function captureSessionEnv(env: HostEnv, base: NodeJS.ProcessEnv): Promise
 /**
  * The environment for Pi: what a Termux session exports after its profile and `~/.bashrc`, such as API keys and PATH
  * additions, so Pi, its extensions and the commands it runs see what `pi` in a Termux terminal would. The startup files
- * run without the host's own variables, and Pipkin's config directory wins over one the user exports. Falls back to the
+ * run without the host's own variables, and Pigkin's config directory wins over one the user exports. Falls back to the
  * host's environment, minus its own variables, when the capture fails.
  */
 export async function termuxSessionEnv(env: HostEnv): Promise<NodeJS.ProcessEnv> {

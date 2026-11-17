@@ -48,7 +48,7 @@ const OPENROUTER_ENTRY = {
 };
 
 function success(models: unknown[]): JsonObject {
-  return { type: "pipkin_result", ok: true, data: { models } };
+  return { type: "pigkin_result", ok: true, data: { models } };
 }
 
 /** Endpoints that fail the way real servers do, keyed by `/models` path. */
@@ -133,7 +133,7 @@ describe("provider_models and model_defaults", () => {
     await removeDirs(dirs);
   });
 
-  /** Runs provider_models against the local endpoint and returns the whole `pipkin_result`. */
+  /** Runs provider_models against the local endpoint and returns the whole `pigkin_result`. */
   async function fetchModels(): Promise<JsonObject> {
     return await runOp("provider_models", dirs, { baseUrl, apiKey: "sk-test", api: "openai-responses" });
   }

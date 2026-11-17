@@ -12,7 +12,7 @@ import { quote, remoteScript, watched } from "./script.js";
 
 const run = promisify(execFile);
 
-/** One host to run on, and where Pipkin's SSH state is. */
+/** One host to run on, and where Pigkin's SSH state is. */
 export interface Remote {
   paths: RemotePaths;
   host: Host;
@@ -91,7 +91,7 @@ export async function sshInstalled(paths: RemotePaths): Promise<boolean> {
   }
 }
 
-/** The options every `ssh` call shares: Pipkin's config and the host's master connection. */
+/** The options every `ssh` call shares: Pigkin's config and the host's master connection. */
 function connectionArgs(remote: Remote): string[] {
   return ["-F", sshConfigFile(remote.paths), "-o", `ControlPath=${configWord(controlPath(remote.paths, remote.host.id))}`];
 }
@@ -128,13 +128,13 @@ export function sshArgs(remote: Remote, command: string, signIn: SignIn = "backg
 }
 
 /** The variable naming the file a [masterOptions] call creates when its master didn't carry the session. */
-const FALLBACK_FILE = "PIPKIN_SSH_FALLBACK";
+const FALLBACK_FILE = "PIGKIN_SSH_FALLBACK";
 
 /**
  * Options, up to the destination, of a call only [remote]'s running master may carry. `ssh` that can't use the master,
  * because the server refused it one more session past its `MaxSessions` or the master is gone, falls back to a
  * connection of its own, which a password host can't sign in on; the `ProxyCommand` that connection would go through
- * only creates the file `$PIPKIN_SSH_FALLBACK` names, so the call ends at once with nothing run on the remote, and the
+ * only creates the file `$PIGKIN_SSH_FALLBACK` names, so the call ends at once with nothing run on the remote, and the
  * caller can tell. `ssh`'s own messages stay out of the command's stderr: a session the master carries has none, and
  * the fallback's mean nothing. The `ProxyCommand` runs in `$SHELL`, which the caller sets to `sh` ([masterEnvironment]).
  */
@@ -169,7 +169,7 @@ const RETRY_MAX_MS = 2_000;
  * call, so tests can shorten it.
  */
 function sessionWaitMs(): number {
-  return Number(process.env.PIPKIN_REMOTE_SESSION_WAIT_MS ?? 30_000);
+  return Number(process.env.PIGKIN_REMOTE_SESSION_WAIT_MS ?? 30_000);
 }
 
 /**
@@ -237,7 +237,7 @@ export async function disconnect(remote: Remote): Promise<void> {
 }
 
 /**
- * Removes [remote]'s entries from Pipkin's `known_hosts` (`ssh-keygen -R`), so the next connect asks about its key
+ * Removes [remote]'s entries from Pigkin's `known_hosts` (`ssh-keygen -R`), so the next connect asks about its key
  * again. The name `ssh` files the key under comes from `ssh -G`, which also resolves a `config` host's alias.
  * `~/.ssh/known_hosts` is never written, so a key the user accepted there stays.
  */
@@ -292,7 +292,7 @@ export interface RunOptions {
  * The silence [RunOptions.idleTimeoutMs] allows calls the user waits on: past `ConnectTimeout` (15 s), so without a
  * master `ssh`'s own connect error comes first. Tests shorten it.
  */
-export const READ_IDLE_MS = Number(process.env.PIPKIN_REMOTE_IDLE_MS ?? 20_000);
+export const READ_IDLE_MS = Number(process.env.PIGKIN_REMOTE_IDLE_MS ?? 20_000);
 /** How long a check of a silent call's connection waits for the remote to run a no-op. */
 const PROBE_TIMEOUT_MS = 5_000;
 

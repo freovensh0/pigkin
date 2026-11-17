@@ -132,9 +132,9 @@ export function newHostId(): string {
   return randomBytes(6).toString("hex");
 }
 
-/** The name `ssh` connects to: Pipkin's own `Host` block, or the user's alias. */
+/** The name `ssh` connects to: Pigkin's own `Host` block, or the user's alias. */
 export function destination(host: Host): string {
-  return host.auth === "config" ? host.address : `pipkin-${host.id}`;
+  return host.auth === "config" ? host.address : `pigkin-${host.id}`;
 }
 
 /** [value] as one word of an OpenSSH config line or `-o` option. */
@@ -149,7 +149,7 @@ export function configWord(value: string): string {
  */
 export function sshConfig(paths: RemotePaths, hosts: readonly Host[], quietWeakCrypto: boolean): string {
   const lines = [
-    "# Written by Pipkin from hosts.json; changes here are overwritten.",
+    "# Written by Pigkin from hosts.json; changes here are overwritten.",
     "Host *",
     // A silent server ends the connection after (count + 1) unanswered intervals: 45 s.
     "  ServerAliveInterval 15",
@@ -198,7 +198,7 @@ let knowsWarnWeakCrypto = false;
 async function supportsWarnWeakCrypto(paths: RemotePaths): Promise<boolean> {
   if (knowsWarnWeakCrypto) return true;
   const { promise, resolve } = Promise.withResolvers<boolean>();
-  execFile(join(paths.bin, "ssh"), ["-G", "-F", "/dev/null", "-o", "WarnWeakCrypto=no", "pipkin-probe"], { timeout: 10_000 }, (error) => {
+  execFile(join(paths.bin, "ssh"), ["-G", "-F", "/dev/null", "-o", "WarnWeakCrypto=no", "pigkin-probe"], { timeout: 10_000 }, (error) => {
     resolve(error === null);
   });
   knowsWarnWeakCrypto = await promise;
@@ -213,7 +213,7 @@ export async function writeSshConfig(paths: RemotePaths, hosts?: readonly Host[]
 }
 
 /**
- * Writes `ssh/config` again from the saved hosts, so a change in what this Pipkin writes there reaches hosts saved by
+ * Writes `ssh/config` again from the saved hosts, so a change in what this Pigkin writes there reaches hosts saved by
  * an older one, which would otherwise keep its settings until they were edited. Nothing before the first host.
  */
 export async function refreshSshConfig(paths: RemotePaths): Promise<void> {

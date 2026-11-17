@@ -107,10 +107,10 @@ describe("subscription_models", () => {
   });
 
   it("has no list for Gemini, whose models come from Pi's catalogue", async () => {
-    expect(await runOp("subscription_models", dirs, { providerId: "google" })).toEqual({ type: "pipkin_result", ok: true, data: {} });
+    expect(await runOp("subscription_models", dirs, { providerId: "google" })).toEqual({ type: "pigkin_result", ok: true, data: {} });
   });
 
-  it.each(["anthropic", "vercel-ai-gateway"])("refuses %s, which Pipkin doesn't connect with a key", async (providerId) => {
+  it.each(["anthropic", "vercel-ai-gateway"])("refuses %s, which Pigkin doesn't connect with a key", async (providerId) => {
     expect(await runOp("subscription_models", dirs, { providerId })).toMatchObject({ ok: false, code: "bad_params" });
   });
 

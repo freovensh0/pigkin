@@ -34,7 +34,7 @@ export class Connection {
       this.receive(line);
     });
     const hangUp = (): void => {
-      this.abort.abort(new Error("Pipkin closed the connection"));
+      this.abort.abort(new Error("Pigkin closed the connection"));
     };
     socket.on("data", this.onData);
     socket.on("error", () => {
@@ -96,7 +96,7 @@ export class Connection {
     try {
       message = JSON.parse(line);
     } catch {
-      process.stderr.write("pipkin-host: ignoring malformed line\n");
+      process.stderr.write("pigkin-host: ignoring malformed line\n");
       return;
     }
     if (!isObject(message)) return;

@@ -1,17 +1,17 @@
 /**
- * Pipkin's channel between the Pi extensions it bundles and the app. The host starts Pi with one more socket, on
+ * Pigkin's channel between the Pi extensions it bundles and the app. The host starts Pi with one more socket, on
  * fd [CHANNEL_FD], that carries JSONL both ways: `{"topic":…,"data":…}` per line. Lines from Pi reach the app as
- * `{"type":"pipkin_channel","topic":…,"data":…}`, merged into Pi's RPC output only between two of Pi's lines; lines the
- * app sends Pi with that type go to the socket instead of Pi's stdin. Private to Pipkin: the app and the extensions
+ * `{"type":"pigkin_channel","topic":…,"data":…}`, merged into Pi's RPC output only between two of Pi's lines; lines the
+ * app sends Pi with that type go to the socket instead of Pi's stdin. Private to Pigkin: the app and the extensions
  * ship together, so topics need no versioning.
  */
 import { isObject, LineSplitter, LineTooLong, MAX_LINE } from "./framing.js";
 
 export const CHANNEL_FD = 3;
-export const CHANNEL_TYPE = "pipkin_channel";
+export const CHANNEL_TYPE = "pigkin_channel";
 
-/** The topic of the host's first line on the socket, which tells an extension the far end is Pipkin's host. */
-export const HELLO_TOPIC = "pipkin";
+/** The topic of the host's first line on the socket, which tells an extension the far end is Pigkin's host. */
+export const HELLO_TOPIC = "pigkin";
 
 /** The app's messages to the extensions are small state: requests, never transcripts or images. */
 export const MAX_CHANNEL_LINE = 1024 * 1024;

@@ -54,12 +54,12 @@ function folderName(): string {
 }
 
 /**
- * Makes a fresh folder under the remote's `${XDG_CACHE_HOME:-~/.cache}/pipkin/attachments` and returns its path, as
+ * Makes a fresh folder under the remote's `${XDG_CACHE_HOME:-~/.cache}/pigkin/attachments` and returns its path, as
  * the remote's shell expands it.
  */
 async function remoteFolder(remote: Remote): Promise<string> {
   const script = [
-    `d="\${XDG_CACHE_HOME:-$HOME/.cache}/pipkin/attachments/"${quote(folderName())}`,
+    `d="\${XDG_CACHE_HOME:-$HOME/.cache}/pigkin/attachments/"${quote(folderName())}`,
     `mkdir -p -- "$d" || exit 1`,
     `printf '%s' "$d"`,
   ].join("\n");
@@ -70,7 +70,7 @@ async function remoteFolder(remote: Remote): Promise<string> {
 
 /**
  * Writes files attached in the app where Pi's tools can read them; Pi's RPC `prompt` itself only carries images. For
- * a chat on the phone that's a fresh folder under `$PIPKIN_ROOT/attachments`. For a remote chat, whose `cwd` is a
+ * a chat on the phone that's a fresh folder under `$PIGKIN_ROOT/attachments`. For a remote chat, whose `cwd` is a
  * stand-in, the tools work on the remote, so the files go to a fresh folder in its cache, and the paths are the
  * remote's.
  */

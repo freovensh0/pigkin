@@ -26,7 +26,7 @@ import { stringParam } from "../params.js";
 import { runningPi, waitForPiExit } from "../pi-processes.js";
 import { readTar, tarStream, TarError, type TarEntry } from "../tar.js";
 
-const FORMAT = "pipkin-config-backup";
+const FORMAT = "pigkin-config-backup";
 const VERSION = 1;
 const MANIFEST = "manifest.json";
 const MAX_MANIFEST = 64 * 1024;
@@ -71,13 +71,13 @@ function progress(ctx: ModeContext, verb: string, key: string): (count: number) 
     if (Date.now() - last < PROGRESS_INTERVAL_MS) return;
     last = Date.now();
     const line = `${verb} ${count} ${count === 1 ? "item" : "items"}`;
-    ctx.conn.send({ type: "pipkin_progress", line, lineI18n: { key, args: { count } } });
+    ctx.conn.send({ type: "pigkin_progress", line, lineI18n: { key, args: { count } } });
   };
 }
 
-/** The failure of a file whose manifest doesn't make it a Pipkin backup. */
+/** The failure of a file whose manifest doesn't make it a Pigkin backup. */
 function notBackup(): HostError {
-  return new HostError("not_backup", "This file is not a Pipkin configuration backup", { key: "backup_not_pipkin" });
+  return new HostError("not_backup", "This file is not a Pigkin configuration backup", { key: "backup_not_pigkin" });
 }
 
 /** Reads the first `size` bytes of an open file, then closes it. */
@@ -145,12 +145,12 @@ async function* configEntries(configDir: string, counted: (count: number) => voi
   yield* walk(configDir, "");
 }
 
-/** A fresh name, `pipkin-config-20261015T143000Z.tar.gz`, with a counter when one already has that second. */
+/** A fresh name, `pigkin-config-20261015T143000Z.tar.gz`, with a counter when one already has that second. */
 async function newBackupName(dir: string): Promise<string> {
   const stamp = new Date().toISOString().replaceAll(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
   const taken = new Set(await readdir(dir));
   for (let counter = 1; ; counter++) {
-    const name = counter === 1 ? `pipkin-config-${stamp}.tar.gz` : `pipkin-config-${stamp}-${counter}.tar.gz`;
+    const name = counter === 1 ? `pigkin-config-${stamp}.tar.gz` : `pigkin-config-${stamp}-${counter}.tar.gz`;
     if (!taken.has(name)) return name;
   }
 }
@@ -184,8 +184,8 @@ async function parseManifest(entry: TarEntry): Promise<Manifest> {
   }
   if (manifest === null || typeof manifest !== "object" || !("format" in manifest) || manifest.format !== FORMAT) throw notBackup();
   if (!("version" in manifest) || manifest.version !== VERSION) {
-    throw new HostError("backup_version", "This backup is from a newer Pipkin; update Pipkin to restore it", {
-      key: "backup_from_newer_pipkin",
+    throw new HostError("backup_version", "This backup is from a newer Pigkin; update Pigkin to restore it", {
+      key: "backup_from_newer_pigkin",
     });
   }
   const createdAt = "createdAt" in manifest && typeof manifest.createdAt === "string" ? manifest.createdAt : "";

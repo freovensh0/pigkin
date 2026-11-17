@@ -54,7 +54,7 @@ describe("subscription model settings and scope", () => {
     return isObject(settings) ? settings.enabledModels : undefined;
   }
 
-  it("writes only overrides that differ from Pi's catalogue and keeps what Pipkin doesn't manage", async () => {
+  it("writes only overrides that differ from Pi's catalogue and keeps what Pigkin doesn't manage", async () => {
     await writeJson(modelsPath, {
       providers: {
         anthropic: {
@@ -125,7 +125,7 @@ describe("subscription model settings and scope", () => {
     expect(await providerIds("anthropic")).not.toContain("gone");
   });
 
-  it("builds a scope from an empty one, default model first, keeping settings Pipkin doesn't manage", async () => {
+  it("builds a scope from an empty one, default model first, keeping settings Pigkin doesn't manage", async () => {
     await writeJson(modelsPath, { providers: { "my-lb": LB } });
     await writeJson(settingsPath, { theme: "dark", defaultProvider: "my-lb", defaultModel: "lb-1" });
     expect(await save("anthropic", ["claude-opus-4-8"], [])).toMatchObject({ ok: true });

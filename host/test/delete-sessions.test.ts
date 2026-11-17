@@ -29,7 +29,7 @@ describe("delete_sessions mode", () => {
   it("deletes every session file it is given", async () => {
     const a = await session("a.jsonl");
     const b = await session("b.jsonl");
-    expect(await runOp("delete_sessions", dirs, { paths: [a, b] })).toEqual({ type: "pipkin_result", ok: true, data: {} });
+    expect(await runOp("delete_sessions", dirs, { paths: [a, b] })).toEqual({ type: "pigkin_result", ok: true, data: {} });
     await expect(access(a)).rejects.toThrow(/ENOENT/);
     await expect(access(b)).rejects.toThrow(/ENOENT/);
   });

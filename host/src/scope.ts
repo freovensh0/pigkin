@@ -7,14 +7,14 @@ import { BUILTIN_PROVIDERS, hiddenUntilPicked } from "./runtime.js";
 export type ScopeModel = { provider: string; id: string; name?: string; unusable?: true };
 /** One model in scope, with the thinking level its pattern named (`provider/id:high`). */
 export type ScopeRef = { provider: string; id: string; thinkingLevel?: string };
-/** Matches patterns like Pipkin's scope; `usableOnly` like Pi at startup, against the models it can use. */
+/** Matches patterns like Pigkin's scope; `usableOnly` like Pi at startup, against the models it can use. */
 export type ScopeResolver = (patterns: readonly string[], options?: { usableOnly?: boolean }) => Promise<ScopeRef[]>;
 
 const GLOB = /[*?[]/;
 
 /**
  * The models Pi matches `enabledModels` against at startup (those it can use now), plus every model of
- * the providers Pipkin connects, marked `unusable`, so they can be scoped before sign-in. A provider
+ * the providers Pigkin connects, marked `unusable`, so they can be scoped before sign-in. A provider
  * whose models the user picks from its list after sign-in counts only once signed in.
  */
 export async function scopeUniverse(runtime: ModelRuntime, signal: AbortSignal): Promise<ScopeModel[]> {
@@ -38,7 +38,7 @@ export function replaceProviderModels(universe: readonly ScopeModel[], provider:
 export function scopeResolver(pi: PiSdk, universe: readonly ScopeModel[]): ScopeResolver {
   const usable = universe.filter((model) => model.unusable !== true);
   return async (patterns, { usableOnly = false } = {}) => {
-    // Pi's resolver only calls getAvailable(); this hands it Pipkin's model list instead of a runtime's.
+    // Pi's resolver only calls getAvailable(); this hands it Pigkin's model list instead of a runtime's.
     const source = { getAvailable: () => Promise.resolve(usableOnly ? usable : universe) } as unknown as ModelRuntime;
     const { scopedModels } = await pi.resolveModelScopeWithDiagnostics([...patterns], source);
     return scopedModels.map(({ model, thinkingLevel }) =>
@@ -47,7 +47,7 @@ export function scopeResolver(pi: PiSdk, universe: readonly ScopeModel[]): Scope
   };
 }
 
-/** A pattern written as `provider/…`, which Pipkin treats as belonging to that provider. */
+/** A pattern written as `provider/…`, which Pigkin treats as belonging to that provider. */
 function ownedBy(pattern: string, provider: string): boolean {
   return pattern.toLowerCase().startsWith(`${provider.toLowerCase()}/`);
 }
@@ -98,10 +98,10 @@ async function everyProvider(universe: readonly ScopeModel[], resolve: ScopeReso
 /**
  * The pattern a scope with no model holds, since Pi reads an empty `enabledModels` as every model. Its
  * prefix can't be a provider id (no provider id starts with `_`), so it names no provider, matches no
- * model, and Pipkin's model list shows nothing. Pi, finding no match for any pattern, still starts a
+ * model, and Pigkin's model list shows nothing. Pi, finding no match for any pattern, still starts a
  * chat on its default model.
  */
-export const NO_MODELS = "_pipkin/no-models";
+export const NO_MODELS = "_pigkin/no-models";
 
 /**
  * All models of every provider but `provider` and those hidden until picked, for a scope that must not

@@ -16,7 +16,7 @@ import { createRuntime, loginType, modelListPath } from "../runtime.js";
 export async function subscriptionModels(ctx: ModeContext): Promise<JsonObject> {
   const providerId = stringParam(ctx.params, "providerId");
   if (loginType(providerId) !== "api_key") {
-    throw new HostError("bad_params", `${providerId} is not a provider Pipkin connects with an API key`);
+    throw new HostError("bad_params", `${providerId} is not a provider Pigkin connects with an API key`);
   }
   const path = modelListPath(providerId);
   if (path === undefined) return {};

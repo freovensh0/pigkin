@@ -63,28 +63,28 @@ const OPERATIONS: Record<string, (ctx: ModeContext) => Promise<JsonObject>> = {
 
 async function answer(ctx: ModeContext, op: unknown, params: unknown): Promise<JsonObject> {
   const run = typeof op === "string" && Object.hasOwn(OPERATIONS, op) ? OPERATIONS[op] : undefined;
-  if (run === undefined) return { type: "pipkin_result", ok: false, error: `Unknown operation ${String(op)}`, code: "unknown_op" };
-  if (!isObject(params)) return { type: "pipkin_result", ok: false, error: "Expected params", code: "bad_request" };
+  if (run === undefined) return { type: "pigkin_result", ok: false, error: `Unknown operation ${String(op)}`, code: "unknown_op" };
+  if (!isObject(params)) return { type: "pigkin_result", ok: false, error: "Expected params", code: "bad_request" };
   try {
-    return { type: "pipkin_result", ok: true, data: await run({ ...ctx, params }) };
+    return { type: "pigkin_result", ok: true, data: await run({ ...ctx, params }) };
   } catch (error) {
     return failure(error);
   }
 }
 
 /**
- * Long-lived host for the app's one-off requests ([OPERATIONS]): sends `pipkin_utility_ready`, then answers each
- * `pipkin_utility_request {id, op, params}` concurrently with the `pipkin_result` that operation's own host would have
+ * Long-lived host for the app's one-off requests ([OPERATIONS]): sends `pigkin_utility_ready`, then answers each
+ * `pigkin_utility_request {id, op, params}` concurrently with the `pigkin_result` that operation's own host would have
  * sent, carrying the request's `id`, until the app hangs up. Pi's SDK is imported once, by the first request that
  * needs it, so the app restarts this host after `ensure` installs another Pi.
  */
 export async function utility(ctx: ModeContext): Promise<JsonObject> {
-  ctx.conn.send({ type: "pipkin_utility_ready" });
+  ctx.conn.send({ type: "pigkin_utility_ready" });
   // Returning exits the process, so a hang-up first lets a save in progress finish its write.
   const inFlight = new Set<Promise<void>>();
   ctx.conn.listen((message) => {
     const { id } = message;
-    if (message.type !== "pipkin_utility_request" || typeof id !== "number") return;
+    if (message.type !== "pigkin_utility_request" || typeof id !== "number") return;
     const sent = answer(ctx, message.op, message.params).then((result) => ctx.conn.send({ ...result, id }));
     inFlight.add(sent);
     void sent.finally(() => inFlight.delete(sent));

@@ -1,0 +1,125 @@
+package io.pigkin.ui.git
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import io.pigkin.R
+import io.pigkin.ui.components.LucideIcon
+import io.pigkin.ui.files.Spinner
+import io.pigkin.ui.onboarding.PrimaryButton
+import io.pigkin.ui.theme.PigkinTokens
+import io.pigkin.ui.theme.pigkinColors
+
+/**
+ * A note in place of a diff, centred on a card: a spinner first while [loading], then [text] if any, then Connect when
+ * [onConnect] is given, for a remote host only the user can sign in to or check the key of.
+ */
+@Composable
+internal fun DiffNote(
+  text: String?,
+  modifier: Modifier = Modifier,
+  loading: Boolean = false,
+  onConnect: (() -> Unit)? = null,
+) {
+  val colors = pigkinColors
+  NoteCard(modifier, Alignment.Center, PigkinTokens.Spacing.s8) {
+    if (loading) Spinner(PigkinTokens.IconSize.md, contentDescription = null)
+    if (text != null) {
+      Text(
+        text = text,
+        color = colors.foregroundMuted,
+        fontSize = PigkinTokens.FontSize.base,
+        textAlign = TextAlign.Center,
+      )
+    }
+    if (onConnect != null) {
+      PrimaryButton(
+        text = stringResource(R.string.remote_connect),
+        onClick = onConnect,
+        modifier = Modifier.padding(top = PigkinTokens.Spacing.s4),
+      )
+    }
+  }
+}
+
+/** A diff too large to send, on a card: a file warning on its tile over the title and how to narrow it. */
+@Composable
+internal fun DiffTooLarge(modifier: Modifier = Modifier) {
+  val colors = pigkinColors
+  NoteCard(modifier, Alignment.TopCenter, PigkinTokens.Spacing.s12) {
+    Box(
+      modifier = Modifier.size(36.dp).background(colors.warningSoft, RoundedCornerShape(PigkinTokens.Radius.md)),
+      contentAlignment = Alignment.Center,
+    ) {
+      LucideIcon(
+        icon = R.drawable.ic_lucide_file_warning,
+        contentDescription = null,
+        size = PigkinTokens.IconSize.lg,
+        tint = colors.dotWarning,
+      )
+    }
+    Column(
+      verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s4),
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      Text(
+        text = stringResource(R.string.git_diff_too_large_title),
+        color = colors.foreground,
+        fontSize = PigkinTokens.FontSize.content,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+      )
+      Text(
+        text = stringResource(R.string.git_diff_too_large_description),
+        color = colors.foregroundMuted,
+        fontSize = PigkinTokens.FontSize.meta,
+        textAlign = TextAlign.Center,
+      )
+    }
+  }
+}
+
+/**
+ * A diff card holding a note's [content] centred, the card placed at [alignment] in the space a diff would fill and no
+ * wider than a note, so a wide screen centres it.
+ */
+@Composable
+private fun NoteCard(
+  modifier: Modifier,
+  alignment: Alignment,
+  spacing: Dp,
+  content: @Composable ColumnScope.() -> Unit,
+) {
+  Box(
+    modifier = modifier.fillMaxSize().padding(horizontal = CARD_MARGIN, vertical = PigkinTokens.Spacing.s24),
+    contentAlignment = alignment,
+  ) {
+    Column(
+      modifier = Modifier
+        .widthIn(max = PigkinTokens.noteMaxWidth)
+        .fillMaxWidth()
+        .background(pigkinColors.surface1, CardShape)
+        .padding(PigkinTokens.Spacing.s24),
+      verticalArrangement = Arrangement.spacedBy(spacing),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      content = content,
+    )
+  }
+}

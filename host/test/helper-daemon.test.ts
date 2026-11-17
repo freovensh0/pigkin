@@ -18,7 +18,7 @@ import {
   sessionKeys,
 } from "../src/helper/protocol.js";
 
-const bundle = path.join(path.dirname(inject("hostBundle")), "pipkin-helper.mjs");
+const bundle = path.join(path.dirname(inject("hostBundle")), "pigkin-helper.mjs");
 const KEY = randomBytes(32);
 
 interface Env {
@@ -36,10 +36,10 @@ const children: ChildProcess[] = [];
 const servers: Server[] = [];
 
 beforeEach(async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "pipkin-helper-"));
+  const root = await mkdtemp(path.join(os.tmpdir(), "pigkin-helper-"));
   const prefix = path.join(root, "usr");
   const home = path.join(root, "home");
-  const dir = path.join(home, ".pipkin", "helper");
+  const dir = path.join(home, ".pigkin", "helper");
   const amLog = path.join(root, "am.log");
   await mkdir(path.join(prefix, "bin"), { recursive: true });
   await mkdir(dir, { recursive: true, mode: 0o700 });
@@ -184,12 +184,12 @@ describe("helper daemon", () => {
     expect(await readFile(path.join(env.home, "out.txt"), "utf8")).toBe("hello there\n");
     expect(await readdir(file("launches"))).toEqual([]);
 
-    connection.send({ type: "return", package: "io.jeph.pipkin.debug" });
+    connection.send({ type: "return", package: "io.pigkin.debug" });
     expect(await connection.next()).toEqual({ type: "returned", ok: true });
     expect(await readFile(env.amLog, "utf8")).toBe(
-      "start --user 0 --activity-reorder-to-front -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n io.jeph.pipkin.debug/io.jeph.pipkin.MainActivity\n",
+      "start --user 0 --activity-reorder-to-front -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n io.pigkin.debug/io.pigkin.MainActivity\n",
     );
-    connection.send({ type: "return", package: "io.jeph.pipkin; rm -rf /" });
+    connection.send({ type: "return", package: "io.pigkin; rm -rf /" });
     expect(await connection.next()).toEqual({ type: "returned", ok: false });
 
     connection.send({ type: "launch", args: "nope", stdin: "" });
@@ -401,14 +401,14 @@ describe("helper pair", () => {
 
   async function pairWith(status: number): Promise<{ code: number | null; stderr: string }> {
     const server = createHttpServer((request, response) => {
-      response.writeHead(request.url === `/pipkin/${sid}/key` ? status : 404, { "Cache-Control": "no-store" });
+      response.writeHead(request.url === `/pigkin/${sid}/key` ? status : 404, { "Cache-Control": "no-store" });
       response.end(status === 200 ? body : "");
     });
     server.listen(0, "127.0.0.1");
     await once(server, "listening");
     try {
-      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/pipkin/${sid}`;
-      const child = runHelper(["pair"], { PIPKIN_URL: url, PIPKIN_TOKEN: token });
+      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/pigkin/${sid}`;
+      const child = runHelper(["pair"], { PIGKIN_URL: url, PIGKIN_TOKEN: token });
       let stderr = "";
       child.stderr?.on("data", (chunk: Buffer) => {
         stderr += chunk.toString();
@@ -420,7 +420,7 @@ describe("helper pair", () => {
     }
   }
 
-  it("writes the key from Pipkin", async () => {
+  it("writes the key from Pigkin", async () => {
     await rm(file("key"));
     expect(await pairWith(200)).toEqual({ code: 0, stderr: "" });
     expect(await readFile(file("key"), "utf8")).toBe(`${vectorKey}\n`);
@@ -432,9 +432,9 @@ describe("helper pair", () => {
     expect(await readFile(file("key"), "utf8")).toBe(`${KEY.toString("hex")}\n`);
   });
 
-  it("fails with a Pipkin message on other answers", async () => {
+  it("fails with a Pigkin message on other answers", async () => {
     const { code, stderr } = await pairWith(500);
     expect(code).toBe(1);
-    expect(stderr).toMatch(/^Pipkin: .+\n$/);
+    expect(stderr).toMatch(/^Pigkin: .+\n$/);
   });
 });

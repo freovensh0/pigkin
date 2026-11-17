@@ -20,7 +20,7 @@ describe("files mode", () => {
     await writeFile(path.join(outside, "secret.txt"), "secret");
     ({ run } = await startHost("files", dirs));
     await run.next();
-    run.send({ type: "pipkin_request", params: {} });
+    run.send({ type: "pigkin_request", params: {} });
   });
 
   afterEach(async () => {
@@ -38,12 +38,12 @@ describe("files mode", () => {
     }
   }
 
-  const list = (target: string) => request("pipkin_files_list", { path: target });
-  const read = (target: string) => request("pipkin_files_read", { path: target });
+  const list = (target: string) => request("pigkin_files_list", { path: target });
+  const read = (target: string) => request("pigkin_files_read", { path: target });
   const names = async (target: string) => ((await list(target))?.entries as { name: string }[] | undefined)?.map((entry) => entry.name);
 
   it("starts with a ready message", async () => {
-    expect(await run.next()).toEqual({ type: "pipkin_files_ready" });
+    expect(await run.next()).toEqual({ type: "pigkin_files_ready" });
   });
 
   it("lists folders first, then by name ignoring case and reading numbers, dot entries included", async () => {
@@ -58,7 +58,7 @@ describe("files mode", () => {
     await mkdir(path.join(workspace, "src", "lib"));
     const { mtimeMs } = await stat(file);
     expect(await list("src")).toEqual({
-      type: "pipkin_files_listing",
+      type: "pigkin_files_listing",
       id: nextId,
       path: "src",
       entries: [
@@ -96,19 +96,19 @@ describe("files mode", () => {
     await symlink(outside, path.join(workspace, "escape"));
     expect(await list("escape")).toMatchObject({ entries: [], error: "That path is outside the workspace." });
     const missingRoot = path.join(dirs.base, "nowhere");
-    expect(await request("pipkin_files_list", { root: missingRoot, path: "." })).toMatchObject({
+    expect(await request("pigkin_files_list", { root: missingRoot, path: "." })).toMatchObject({
       entries: [],
       error: `Folder not found: ${missingRoot}`,
       errorI18n: { key: "folder_not_found", args: { path: missingRoot } },
     });
-    expect(await request("pipkin_files_list", { root: "relative", path: "." })).toMatchObject({ error: "Folder not found: relative" });
+    expect(await request("pigkin_files_list", { root: "relative", path: "." })).toMatchObject({ error: "Folder not found: relative" });
   });
 
   it("ignores malformed requests", async () => {
-    run.send({ type: "pipkin_files_list", id: "1", root: workspace, path: "." });
-    run.send({ type: "pipkin_files_list", id: 1000, path: "." });
-    run.send({ type: "pipkin_files_mkdir", id: 1001, root: workspace, path: "." });
-    run.send({ type: "pipkin_files_list", id: 1002, root: workspace, path: "." });
+    run.send({ type: "pigkin_files_list", id: "1", root: workspace, path: "." });
+    run.send({ type: "pigkin_files_list", id: 1000, path: "." });
+    run.send({ type: "pigkin_files_mkdir", id: 1001, root: workspace, path: "." });
+    run.send({ type: "pigkin_files_list", id: 1002, root: workspace, path: "." });
     const seen: unknown[] = [];
     for (;;) {
       const message = await run.next();
@@ -123,7 +123,7 @@ describe("files mode", () => {
     await writeFile(path.join(workspace, "empty.txt"), "");
     await writeFile(path.join(workspace, "icon.svg"), "<svg/>");
     expect(await read("src/hello.md")).toEqual({
-      type: "pipkin_files_file",
+      type: "pigkin_files_file",
       id: nextId,
       path: "src/hello.md",
       size: Buffer.byteLength("héllo 👋\n"),
@@ -168,25 +168,25 @@ describe("files mode", () => {
   });
 
   it("makes a folder inside another and names it relative to the workspace", async () => {
-    expect(await request("pipkin_files_mkdir", { path: "src", name: " lib " })).toEqual({ type: "pipkin_files_made", id: nextId, path: "src/lib" });
+    expect(await request("pigkin_files_mkdir", { path: "src", name: " lib " })).toEqual({ type: "pigkin_files_made", id: nextId, path: "src/lib" });
     expect((await stat(path.join(workspace, "src", "lib"))).isDirectory()).toBe(true);
-    expect(await request("pipkin_files_mkdir", { path: ".", name: "docs" })).toMatchObject({ path: "docs" });
+    expect(await request("pigkin_files_mkdir", { path: ".", name: "docs" })).toMatchObject({ path: "docs" });
   });
 
   it("refuses folder names that are taken or invalid, and parents outside the workspace", async () => {
     await writeFile(path.join(workspace, "taken"), "");
-    expect(await request("pipkin_files_mkdir", { path: ".", name: "src" })).toMatchObject({
+    expect(await request("pigkin_files_mkdir", { path: ".", name: "src" })).toMatchObject({
       error: "A file or folder named src already exists.",
     });
-    expect(await request("pipkin_files_mkdir", { path: ".", name: "taken" })).toMatchObject({
+    expect(await request("pigkin_files_mkdir", { path: ".", name: "taken" })).toMatchObject({
       error: "A file or folder named taken already exists.",
     });
     for (const name of ["", "  ", ".", "..", "a/b", "a\0b"]) {
-      const reply = await request("pipkin_files_mkdir", { path: ".", name });
+      const reply = await request("pigkin_files_mkdir", { path: ".", name });
       expect(reply).toMatchObject({ error: expect.stringContaining("Folder names") });
       expect(reply).not.toHaveProperty("path");
     }
-    expect(await request("pipkin_files_mkdir", { path: "..", name: "sneaky" })).toMatchObject({ error: "That path is outside the workspace." });
+    expect(await request("pigkin_files_mkdir", { path: "..", name: "sneaky" })).toMatchObject({ error: "That path is outside the workspace." });
     await expect(stat(path.join(dirs.base, "sneaky"))).rejects.toThrow("ENOENT");
   });
 });

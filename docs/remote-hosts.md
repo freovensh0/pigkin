@@ -3,26 +3,26 @@ title: Remote hosts
 description: Work on a project on another computer over SSH, while the agent keeps running on your phone.
 ---
 
-A remote host is a computer of your own, such as a desktop, a home server, or a cloud machine, that Pipkin reaches over SSH. A workspace can be a folder on one: the agent keeps running on your phone, while its tools, the file explorer, git, and terminals work on the host.
+A remote host is a computer of your own, such as a desktop, a home server, or a cloud machine, that Pigkin reaches over SSH. A workspace can be a folder on one: the agent keeps running on your phone, while its tools, the file explorer, git, and terminals work on the host.
 
 Nothing is installed on the host. It needs an SSH server and `bash`, which most Linux and macOS machines already have, and `git` if you want the git pane.
 
 ## Add a host
 
-1. Open **Settings → Remote hosts** and tap **Add host**. The first time, Pipkin offers to install OpenSSH in Termux; tap **Install OpenSSH** and wait for it to finish.
+1. Open **Settings → Remote hosts** and tap **Add host**. The first time, Pigkin offers to install OpenSSH in Termux; tap **Install OpenSSH** and wait for it to finish.
 2. Give the host a **Name**, which is how the sidebar and chats refer to it, such as `devbox`.
 3. Enter its **Address** as `user@host`, for example `me@devbox.lan`, `me@192.168.1.20`, or `me@[fd00::1]`, and its **Port** if it isn't 22.
 4. Choose how to **Sign in with**:
-   - **Pipkin's key.** Pipkin makes an SSH key for itself the first time you need it. Tap **Copy public key** and add that line to `~/.ssh/authorized_keys` on the host.
-   - **Password.** Pipkin asks for the password the first time it connects. With **Remember password** ticked, it saves the password on this phone once it signs in, and fills it in from then on.
+   - **Pigkin's key.** Pigkin makes an SSH key for itself the first time you need it. Tap **Copy public key** and add that line to `~/.ssh/authorized_keys` on the host.
+   - **Password.** Pigkin asks for the password the first time it connects. With **Remember password** ticked, it saves the password on this phone once it signs in, and fills it in from then on.
    - **Use my ~/.ssh/config.** For a host you've already set up in Termux's own `~/.ssh/config`, with your own keys or jump hosts. The address is then the `Host` name from that file.
 5. Tap **Connect** to check that it works, or **Save**.
 
 ### The host's key
 
-The first time Pipkin connects to a host, it shows the host's key fingerprint and asks whether to trust it. Check that it matches the host's own, for example by running `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the host, then tap **Trust and connect**.
+The first time Pigkin connects to a host, it shows the host's key fingerprint and asks whether to trust it. Check that it matches the host's own, for example by running `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the host, then tap **Trust and connect**.
 
-If the key a host sends later doesn't match the one you trusted, Pipkin refuses to connect and warns you: someone may be intercepting the connection. When you know why the key changed, for example because the server was reinstalled, open the host in **Settings → Remote hosts**, tap **Forget host key**, and connect again to check the new one.
+If the key a host sends later doesn't match the one you trusted, Pigkin refuses to connect and warns you: someone may be intercepting the connection. When you know why the key changed, for example because the server was reinstalled, open the host in **Settings → Remote hosts**, tap **Forget host key**, and connect again to check the new one.
 
 ## Open a folder on a host
 
@@ -39,7 +39,7 @@ The workspace shows in the sidebar beside your other workspaces, with a server b
 | The agent's `read`, `write`, `edit`, and `bash` tools, and `!` commands | The agent itself, and what it sends to your model provider |
 | Background tasks | The output of background tasks and of long `bash` commands, which the agent can still read |
 | The file explorer, git, and terminals | Your chats and their history |
-| Files you attach, which are uploaded to `~/.cache/pipkin/attachments` on the host | Photos you attach, which go to the model with your message |
+| Files you attach, which are uploaded to `~/.cache/pigkin/attachments` on the host | Photos you attach, which go to the model with your message |
 
 A few things work differently in a remote chat:
 
@@ -49,37 +49,37 @@ A few things work differently in a remote chat:
 
 ## Connections
 
-Pipkin keeps one connection per host and shares it between chats, the file explorer, git, and terminals. It closes 10 minutes after anything last used it, and a remote chat on screen counts as using it. A host that signs in with Pipkin's key connects again on its own when it's next needed, and so does one from your `~/.ssh/config` whose key needs no passphrase, and a password host whose password is saved. A host that asks for a passphrase, or for a password that isn't saved, has to be connected again, and the chat, picker, or terminal offers **Connect**.
+Pigkin keeps one connection per host and shares it between chats, the file explorer, git, and terminals. It closes 10 minutes after anything last used it, and a remote chat on screen counts as using it. A host that signs in with Pigkin's key connects again on its own when it's next needed, and so does one from your `~/.ssh/config` whose key needs no passphrase, and a password host whose password is saved. A host that asks for a passphrase, or for a password that isn't saved, has to be connected again, and the chat, picker, or terminal offers **Connect**.
 
-While a remote chat is on screen, Pipkin checks every few seconds that its host still answers. If the network drops or the host stops answering, a warning floats over the top of the chat within about 15 seconds, and you can't send a message until the host can be reached again; anything you type stays in the message box. A terminal ends with the reason and **Restart shell**. **Settings → Remote hosts** shows which hosts are connected, and **Disconnect** closes a host's connection.
+While a remote chat is on screen, Pigkin checks every few seconds that its host still answers. If the network drops or the host stops answering, a warning floats over the top of the chat within about 15 seconds, and you can't send a message until the host can be reached again; anything you type stays in the message box. A terminal ends with the reason and **Restart shell**. **Settings → Remote hosts** shows which hosts are connected, and **Disconnect** closes a host's connection.
 
 ### Saved passwords
 
-A saved password is kept in Pipkin's own storage, encrypted with a key in Android's Keystore, never in Termux. Pipkin fills it in only when SSH asks the same question it answered when you saved it; any other question, such as a one-time code, still comes to you. It doesn't send the password to a host whose key isn't the one you trusted, and the chat says so with **Review**. If the host refuses the password, Pipkin stops sending it and asks you for the current one with **Enter password**. When a connection drops in the background, Pipkin tries again after 30 seconds, then waits longer each time, up to 5 minutes.
+A saved password is kept in Pigkin's own storage, encrypted with a key in Android's Keystore, never in Termux. Pigkin fills it in only when SSH asks the same question it answered when you saved it; any other question, such as a one-time code, still comes to you. It doesn't send the password to a host whose key isn't the one you trusted, and the chat says so with **Review**. If the host refuses the password, Pigkin stops sending it and asks you for the current one with **Enter password**. When a connection drops in the background, Pigkin tries again after 30 seconds, then waits longer each time, up to 5 minutes.
 
 **Settings → Remote hosts** shows **Saved on this phone** under a host's **Password**, and **Forget** deletes it. Changing the host's address or port, or how it signs in, deletes it too, since it was for another server.
 
-SSH runs in Termux, so each sign-in hands the password to SSH there, where a program running in Termux at that moment could read it. Pipkin's key avoids passwords altogether and is the safer choice.
+SSH runs in Termux, so each sign-in hands the password to SSH there, where a program running in Termux at that moment could read it. Pigkin's key avoids passwords altogether and is the safer choice.
 
 ## Make a new key
 
-Pipkin uses one key for every host that signs in with Pipkin's key. **Settings → Remote hosts → Pipkin's key** shows its name, its fingerprint, and the hosts that use it, with **Copy public key**.
+Pigkin uses one key for every host that signs in with Pigkin's key. **Settings → Remote hosts → Pigkin's key** shows its name, its fingerprint, and the hosts that use it, with **Copy public key**.
 
-If someone else may have a copy of the key, tap **Make a new key**. Pipkin deletes the old key on the phone, makes a new one, and closes the connections of the hosts that used it. Those hosts refuse Pipkin until you replace the old Pipkin line in their `~/.ssh/authorized_keys` with the new one, which Pipkin shows you to copy. Pipkin doesn't change `authorized_keys` itself, so remove the old line on each host to stop the old key working there.
+If someone else may have a copy of the key, tap **Make a new key**. Pigkin deletes the old key on the phone, makes a new one, and closes the connections of the hosts that used it. Those hosts refuse Pigkin until you replace the old Pigkin line in their `~/.ssh/authorized_keys` with the new one, which Pigkin shows you to copy. Pigkin doesn't change `authorized_keys` itself, so remove the old line on each host to stop the old key working there.
 
 ## Remove a host
 
 Open the host in **Settings → Remote hosts** and tap **Remove host**. Its workspaces leave the sidebar and their chats are archived, the way removing a workspace does, and anything running in them stops. Nothing on the host changes.
 
-## Where Pipkin keeps it
+## Where Pigkin keeps it
 
-Pipkin keeps what it needs to reach your hosts in Termux, in `~/.pipkin/ssh`:
+Pigkin keeps what it needs to reach your hosts in Termux, in `~/.pigkin/ssh`:
 
 | Path | Holds |
 | --- | --- |
 | `hosts.json` | The hosts you've added |
-| `config` | The OpenSSH configuration Pipkin writes from them. Edits here are overwritten; put your own settings in `~/.ssh/config`, which it includes. |
-| `id_ed25519`, `id_ed25519.pub` | Pipkin's key |
-| `known_hosts` | The host keys you've trusted in Pipkin. Termux's `~/.ssh/known_hosts` is read too, but never changed. |
+| `config` | The OpenSSH configuration Pigkin writes from them. Edits here are overwritten; put your own settings in `~/.ssh/config`, which it includes. |
+| `id_ed25519`, `id_ed25519.pub` | Pigkin's key |
+| `known_hosts` | The host keys you've trusted in Pigkin. Termux's `~/.ssh/known_hosts` is read too, but never changed. |
 
-None of these are in [backups](/docs/configure/), so a backup you share doesn't carry the key. Each remote workspace also has a small folder in `~/.pipkin/remotes` that Pi runs in on the phone, which is how saved chats remember their host and folder.
+None of these are in [backups](/docs/configure/), so a backup you share doesn't carry the key. Each remote workspace also has a small folder in `~/.pigkin/remotes` that Pi runs in on the phone, which is how saved chats remember their host and folder.

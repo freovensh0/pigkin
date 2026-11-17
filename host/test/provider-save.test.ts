@@ -35,7 +35,7 @@ describe("provider_save mode", () => {
   it("adds the provider and keeps other providers and keys", async () => {
     const other = { baseUrl: "http://localhost:11434/v1", api: "openai-completions", apiKey: "x", models: [{ id: "llama" }] };
     await writeFile(modelsPath, JSON.stringify({ extra: true, providers: { local: other } }));
-    expect(await runOp("provider_save", dirs, SAVE)).toEqual({ type: "pipkin_result", ok: true, data: {} });
+    expect(await runOp("provider_save", dirs, SAVE)).toEqual({ type: "pigkin_result", ok: true, data: {} });
     expect(await saved()).toEqual({
       extra: true,
       providers: {
@@ -45,7 +45,7 @@ describe("provider_save mode", () => {
     });
   });
 
-  it("keeps settings Pipkin does not manage and drops cleared fields and models", async () => {
+  it("keeps settings Pigkin does not manage and drops cleared fields and models", async () => {
     const tiers = [{ inputTokensAbove: 272_000, input: 10, output: 45, cacheRead: 1, cacheWrite: 0 }];
     const existing = {
       baseUrl: "https://old.test/v1",
@@ -130,7 +130,7 @@ describe("provider_save mode", () => {
   it("rejects invalid models.json without writing", async () => {
     await writeFile(modelsPath, "{ not json");
     expect(await runOp("provider_save", dirs, SAVE)).toEqual({
-      type: "pipkin_result",
+      type: "pigkin_result",
       ok: false,
       code: "models_invalid",
       error: "models.json is not valid JSON. Ask the agent to fix it.",

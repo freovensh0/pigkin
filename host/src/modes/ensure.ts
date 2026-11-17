@@ -7,7 +7,7 @@ import type { JsonObject } from "../framing.js";
 import { type InstallLock, withInstallLock } from "../install-lock.js";
 import type { ModeContext } from "../mode.js";
 import { stringParam } from "../params.js";
-import { installPipkinExtensions, pipkinExtensionsParam } from "../pipkin-extensions.js";
+import { installPigkinExtensions, pigkinExtensionsParam } from "../pigkin-extensions.js";
 import { refreshSshConfig } from "../remote/hosts.js";
 import { remotePaths } from "../remote/paths.js";
 
@@ -45,7 +45,7 @@ export async function npmCi(ctx: ModeContext, cwd: string, lock: InstallLock): P
   let offline = false;
   const send = (line: string): void => {
     offline ||= isNpmNetworkError(line);
-    ctx.conn.send({ type: "pipkin_progress", line });
+    ctx.conn.send({ type: "pigkin_progress", line });
   };
   // npm at --loglevel=error stays quiet until it's done; this line tells the app it's installing, not just checking.
   send("npm ci");
@@ -89,13 +89,13 @@ export async function npmCi(ctx: ModeContext, cwd: string, lock: InstallLock): P
 
 /**
  * Installs the pinned runtime unless it's already installed in full, or always when `reinstall` is true, then
- * Pipkin's extensions.
+ * Pigkin's extensions.
  */
 export async function ensure(ctx: ModeContext): Promise<JsonObject> {
   const packageJson = stringParam(ctx.params, "packageJson");
   const packageLock = stringParam(ctx.params, "packageLock");
   const expectedVersion = stringParam(ctx.params, "expectedVersion");
-  const pipkinExtensions = pipkinExtensionsParam(ctx.params);
+  const pigkinExtensions = pigkinExtensionsParam(ctx.params);
   const piDir = join(ctx.env.root, "pi");
   await mkdir(piDir, { recursive: true });
   await mkdir(ctx.env.configDir, { recursive: true });
@@ -122,10 +122,10 @@ export async function ensure(ctx: ModeContext): Promise<JsonObject> {
     await npmCi(ctx, piDir, lock);
     await rm(marker, { force: true });
   });
-  await installPipkinExtensions(ctx.env.root, pipkinExtensions);
+  await installPigkinExtensions(ctx.env.root, pigkinExtensions);
   // Remote hosts are secondary here: a hosts file that can't be read mustn't keep local chats from starting.
   await refreshSshConfig(remotePaths(ctx.env.configDir, ctx.env.prefix, ctx.env.home)).catch((error: unknown) => {
-    process.stderr.write(`pipkin-host ensure: couldn't rewrite ssh/config: ${String(error)}\n`);
+    process.stderr.write(`pigkin-host ensure: couldn't rewrite ssh/config: ${String(error)}\n`);
   });
 
   return { piVersion: await installedPiVersion(ctx.env.root) };
