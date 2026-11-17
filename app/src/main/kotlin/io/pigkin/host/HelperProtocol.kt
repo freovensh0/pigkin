@@ -80,14 +80,14 @@ internal object HelperProtocol {
   }
 
   fun serverMac(key: ByteArray, nonceC: ByteArray, nonceS: ByteArray): ByteArray =
-    hmac(key, "pigkin-helper-server", nonceC, nonceS)
+    hmac(key, "pipkin-helper-server", nonceC, nonceS)
 
   fun clientMac(key: ByteArray, nonceC: ByteArray, nonceS: ByteArray): ByteArray =
-    hmac(key, "pigkin-helper-client", nonceC, nonceS)
+    hmac(key, "pipkin-helper-client", nonceC, nonceS)
 
   fun sessionKeys(key: ByteArray, nonceC: ByteArray, nonceS: ByteArray) = SessionKeys(
-    clientToServer = hmac(key, "pigkin-helper-c2s", nonceC, nonceS),
-    serverToClient = hmac(key, "pigkin-helper-s2c", nonceC, nonceS),
+    clientToServer = hmac(key, "pipkin-helper-c2s", nonceC, nonceS),
+    serverToClient = hmac(key, "pipkin-helper-s2c", nonceC, nonceS),
   )
 
   fun hmac(key: ByteArray, label: String, vararg parts: ByteArray): ByteArray {

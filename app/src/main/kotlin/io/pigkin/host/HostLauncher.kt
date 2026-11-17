@@ -220,7 +220,7 @@ private class BinaryServer(bytes: ByteArray, token: String) : AutoCloseable {
           return@Thread
         }
         client.use { connection ->
-          val reader = BufferedReader(InputStreamReader(connection, Charsets.US_ASCII))
+          val reader = BufferedReader(InputStreamReader(connection.getInputStream(), Charsets.US_ASCII))
           val request = reader.readLine() ?: return@use
           var header = reader.readLine()
           while (header?.isNotEmpty() == true) header = reader.readLine()

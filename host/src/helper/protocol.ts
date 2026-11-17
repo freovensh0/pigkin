@@ -21,11 +21,11 @@ function hmac(key: Buffer, label: string, nonceC: Buffer, nonceS: Buffer): Buffe
 }
 
 export function serverMac(key: Buffer, nonceC: Buffer, nonceS: Buffer): Buffer {
-  return hmac(key, "pigkin-helper-server", nonceC, nonceS);
+  return hmac(key, "pipkin-helper-server", nonceC, nonceS);
 }
 
 export function clientMac(key: Buffer, nonceC: Buffer, nonceS: Buffer): Buffer {
-  return hmac(key, "pigkin-helper-client", nonceC, nonceS);
+  return hmac(key, "pipkin-helper-client", nonceC, nonceS);
 }
 
 export interface SessionKeys {
@@ -34,7 +34,7 @@ export interface SessionKeys {
 }
 
 export function sessionKeys(key: Buffer, nonceC: Buffer, nonceS: Buffer): SessionKeys {
-  return { c2s: hmac(key, "pigkin-helper-c2s", nonceC, nonceS), s2c: hmac(key, "pigkin-helper-s2c", nonceC, nonceS) };
+  return { c2s: hmac(key, "pipkin-helper-c2s", nonceC, nonceS), s2c: hmac(key, "pipkin-helper-s2c", nonceC, nonceS) };
 }
 
 export function macEquals(a: Buffer, b: Buffer): boolean {
