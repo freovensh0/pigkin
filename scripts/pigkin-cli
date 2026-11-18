@@ -1,0 +1,90 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Manages packages in Pigkin's Pi config, not PiG's ~/.pig. Install this as $PREFIX/bin/pigkin.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+pigkin - manage packages for Pigkin's agent
+
+Usage:
+  pigkin install <source>       Install a Pi package (npm:, git:, or a local path)
+  pigkin uninstall <source>     Remove a package from Pigkin's config
+  pigkin list                   List packages in Pigkin's config
+  pigkin update                 Update packages in Pigkin's config
+  pigkin config                 Show the paths this CLI uses
+  pigkin help                   Show this text
+
+Use --dev before the command for Pigkin Dev, for example: pigkin --dev list
+PIGKIN_CONFIG_DIR and PIGKIN_ROOT override the paths when set.
+EOF
+}
+
+variant=release
+if [ "${1:-}" = "--dev" ]; then
+  variant=dev
+  shift
+fi
+
+case "$variant" in
+  dev)
+    root="${PIGKIN_ROOT:-$HOME/.local/share/pigkin-dev}"
+    config="${PIGKIN_CONFIG_DIR:-$HOME/.pigkin-dev/pi}"
+    ;;
+  *)
+    root="${PIGKIN_ROOT:-$HOME/.local/share/pigkin}"
+    config="${PIGKIN_CONFIG_DIR:-$HOME/.pigkin/pi}"
+    ;;
+esac
+cli="$root/pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"
+node_bin="${PREFIX:-/data/data/com.termux/files/usr}/bin/node"
+if [ ! -x "$node_bin" ]; then
+  node_bin=$(command -v node || true)
+fi
+
+if [ ! -f "$cli" ]; then
+  printf 'Pigkin agenti kurulu degil: %s\n' "$cli" >&2
+  exit 1
+fi
+if [ -z "$node_bin" ]; then
+  printf 'Node.js bulunamadi.\n' >&2
+  exit 1
+fi
+
+command=${1:-help}
+case "$command" in
+  install|add)
+    shift
+    if [ "$#" -eq 0 ]; then
+      printf 'Kullanim: pigkin install <kaynak>\n' >&2
+      exit 2
+    fi
+    PI_CODING_AGENT_DIR="$config" "$node_bin" "$cli" install "$@"
+    ;;
+  uninstall|remove|rm)
+    shift
+    if [ "$#" -eq 0 ]; then
+      printf 'Kullanim: pigkin uninstall <kaynak>\n' >&2
+      exit 2
+    fi
+    PI_CODING_AGENT_DIR="$config" "$node_bin" "$cli" remove "$@"
+    ;;
+  list|ls)
+    shift
+    PI_CODING_AGENT_DIR="$config" "$node_bin" "$cli" list "$@"
+    ;;
+  update)
+    shift
+    PI_CODING_AGENT_DIR="$config" "$node_bin" "$cli" update "$@"
+    ;;
+  config)
+    printf 'root:   %s\nconfig: %s\ncli:    %s\n' "$root" "$config" "$cli"
+    ;;
+  help|--help|-h|"")
+    usage
+    ;;
+  *)
+    printf 'Bilinmeyen komut: %s\n\n' "$command" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
