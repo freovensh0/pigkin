@@ -71,9 +71,9 @@ var hostExecutable = os.Executable
 var extensionName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
 // ensure refreshes the bundled host binary in Pigkin's managed folder, then
-// installs the pinned Node Pi runtime when the app ships bundled extensions.
-// The Node runtime is what runs fd-3 extension chats and remote chats; the
-// Go-only PiG path needs none of it.
+// installs the pinned Node Pi runtime and every bundled extension when the app
+// ships any. The Node runtime is what runs fd-3 extension chats and remote
+// chats; the Go-only PiG path needs none of it.
 func ensure(ctx *Context) (host.Message, error) {
 	for _, key := range []string{"packageJson", "packageLock", "expectedVersion"} {
 		if _, err := stringParam(ctx.Params, key); err != nil {
@@ -92,6 +92,9 @@ func ensure(ctx *Context) (host.Message, error) {
 	}
 	version, err := ensureNodeRuntime(ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := installPigkinExtensions(ctx.Env.Root, extensions); err != nil {
 		return nil, err
 	}
 	return host.Message{"piVersion": version}, nil

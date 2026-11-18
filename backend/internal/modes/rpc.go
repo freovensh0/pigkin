@@ -92,10 +92,13 @@ func rpc(ctx *Context) (host.Message, error) {
 	}
 	sessionPath, _ := ctx.Params["sessionPath"].(string)
 
-	extensions := installedPigkinExtensions(ctx)
+	extensions, refusal := installedPigkinExtensions(ctx)
+	if refusal != nil {
+		return nil, refusal
+	}
 	if len(extensions) == 0 && remoteWorkspace(ctx.Env, cwd) {
 		// PiG's own RPC backend has no remote tool overrides; only bundled Node Pi can run them.
-		return nil, host.NewError("pi_version", "The agent's bundled extensions are out of date", &host.Text{Key: "agent_extensions_outdated"})
+		return nil, extensionsOutdated()
 	}
 	if len(extensions) > 0 {
 		return rpcWithPi(ctx, cwd, sessionPath, extensions)

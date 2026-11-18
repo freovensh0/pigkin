@@ -134,6 +134,9 @@ func TestEnsureInstallsAndRefreshesHostBinary(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(env.Root, installLockName)); !os.IsNotExist(err) {
 		t.Fatal("install lock was left behind")
 	}
+	if got, err := os.ReadFile(filepath.Join(env.Root, "extensions", "pigkin-todo", "index.js")); err != nil || string(got) != "todo\n" {
+		t.Fatalf("bundled extension = %q (%v)", got, err)
+	}
 
 	if _, err := ensure(ensureContext(t, env, ensureParams())); err != nil {
 		t.Fatal(err)
@@ -159,9 +162,48 @@ func TestEnsureInstallsAndRefreshesHostBinary(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if entry.Name() != "pigkin-host" && entry.Name() != "pi" {
+		if entry.Name() != "pigkin-host" && entry.Name() != "pi" && entry.Name() != "extensions" {
 			t.Fatalf("leftover in root: %s", entry.Name())
 		}
+	}
+}
+
+func TestEnsureInstallsBundledExtensions(t *testing.T) {
+	env := testEnv(t)
+	fakeToolchain(t)
+	stubBundledBinary(t, env.Root, "first build")
+	params := ensureParams()
+	params["pigkinExtensions"] = []any{
+		host.Message{"name": "pigkin-todo", "source": "todo\n", "usesRuntimePackages": false},
+		host.Message{"name": "pigkin-web-access", "source": "web\n", "usesRuntimePackages": true},
+	}
+	if _, err := ensure(ensureContext(t, env, params)); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		path string
+		want string
+	}{
+		{filepath.Join(env.Root, "extensions", "pigkin-todo", "index.js"), "todo\n"},
+		{filepath.Join(env.Root, "pi", "extensions", "pigkin-web-access", "index.js"), "web\n"},
+	} {
+		got, err := os.ReadFile(test.path)
+		if err != nil || string(got) != test.want {
+			t.Fatalf("%s = %q (%v), want %q", test.path, got, err, test.want)
+		}
+	}
+
+	// A tampered file is restored by the next ensure; one that already matches
+	// is left alone.
+	path := filepath.Join(env.Root, "extensions", "pigkin-todo", "index.js")
+	if err := os.WriteFile(path, []byte("changed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ensure(ensureContext(t, env, params)); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(path); string(got) != "todo\n" {
+		t.Fatalf("tampered extension was not restored: %q", got)
 	}
 }
 
@@ -300,7 +342,7 @@ func TestEnsureValidatesParams(t *testing.T) {
 }
 
 func TestUnsupportedSetupModes(t *testing.T) {
-	for _, mode := range []Mode{packageInstall, updateExtensions} {
+	for _, mode := range []Mode{updateExtensions} {
 		_, err := mode(&Context{})
 		hostErr, ok := err.(*host.Error)
 		if !ok || hostErr.Code != "unsupported" {

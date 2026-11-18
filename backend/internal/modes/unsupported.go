@@ -2,11 +2,8 @@ package modes
 
 import "github.com/freovensh0/pigkin/backend/internal/host"
 
-// The Go host has no Node runtime: npm packages and Pi's TypeScript extension
-// updater have nothing to act on. These modes refuse explicitly so the app
-// never reports a package as installed when it isn't.
-func packageInstall(*Context) (host.Message, error) { return unsupported("Installing npm packages") }
-
+// The Go host still has no port of Pi's TypeScript extension updater, so that
+// mode refuses explicitly instead of reporting a success that never happened.
 func updateExtensions(*Context) (host.Message, error) { return unsupported("Updating npm extensions") }
 
 func unsupported(feature string) (host.Message, error) {

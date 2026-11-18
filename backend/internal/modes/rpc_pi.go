@@ -45,6 +45,19 @@ func (t *lockedTail) String() string {
 	return t.buf.String()
 }
 
+// piNode finds the Node.js that runs Pigkin's bundled Pi. Termux installs it
+// under $PREFIX/bin, which a host started at boot may not have on PATH.
+func piNode(env host.Env) (string, error) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		node = filepath.Join(env.Prefix, "bin", "node")
+		if _, statErr := os.Stat(node); statErr != nil {
+			return "", err
+		}
+	}
+	return node, nil
+}
+
 func piEntry(root string) (string, error) {
 	dir := filepath.Join(root, "pi", "node_modules", filepath.FromSlash(piPackage))
 	data, err := os.ReadFile(filepath.Join(dir, "package.json"))
@@ -72,40 +85,39 @@ func piEntry(root string) (string, error) {
 }
 
 // installedPigkinExtensions resolves the paths host/src/pigkin-extensions.ts
-// uses and checks each installed file against the app's fingerprint. A missing
-// or changed file means the app must fall back to the extension-less backend.
-func installedPigkinExtensions(ctx *Context) []pigkinExtension {
+// uses and checks each installed file against the app's fingerprint. When the
+// app named extensions but one is missing or changed, it returns a pi_version
+// refusal so the app runs ensure and retries instead of silently losing every
+// extension. With no fingerprints, the extension-less PiG path is expected.
+func installedPigkinExtensions(ctx *Context) ([]pigkinExtension, *host.Error) {
 	items, ok := ctx.Params["pigkinExtensions"].([]any)
 	if !ok || len(items) == 0 {
-		return nil
+		return nil, nil
 	}
 	extensions := make([]pigkinExtension, 0, len(items))
 	for _, item := range items {
 		obj, ok := item.(map[string]any)
 		if !ok {
-			return nil
+			return nil, extensionsOutdated()
 		}
 		name, _ := obj["name"].(string)
 		fingerprint, _ := obj["sha256"].(string)
 		inRuntime, _ := obj["usesRuntimePackages"].(bool)
 		if !extensionNameRE.MatchString(name) || fingerprint == "" {
-			return nil
+			return nil, extensionsOutdated()
 		}
-		path := filepath.Join(ctx.Env.Root, "extensions", name, "index.js")
-		if inRuntime {
-			path = filepath.Join(ctx.Env.Root, "pi", "extensions", name, "index.js")
-		}
+		path := pigkinExtensionPath(ctx.Env.Root, name, inRuntime)
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return nil
+			return nil, extensionsOutdated()
 		}
 		sum := sha256.Sum256(data)
 		if hex.EncodeToString(sum[:]) != fingerprint {
-			return nil
+			return nil, extensionsOutdated()
 		}
 		extensions = append(extensions, pigkinExtension{name: name, path: path})
 	}
-	return extensions
+	return extensions, nil
 }
 
 type remoteChat struct {
@@ -149,12 +161,9 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 	if err != nil {
 		return nil, host.NewError("pi_version", "The agent's install is incomplete", &host.Text{Key: "agent_install_incomplete"})
 	}
-	node, err := exec.LookPath("node")
+	node, err := piNode(ctx.Env)
 	if err != nil {
-		node = filepath.Join(ctx.Env.Prefix, "bin", "node")
-		if _, statErr := os.Stat(node); statErr != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	remote, err := remoteChatFor(ctx, cwd, extensions)
 	if err != nil {
@@ -164,8 +173,14 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 	if sessionPath != "" {
 		args = append(args, "--session", sessionPath)
 	}
+	// Pi exits when two extensions register the same tools, so the npm copy of
+	// pi-web-access replaces Pigkin's bundled one, as in host/src/modes/rpc.ts.
+	webAccessFromNpm := installedNpmPackage(ctx.Env.ConfigDir, webAccessNpmPackage)
 	for _, extension := range extensions {
 		if remote != nil && extension.name == remoteExtension {
+			continue
+		}
+		if extension.name == webAccessExtension && webAccessFromNpm {
 			continue
 		}
 		args = append(args, "--extension", extension.path)
