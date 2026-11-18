@@ -169,6 +169,12 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 	if err != nil {
 		return nil, err
 	}
+	for _, extension := range extensions {
+		if extension.name == webAccessExtension {
+			defaultWebToolsToEager(ctx.Env.ConfigDir)
+			break
+		}
+	}
 	args := []string{entry, "--mode", "rpc"}
 	if sessionPath != "" {
 		args = append(args, "--session", sessionPath)
