@@ -3,7 +3,7 @@ title: Privacy policy
 description: What data Pigkin keeps on your phone, what leaves it, and where it goes.
 ---
 
-_Last updated: November 4, 2026_
+_Last updated: November 18, 2026_
 
 Pigkin is an app for running the [Pi](https://pi.dev) coding agent in [Termux](https://termux.dev) on your Android phone. It's made by Jeph, an independent developer, and is open source, so you can check everything on this page in [its code](https://github.com/freovensh0/pigkin).
 
@@ -15,7 +15,7 @@ Pigkin is an app for running the [Pi](https://pi.dev) coding agent in [Termux](h
 
 ## What stays on your phone
 
-Pigkin keeps its own settings, such as the theme and the folders you've opened as workspaces, in its private app storage. It also keeps there which chats you've archived, and when you last opened each chat, which auto-archive uses to find chats you haven't used in a while.
+Pigkin keeps its own settings, such as the theme and the folders you've opened as workspaces, in its private app storage. It also keeps there which chats you've archived, and when you last opened each chat, which auto-archive uses to find chats you haven't used in a while. Scheduled tasks you add in **Settings → Scheduled tasks** are kept there too: their prompts, next run times, repeat settings, icons, and whether you want a notification. The result of a run is shown in that notification and isn't saved by Pigkin.
 
 If you turn on [local models](/docs/local-models/) under **Settings → Providers and models**, the models you download are kept in Pigkin's private app storage too, and aren't included in Android's backup. A local model runs entirely on the phone: your messages, the files and command output the agent reads, and the model's replies never leave it. The agent reaches the model over a connection that only accepts requests from the phone itself and only with a key Pigkin gives the agent, so other apps and devices can't use it.
 
@@ -39,7 +39,7 @@ Pigkin opts out of Android's backup to your Google account and of the transfer t
 
 Pigkin sends data off the phone only to do what you ask, and only to these services:
 
-- **Your AI model provider.** The agent sends your messages, the photos you attach, and the parts of your files and command output it reads to the provider you connect, such as Anthropic, OpenAI, Google, Z.ai, Moonshot AI, OpenRouter, or an OpenAI-compatible API you add. OpenRouter passes requests on to the company that runs the model you pick. When you sign in with a subscription, you sign in on the provider's own website. Pigkin also asks a provider you add for its list of models, using the API key you gave it, if any; for Z.ai, Kimi and OpenRouter, that's the list of models your key can use.
+- **Your AI model provider.** The agent sends your messages, the photos you attach, and the parts of your files and command output it reads to the provider you connect, such as Anthropic, OpenAI, Google, Z.ai, Moonshot AI, OpenRouter, or an OpenAI-compatible API you add. A prompt from a scheduled task is sent the same way when it runs. OpenRouter passes requests on to the company that runs the model you pick. When you sign in with a subscription, you sign in on the provider's own website. Pigkin also asks a provider you add for its list of models, using the API key you gave it, if any; for Z.ai, Kimi and OpenRouter, that's the list of models your key can use.
 - **Web search and page fetching.** When the agent searches the web, the bundled web access extension sends the search query to a search service. By default that's [Exa](https://exa.ai), which needs no account, or OpenAI's web search if you've connected OpenAI; you can choose others in its settings. When the agent reads a web page, PDF, or video, it downloads it from the site that hosts it. Depending on the extraction services and credentials you've set up for the extension, such as Gemini or Datalab, it may also send the whole page, PDF, or video link to one of them to read it, separately from your chat's model provider. You can turn the extension off in **Settings → Extensions**.
 - **Your remote hosts.** In a chat on a remote host, the agent's commands run on that host, and the files it reads and writes, and files you attach, travel between the phone and the host over SSH. The file explorer, git, and terminals do the same for a remote workspace. These connections go only to the hosts you add. What the agent reads there goes to your model provider like any other file.
 - **Downloads during setup and updates.** Setup downloads Node.js from Termux's package mirrors and Pi from the [npm registry](https://www.npmjs.com). Adding your first remote host installs OpenSSH from Termux's package mirrors. Installing or updating extensions downloads them from where they're published.
@@ -54,8 +54,8 @@ Pigkin asks for these Android permissions:
 
 - **Run commands in Termux**, to start the agent and its helper in Termux.
 - **Network access**, which Android requires even for Pigkin to talk to its helper in Termux on the same phone.
-- **Notifications**, to tell you when a chat finishes or needs your answer.
-- **Running in the background and keeping the phone awake**, so a chat can keep working while you use other apps or lock the screen.
+- **Notifications**, to tell you when a chat finishes or needs your answer, and when a scheduled task runs if you left its reminder on.
+- **Running in the background and keeping the phone awake**, so a chat can keep working while you use other apps or lock the screen, and so a scheduled task can start at its chosen time, including after a restart.
 - **Asking to uninstall an app**, used only to offer removing a copy of Termux that Pigkin can't use. Android asks you to confirm.
 
 When you attach a photo, Android's photo picker gives Pigkin only the photos you choose. Pigkin itself doesn't ask for access to your contacts, location, camera, microphone, or the rest of your photos and files.
