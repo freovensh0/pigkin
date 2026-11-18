@@ -26,6 +26,10 @@
     <!-- A chat notification's headline, such as Agent finished, then the chat's title. -->
     <string name="chat_notification_title">%1$s: %2$s</string>
 
+    <string name="scheduled_task_notification_channel">Scheduled tasks</string>
+    <string name="scheduled_task_notification_title">Scheduled task</string>
+    <string name="scheduled_task_notification_failed">The scheduled task could not run. It will retry when Pigkin opens.</string>
+
     <!-- Shown over every screen while Pigkin waits for its helper in Termux's Google Play build. -->
     <string name="termux_waking">Starting Pigkin\'s helper in Termux…</string>
 

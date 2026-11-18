@@ -61,6 +61,12 @@ sealed interface Destination {
    */
   data class ArchivedSubagent(val path: String, val toolCallId: String) : Destination
 
+  /** The prompts Pigkin runs at a chosen time, reached from Settings. */
+  data object ScheduledTasks : Destination
+
+  /** [id] null adds a scheduled task; otherwise edits the one with that id. */
+  data class ScheduledTaskEditor(val id: String?) : Destination
+
   /** The remote hosts the user added, reached from Settings. */
   data object RemoteHosts : Destination
 
@@ -126,6 +132,7 @@ class AppNavigator(initial: List<Destination>) {
       is Destination.ModelEditor -> MODEL + d.modelId
       Destination.Archive, is Destination.ArchivedChat, is Destination.ArchivedSubagent -> archiveKey(d)
       Destination.RemoteHosts, is Destination.RemoteHostEditor -> remoteHostKey(d)
+      Destination.ScheduledTasks, is Destination.ScheduledTaskEditor -> scheduledTaskKey(d)
     }
 
     private fun archiveKey(d: Destination): String = when (d) {
@@ -142,11 +149,17 @@ class AppNavigator(initial: List<Destination>) {
       else -> REMOTE_HOSTS
     }
 
+    private fun scheduledTaskKey(d: Destination): String = when (d) {
+      is Destination.ScheduledTaskEditor -> SCHEDULED_TASK + d.id.orEmpty()
+      else -> SCHEDULED_TASKS
+    }
+
     /** The destinations that carry nothing but their key. */
     private val SCREENS = listOf(
       Destination.Main, Destination.Settings, Destination.Permissions, Destination.RunningAgents, Destination.Backups,
       Destination.LocalModels, Destination.Licenses, Destination.Onboarding, Destination.Providers,
       Destination.AddProvider, Destination.AddModels, Destination.Archive, Destination.RemoteHosts,
+      Destination.ScheduledTasks,
     )
 
     private fun destination(key: String): Destination? = when {
@@ -170,6 +183,9 @@ class AppNavigator(initial: List<Destination>) {
 
       key.startsWith(REMOTE_HOST_PICKER) ->
         Destination.RemoteHostEditor(key.removePrefix(REMOTE_HOST_PICKER).ifEmpty { null }, fromPicker = true)
+
+      key.startsWith(SCHEDULED_TASK) ->
+        Destination.ScheduledTaskEditor(key.removePrefix(SCHEDULED_TASK).ifEmpty { null })
 
       else -> null
     }
@@ -195,5 +211,7 @@ class AppNavigator(initial: List<Destination>) {
     private const val REMOTE_HOSTS = "remote-hosts"
     private const val REMOTE_HOST = "remote-host:"
     private const val REMOTE_HOST_PICKER = "remote-host-picker:"
+    private const val SCHEDULED_TASKS = "scheduled-tasks"
+    private const val SCHEDULED_TASK = "scheduled-task:"
   }
 }

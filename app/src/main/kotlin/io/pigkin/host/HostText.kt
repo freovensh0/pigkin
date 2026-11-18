@@ -119,6 +119,9 @@ private val templates: Map<String, Template> = mapOf(
   "agent_extensions_outdated" to Template.Text(R.string.host_agent_extensions_outdated),
   "agent_download_offline" to Template.Text(R.string.host_agent_download_offline),
   "extensions_download_offline" to Template.Text(R.string.host_extensions_download_offline),
+  "scheduled_task_prompt_required" to Template.Text(R.string.host_scheduled_task_prompt_required),
+  "scheduled_task_timed_out" to Template.Text(R.string.host_scheduled_task_timed_out),
+
   "command_failed" to Template.Text(R.string.host_command_failed, listOf("command", "exit")),
   "command_killed" to Template.Text(R.string.host_command_killed, listOf("command")),
 

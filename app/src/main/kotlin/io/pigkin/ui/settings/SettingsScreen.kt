@@ -57,15 +57,7 @@ import kotlinx.coroutines.launch
  * Settings: models, chats, appearance, extensions, agent, remote hosts, configuration and about cards under a header.
  */
 @Composable
-internal fun SettingsScreen(
-  onBack: () -> Unit,
-  onOpenProviders: () -> Unit,
-  onOpenRunningAgents: () -> Unit,
-  onOpenPermissions: () -> Unit,
-  onOpenRemoteHosts: () -> Unit,
-  onOpenBackups: () -> Unit,
-  onOpenLicenses: () -> Unit,
-) {
+internal fun SettingsScreen(nav: SettingsNav) {
   val graph = LocalContext.current.appGraph
   val snackbar = remember { SnackbarStackState() }
   Box(modifier = Modifier.fillMaxSize().background(pigkinColors.surface0)) {
@@ -76,20 +68,11 @@ internal fun SettingsScreen(
           HeaderButton(
             icon = R.drawable.ic_lucide_chevron_left,
             contentDescription = stringResource(R.string.settings_back),
-            onClick = onBack,
+            onClick = nav.onBack,
           )
         },
       )
-      SettingsContent(
-        graph = graph,
-        snackbar = snackbar,
-        onOpenProviders = onOpenProviders,
-        onOpenRunningAgents = onOpenRunningAgents,
-        onOpenPermissions = onOpenPermissions,
-        onOpenRemoteHosts = onOpenRemoteHosts,
-        onOpenBackups = onOpenBackups,
-        onOpenLicenses = onOpenLicenses,
-      )
+      SettingsContent(graph = graph, snackbar = snackbar, nav = nav)
     }
     SnackbarStack(
       snackbar,
@@ -99,16 +82,7 @@ internal fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsContent(
-  graph: AppGraph,
-  snackbar: SnackbarStackState,
-  onOpenProviders: () -> Unit,
-  onOpenRunningAgents: () -> Unit,
-  onOpenPermissions: () -> Unit,
-  onOpenRemoteHosts: () -> Unit,
-  onOpenBackups: () -> Unit,
-  onOpenLicenses: () -> Unit,
-) {
+private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, nav: SettingsNav) {
   Column(
     modifier =
       Modifier
@@ -122,14 +96,19 @@ private fun SettingsContent(
       modifier = Modifier.widthIn(max = PigkinTokens.contentMaxWidth).fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s24),
     ) {
-      ModelsSection(accounts = graph.accountRepository, onOpenProviders = onOpenProviders)
+      ModelsSection(accounts = graph.accountRepository, onOpenProviders = nav.onOpenProviders)
       ChatsSection(preferences = graph.preferences)
+      ScheduledTasksSection(onOpenScheduledTasks = nav.onOpenScheduledTasks)
       AppearanceSection(preferences = graph.preferences)
       ExtensionsSection(graph = graph, snackbar = snackbar)
-      AgentSection(graph = graph, onOpenRunningAgents = onOpenRunningAgents, onOpenPermissions = onOpenPermissions)
-      RemoteHostsSection(remoteHosts = graph.remoteHosts, onOpenRemoteHosts = onOpenRemoteHosts)
-      ConfigurationSection(graph = graph, snackbar = snackbar, onOpenBackups = onOpenBackups)
-      AboutSection(onOpenLicenses = onOpenLicenses)
+      AgentSection(
+        graph = graph,
+        onOpenRunningAgents = nav.onOpenRunningAgents,
+        onOpenPermissions = nav.onOpenPermissions,
+      )
+      RemoteHostsSection(remoteHosts = graph.remoteHosts, onOpenRemoteHosts = nav.onOpenRemoteHosts)
+      ConfigurationSection(graph = graph, snackbar = snackbar, onOpenBackups = nav.onOpenBackups)
+      AboutSection(onOpenLicenses = nav.onOpenLicenses)
     }
   }
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scheduled_settings_section">Automation</string>
+    <string name="scheduled_tasks_title">Scheduled tasks</string>
+    <!-- %1$s is the locale-formatted next run; %2$s is the repeat label. -->
+    <string name="scheduled_task_subtitle">%1$s · %2$s</string>
+    <string name="scheduled_task_paused">Paused</string>
+    <string name="scheduled_tasks_none">No tasks yet</string>
+    <!-- %1$d is the number of saved tasks. -->
+    <string name="scheduled_tasks_count">%1$d saved</string>
+    <string name="scheduled_tasks_empty">No scheduled tasks yet. Add one to run a prompt at a chosen time.</string>
+    <string name="scheduled_add_task">Add task</string>
+    <string name="scheduled_edit_task">Edit task</string>
+    <string name="scheduled_task_prompt">Prompt</string>
+    <string name="scheduled_task_prompt_placeholder">What should Pigkin do?</string>
+    <string name="scheduled_task_date">Date</string>
+    <string name="scheduled_task_time">Time</string>
+    <string name="scheduled_task_recurrence">Repeat</string>
+    <string name="scheduled_once">Once</string>
+    <string name="scheduled_daily">Daily</string>
+    <string name="scheduled_weekly">Weekly</string>
+    <string name="scheduled_monthly">Monthly</string>
+    <string name="scheduled_task_icon">Icon</string>
+    <string name="scheduled_icon_bell">Bell</string>
+    <string name="scheduled_icon_checklist">Checklist</string>
+    <string name="scheduled_icon_repeat">Repeat</string>
+    <string name="scheduled_icon_check">Check</string>
+    <string name="scheduled_icon_shield">Shield</string>
+    <string name="scheduled_task_reminder">Reminder</string>
+    <string name="scheduled_task_reminder_summary">Notify me when this task runs</string>
+    <string name="scheduled_task_enabled">Enabled</string>
+    <string name="scheduled_task_save">Save task</string>
+    <string name="scheduled_task_delete">Delete task</string>
+    <string name="scheduled_delete_title">Delete task?</string>
+    <string name="scheduled_delete_text">This task and its schedule will be removed.</string>
+    <string name="scheduled_task_gone">This task no longer exists.</string>
+    <string name="scheduled_task_invalid_prompt">Enter a prompt first.</string>
+    <string name="scheduled_task_pick_date">Choose a date</string>
+    <string name="scheduled_task_pick_time">Choose a time</string>
+</resources>

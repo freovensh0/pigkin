@@ -33,6 +33,8 @@
     <string name="host_agent_extensions_outdated">The agent\'s bundled extensions are out of date</string>
     <string name="host_agent_download_offline">Couldn\'t download the agent. Check your internet connection, then retry.</string>
     <string name="host_extensions_download_offline">Couldn\'t download the extensions. Check your internet connection, then retry.</string>
+    <string name="host_scheduled_task_prompt_required">A prompt is required.</string>
+    <string name="host_scheduled_task_timed_out">The task took longer than five minutes.</string>
     <!-- %1$s: the command that failed, such as "npm ci" or "pi install"; %2$s: its exit code. -->
     <string name="host_command_failed"><xliff:g id="command" example="npm ci">%1$s</xliff:g> failed (exit <xliff:g id="exit" example="1">%2$s</xliff:g>)</string>
     <!-- %1$s: the command that failed, such as "npm ci" or "pi install", which a signal stopped before it exited. -->

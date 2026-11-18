@@ -66,6 +66,7 @@ var utilityOps = map[string]utilityOp{
 	"remote_disconnect":      remoteDisconnectOp,
 	"remote_forget_host_key": remoteForgetHostKeyOp,
 	"remote_workspace":       remoteWorkspaceOp,
+	"scheduled_task_run":     scheduledTaskRun,
 }
 
 func answerUtility(ctx *Context, op, params any) host.Message {

@@ -23,6 +23,7 @@ import io.pigkin.data.PiExtensionUpdate
 import io.pigkin.data.Preferences
 import io.pigkin.data.RemoteHosts
 import io.pigkin.data.RemotePasswords
+import io.pigkin.data.ScheduledTaskStore
 import io.pigkin.data.SessionArchive
 import io.pigkin.data.SessionRepository
 import io.pigkin.files.FileTabRegistry
@@ -31,6 +32,7 @@ import io.pigkin.host.FileHost
 import io.pigkin.host.GitHost
 import io.pigkin.host.HostClient
 import io.pigkin.localmodel.LocalModels
+import io.pigkin.scheduler.ScheduledTaskAlarms
 import io.pigkin.terminal.TerminalRegistry
 import io.pigkin.ui.chat.ChatViews
 import io.pigkin.ui.sidebar.folderNames
@@ -117,6 +119,7 @@ internal class AppGraph(private val application: Application) {
   }
 
   init {
+    ScheduledTaskStore.init(application)
     holdWhileWorking()
     restartChatsOnceTermuxWorks()
     feedChatInbox()
@@ -132,6 +135,8 @@ internal class AppGraph(private val application: Application) {
           if (preferences.setupComplete.value) {
             sessionRepository.refresh()
             remoteHosts.refresh()
+            ScheduledTaskStore.refresh()
+            ScheduledTaskAlarms.rescheduleAll()
           }
           // Events may have gone missing while Pigkin was in the background.
           for (process in registry.processes.value.values) scope.launch { process.resync() }

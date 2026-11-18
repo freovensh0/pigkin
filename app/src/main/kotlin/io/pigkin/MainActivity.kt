@@ -58,6 +58,9 @@ import io.pigkin.ui.settings.ProvidersScreen
 import io.pigkin.ui.settings.RemoteHostEditorScreen
 import io.pigkin.ui.settings.RemoteHostsScreen
 import io.pigkin.ui.settings.RunningAgentsScreen
+import io.pigkin.ui.settings.ScheduledTaskEditorScreen
+import io.pigkin.ui.settings.ScheduledTasksScreen
+import io.pigkin.ui.settings.SettingsNav
 import io.pigkin.ui.settings.SettingsScreen
 import io.pigkin.ui.settings.SubscriptionScreen
 import io.pigkin.ui.settings.ownsDraft
@@ -199,6 +202,8 @@ private fun Screen(
 
     Destination.RemoteHosts, is Destination.RemoteHostEditor -> RemoteHostPages(top, navigator, actions)
 
+    Destination.ScheduledTasks, is Destination.ScheduledTaskEditor -> ScheduledTaskPages(top, navigator)
+
     Destination.Providers -> ProvidersScreen(
       onBack = { navigator.pop() },
       onAdd = { navigator.push(Destination.AddProvider) },
@@ -303,13 +308,16 @@ private fun SettingsPages(top: Destination, navigator: AppNavigator) {
     is Destination.License -> LicenseScreen(path = top.path, onBack = { navigator.pop() })
 
     else -> SettingsScreen(
-      onBack = { navigator.pop() },
-      onOpenProviders = { navigator.push(Destination.Providers) },
-      onOpenRunningAgents = { navigator.push(Destination.RunningAgents) },
-      onOpenPermissions = { navigator.push(Destination.Permissions) },
-      onOpenRemoteHosts = { navigator.push(Destination.RemoteHosts) },
-      onOpenBackups = { navigator.push(Destination.Backups) },
-      onOpenLicenses = { navigator.push(Destination.Licenses) },
+      SettingsNav(
+        onBack = { navigator.pop() },
+        onOpenProviders = { navigator.push(Destination.Providers) },
+        onOpenRunningAgents = { navigator.push(Destination.RunningAgents) },
+        onOpenPermissions = { navigator.push(Destination.Permissions) },
+        onOpenRemoteHosts = { navigator.push(Destination.RemoteHosts) },
+        onOpenBackups = { navigator.push(Destination.Backups) },
+        onOpenLicenses = { navigator.push(Destination.Licenses) },
+        onOpenScheduledTasks = { navigator.push(Destination.ScheduledTasks) },
+      ),
     )
   }
 }
@@ -337,6 +345,24 @@ private fun RemoteHostPages(top: Destination, navigator: AppNavigator, actions: 
       onBack = { navigator.pop() },
       onAdd = { navigator.push(Destination.RemoteHostEditor(null)) },
       onOpenHost = { navigator.push(Destination.RemoteHostEditor(it)) },
+    )
+  }
+}
+
+/** The scheduled tasks list, or one task's editor. */
+@Composable
+private fun ScheduledTaskPages(top: Destination, navigator: AppNavigator) {
+  when (top) {
+    is Destination.ScheduledTaskEditor -> ScheduledTaskEditorScreen(
+      taskId = top.id,
+      onBack = { navigator.pop() },
+      onDone = { navigator.pop() },
+    )
+
+    else -> ScheduledTasksScreen(
+      onBack = { navigator.pop() },
+      onAdd = { navigator.push(Destination.ScheduledTaskEditor(null)) },
+      onEdit = { navigator.push(Destination.ScheduledTaskEditor(it)) },
     )
   }
 }

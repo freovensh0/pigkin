@@ -22,6 +22,7 @@ import {
   remoteWorkspace,
 } from "./remote-hosts.js";
 import { saveAttachments } from "./save-attachments.js";
+import { scheduledTaskRun } from "./scheduled_task.js";
 import { sessionMessages } from "./session-messages.js";
 import { sessions } from "./sessions.js";
 import { subagentSessions } from "./subagent-sessions.js";
@@ -59,6 +60,7 @@ const OPERATIONS: Record<string, (ctx: ModeContext) => Promise<JsonObject>> = {
   remote_disconnect: remoteDisconnect,
   remote_forget_host_key: remoteForgetHostKey,
   remote_workspace: remoteWorkspace,
+  scheduled_task_run: scheduledTaskRun,
 };
 
 async function answer(ctx: ModeContext, op: unknown, params: unknown): Promise<JsonObject> {
