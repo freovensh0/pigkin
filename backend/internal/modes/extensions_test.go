@@ -75,11 +75,11 @@ func TestPackageInstall(t *testing.T) {
 	script := `#!/bin/sh
 printf '%s\n' "$*" >> ` + channelQuote(argsFile) + `
 printf x >> ` + channelQuote(runsFile) + `
-printf 'installing %s\n' "$3"
 if [ -n "$FAKE_PI_EXIT" ]; then
   printf 'Error: bad source\n' >&2
   exit "$FAKE_PI_EXIT"
 fi
+printf 'installing %s\n' "$3"
 exit 0
 `
 	if err := os.WriteFile(node, []byte(script), 0o755); err != nil {
