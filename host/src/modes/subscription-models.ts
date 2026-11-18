@@ -3,7 +3,7 @@ import { HostError } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
 import { fillMissing, parseModelDef } from "../model-def.js";
-import { fetchModelList } from "../model-list.js";
+import { endpointUrl, fetchModelList } from "../model-list.js";
 import { stringParam } from "../params.js";
 import { createRuntime, loginType, modelListPath } from "../runtime.js";
 
@@ -26,7 +26,7 @@ export async function subscriptionModels(ctx: ModeContext): Promise<JsonObject> 
   if (baseUrl === undefined || apiKey === undefined) {
     throw new HostError("no_key", `No API key is saved for ${providerId}`, { key: "subscription_no_key" });
   }
-  const listed = await fetchModelList(ctx, baseUrl, `${baseUrl.replace(/\/+$/, "")}${path}`, apiKey);
+  const listed = await fetchModelList(ctx, baseUrl, endpointUrl(baseUrl, path), apiKey);
   const known = new Map(runtime.getModels(providerId).map((model) => [model.id, parseModelDef(model.id, model as unknown as JsonObject)]));
   const catalogue = await loadCatalogue(ctx, "openai-completions");
   return {

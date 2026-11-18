@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { JsonObject } from "../src/framing.js";
+import { endpointUrl } from "../src/model-list.js";
 import { type Dirs, installRealPi, makeDirs, removeDirs, runOp } from "./harness.js";
 
 /** Pi 1.5.2's built-in `openai` entry for gpt-5.5 (other providers list different windows and maps). */
@@ -72,6 +73,16 @@ const ODD_LISTS: Record<string, JsonObject> = {
   "/null-data/models": { data: null },
   "/no-data/models": { models: [] },
 };
+
+describe("provider models endpoint URL", () => {
+  it.each([
+    ["https://api.groq.com/openai/v1", "https://api.groq.com/openai/v1/models"],
+    ["https://api.groq.com/openai/v1/", "https://api.groq.com/openai/v1/models"],
+    ["https://api.groq.com/openai/v1?region=us", "https://api.groq.com/openai/v1/models"],
+  ])("appends /models to %s", (baseUrl, expected) => {
+    expect(endpointUrl(baseUrl, "/models")).toBe(expected);
+  });
+});
 
 describe("provider_models and model_defaults", () => {
   let dirs: Dirs;

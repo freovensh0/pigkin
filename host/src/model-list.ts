@@ -10,6 +10,18 @@ const BODY_PREVIEW = 300;
 const HTML_BODY = /^\s*<(!doctype|html|head|body)/i;
 
 /**
+ * Appends a path to a base URL's path, keeping the base's own path (such as Groq's `/openai/v1`) and dropping any
+ * query or fragment, which would otherwise land after the appended path and make the request go nowhere.
+ */
+export function endpointUrl(baseUrl: string, path: string): string {
+  const url = new URL(baseUrl);
+  url.pathname = url.pathname.replace(/\/+$/u, "") + path;
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+/**
  * Fetches an OpenAI-style `/models` list at `url` and reads each entry's capabilities, keyed by id in
  * the server's order. `baseUrl` names the server in messages. Failures carry a code per cause
  * (`network`, `timeout`, `unauthorized`, `not_found`, `rate_limited`, `server_error`, `http_error`,

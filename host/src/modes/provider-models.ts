@@ -3,7 +3,7 @@ import { HostError } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
 import { fillMissing } from "../model-def.js";
-import { fetchModelList } from "../model-list.js";
+import { endpointUrl, fetchModelList } from "../model-list.js";
 import { NO_API_KEY } from "../models-json.js";
 import { stringParam } from "../params.js";
 
@@ -20,7 +20,7 @@ export async function providerModels(ctx: ModeContext): Promise<JsonObject> {
   if (protocol !== "http:" && protocol !== "https:") {
     throw new HostError("bad_url", `${baseUrl} is not an http:// or https:// URL`);
   }
-  const detected = await fetchModelList(ctx, baseUrl, `${baseUrl.replace(/\/+$/, "")}/models`, apiKey);
+  const detected = await fetchModelList(ctx, baseUrl, endpointUrl(baseUrl, "/models"), apiKey);
   const catalogue = await loadCatalogue(ctx, api);
   const models = [...detected.values()].map((model) => fillMissing(model, catalogue(model.id)));
   return { models: models.toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) };

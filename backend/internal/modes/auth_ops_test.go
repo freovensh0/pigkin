@@ -258,6 +258,34 @@ func TestProviderModelsOp(t *testing.T) {
 	}
 }
 
+func TestProviderModelsOpGroqStyleBaseURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/openai/v1/models" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		if r.URL.RawQuery != "" {
+			t.Errorf("query = %s", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"object":"list","data":[{"id":"llama-3.3-70b-versatile"}]}`)
+	}))
+	defer server.Close()
+	env := testEnv(t)
+	// A base URL with a path, an optional trailing slash and a stray query must all resolve to the same models endpoint.
+	for _, base := range []string{server.URL + "/openai/v1", server.URL + "/openai/v1/", server.URL + "/openai/v1?region=us"} {
+		result := runOp(t, env, "provider_models", host.Message{
+			"baseUrl": base, "apiKey": "dummy-key", "api": "openai-completions",
+		})
+		if result["ok"] != true {
+			t.Fatalf("base %s: %v", base, result)
+		}
+		models := asMessages(t, opData(t, result)["models"])
+		if len(models) != 1 || models[0]["id"] != "llama-3.3-70b-versatile" {
+			t.Fatalf("base %s: models = %v", base, models)
+		}
+	}
+}
+
 func TestSubscriptionModelsOp(t *testing.T) {
 	env := testEnv(t)
 	if opCode(runOp(t, env, "subscription_models", host.Message{"providerId": "anthropic"})) != "bad_params" {

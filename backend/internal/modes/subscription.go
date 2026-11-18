@@ -57,7 +57,11 @@ func subscriptionModelsOp(ctx *Context) (host.Message, error) {
 	if baseURL == "" || apiKey == "" {
 		return nil, host.NewError("no_key", "No API key is saved for "+providerID, &host.Text{Key: "subscription_no_key"})
 	}
-	listed, err := fetchModelList(baseURL, strings.TrimRight(baseURL, "/")+path, apiKey)
+	endpoint, err := endpointURL(baseURL, path)
+	if err != nil {
+		return nil, host.NewError("bad_url", baseURL+" is not an http:// or https:// URL", nil)
+	}
+	listed, err := fetchModelList(baseURL, endpoint, apiKey)
 	if err != nil {
 		return nil, err
 	}

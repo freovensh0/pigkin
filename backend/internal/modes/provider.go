@@ -4,7 +4,6 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
-	"strings"
 
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
@@ -36,7 +35,11 @@ func providerModelsOp(ctx *Context) (host.Message, error) {
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return nil, host.NewError("bad_url", baseURL+" is not an http:// or https:// URL", nil)
 	}
-	detected, err := fetchModelList(baseURL, strings.TrimRight(baseURL, "/")+"/models", apiKey)
+	endpoint, err := endpointURL(baseURL, "/models")
+	if err != nil {
+		return nil, host.NewError("bad_url", baseURL+" is not an http:// or https:// URL", nil)
+	}
+	detected, err := fetchModelList(baseURL, endpoint, apiKey)
 	if err != nil {
 		return nil, err
 	}

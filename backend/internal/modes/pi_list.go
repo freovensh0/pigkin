@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,6 +29,23 @@ func providerError(code, message, key string, args host.Message) error {
 		text.Args = args
 	}
 	return host.NewError(code, message, text)
+}
+
+// endpointURL appends path to a base URL's path, keeping the base's own path (such as
+// Groq's `/openai/v1`) and dropping any query or fragment, which would otherwise land
+// after the appended path and make the request go nowhere.
+func endpointURL(baseURL, path string) (string, error) {
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+	endpoint := *parsed
+	endpoint.Path = strings.TrimRight(parsed.Path, "/") + path
+	endpoint.RawPath = ""
+	endpoint.RawQuery = ""
+	endpoint.Fragment = ""
+	endpoint.RawFragment = ""
+	return endpoint.String(), nil
 }
 
 // fetchModelList fetches an OpenAI-style /models list and reads each entry's
