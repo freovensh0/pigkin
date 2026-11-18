@@ -65,4 +65,78 @@ class ScheduledTaskStoreTest {
     assertEquals(at(2025, Calendar.JANUARY, 27), nextDueAtMillis(due, ScheduledTaskRecurrence.WEEKLY, now))
     assertEquals(at(2025, Calendar.FEBRUARY, 20), nextDueAtMillis(due, ScheduledTaskRecurrence.MONTHLY, now))
   }
+
+  @Test
+  fun weeklyPicksTheNextChosenWeekday() {
+    val due = at(2025, Calendar.JANUARY, 20)
+    val days = listOf(Calendar.MONDAY, Calendar.WEDNESDAY)
+
+    assertEquals(
+      at(2025, Calendar.JANUARY, 22),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.WEEKLY, at(2025, Calendar.JANUARY, 21, 8), days),
+    )
+    assertEquals(
+      at(2025, Calendar.JANUARY, 27),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.WEEKLY, at(2025, Calendar.JANUARY, 22, 10), days),
+    )
+  }
+
+  @Test
+  fun anOverdueWeeklyRunSkipsToTheNextChosenWeekday() {
+    val due = at(2020, Calendar.JANUARY, 6)
+    val now = at(2025, Calendar.JANUARY, 23, 12)
+
+    assertEquals(
+      at(2025, Calendar.JANUARY, 27),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.WEEKLY, now, listOf(Calendar.MONDAY)),
+    )
+  }
+
+  @Test
+  fun monthlyUsesTheChosenDaysAndSkipsInvalidOnes() {
+    val due = at(2025, Calendar.JANUARY, 1)
+    val days = listOf(15, 31)
+
+    assertEquals(
+      at(2025, Calendar.JANUARY, 31),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.MONTHLY, at(2025, Calendar.JANUARY, 20), days),
+    )
+    assertEquals(
+      at(2025, Calendar.FEBRUARY, 15),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.MONTHLY, at(2025, Calendar.JANUARY, 31, 10), days),
+    )
+    assertEquals(
+      at(2025, Calendar.MARCH, 31),
+      nextDueAtMillis(due, ScheduledTaskRecurrence.MONTHLY, at(2025, Calendar.FEBRUARY, 20), listOf(31)),
+    )
+  }
+
+  @Test
+  fun aFailedRunPausesTheTaskWithoutAdvancingIt() {
+    val task = ScheduledTask(
+      id = "task",
+      prompt = "Check in",
+      dueAtMillis = at(2025, Calendar.JANUARY, 20),
+      recurrence = ScheduledTaskRecurrence.WEEKLY,
+      icon = "bell",
+      reminder = true,
+      enabled = true,
+      days = listOf(Calendar.MONDAY),
+    )
+    val now = at(2025, Calendar.JANUARY, 20, 10)
+
+    val failed = afterRun(task, failed = true, now = now)
+    assertEquals(false, failed.enabled)
+    assertEquals(true, failed.failed)
+    assertEquals(task.dueAtMillis, failed.dueAtMillis)
+    assertEquals(now, failed.lastRunAtMillis)
+
+    val retried = failed.copy(enabled = true, failed = false)
+    assertEquals(true, retried.enabled)
+    assertEquals(false, retried.failed)
+    assertEquals(
+      at(2025, Calendar.JANUARY, 27),
+      afterRun(retried, failed = false, now = now).dueAtMillis,
+    )
+  }
 }

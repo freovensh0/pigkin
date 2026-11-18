@@ -9,12 +9,13 @@ import io.pigkin.data.ScheduledTaskStore
 
 internal const val ACTION_RUN_TASK = "io.pigkin.scheduler.RUN_TASK"
 internal const val EXTRA_TASK_ID = "io.pigkin.scheduler.TASK_ID"
+internal const val EXTRA_RETRY = "io.pigkin.scheduler.RETRY"
 
 /** Inexact alarms that survive Doze without needing the exact-alarm permission; re-armed on boot and on foreground. */
 internal object ScheduledTaskAlarms {
   fun rescheduleAll() {
     for (task in ScheduledTaskStore.tasks.value) {
-      if (task.enabled) schedule(task) else cancel(task.id)
+      if (task.enabled && !task.failed) schedule(task) else cancel(task.id)
     }
   }
 
@@ -23,7 +24,7 @@ internal object ScheduledTaskAlarms {
     context.alarmManager().cancel(pendingIntent(context, id))
   }
 
-  internal fun schedule(task: ScheduledTask) {
+  fun schedule(task: ScheduledTask) {
     val context = ScheduledTaskStore.applicationContext
     context.alarmManager().setAndAllowWhileIdle(
       AlarmManager.RTC_WAKEUP,

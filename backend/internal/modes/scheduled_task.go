@@ -29,6 +29,18 @@ func scheduledTaskResult(stdout string) host.Message {
 	return host.Message{"result": strings.TrimSpace(stdout)}
 }
 
+// scheduledTaskArgs builds the Pi --print arguments, adding --model and --thinking only for a non-blank value.
+func scheduledTaskArgs(entry, prompt, model, thinking string) []string {
+	args := []string{entry}
+	if model = strings.TrimSpace(model); model != "" {
+		args = append(args, "--model", model)
+	}
+	if thinking = strings.TrimSpace(thinking); thinking != "" {
+		args = append(args, "--thinking", thinking)
+	}
+	return append(args, "--print", prompt)
+}
+
 // scheduledTaskRun runs a prompt once with the bundled Pi, mirroring host/src/modes/scheduled_task.ts.
 func scheduledTaskRun(ctx *Context) (host.Message, error) {
 	prompt, promptErr := scheduledTaskPrompt(ctx.Params)
@@ -45,7 +57,9 @@ func scheduledTaskRun(ctx *Context) (host.Message, error) {
 	}
 	base, cancel := context.WithTimeout(connContext(ctx.Conn), scheduledTaskTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(base, node, entry, "--print", prompt)
+	model, _ := ctx.Params["model"].(string)
+	thinking, _ := ctx.Params["thinking"].(string)
+	cmd := exec.CommandContext(base, node, scheduledTaskArgs(entry, prompt, model, thinking)...)
 	cmd.Dir = ctx.Env.Home
 	cmd.Env = append(os.Environ(),
 		"PIGKIN_ROOT="+ctx.Env.Root,

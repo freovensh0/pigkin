@@ -135,9 +135,14 @@ internal class HostClient(context: Context, private val foreground: Flow<Boolean
     call("hello", JSONObject())
   }
 
-  /** Runs [prompt] once with Pi and returns its final answer, for a scheduled task. */
-  suspend fun scheduledTaskRun(prompt: String): String =
-    utilityCall("scheduled_task_run", JSONObject().put("prompt", prompt)).getString("result")
+  /** Runs [prompt] once with Pi and returns its final answer, for a scheduled task, on the given model and thinking level. */
+  suspend fun scheduledTaskRun(prompt: String, model: String? = null, thinking: String? = null): String = utilityCall(
+    "scheduled_task_run",
+    JSONObject().put("prompt", prompt).apply {
+      model?.takeIf { it.isNotBlank() }?.let { put("model", it.trim()) }
+      thinking?.takeIf { it.isNotBlank() }?.let { put("thinking", it.trim()) }
+    },
+  ).getString("result")
 
   /** The transcripts of the subagents the chat saved at [path] ran, oldest first, read from their files' headers. */
   suspend fun subagentSessions(path: String): List<SubagentSession> =

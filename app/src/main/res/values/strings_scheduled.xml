@@ -5,6 +5,8 @@
     <!-- %1$s is the locale-formatted next run; %2$s is the repeat label. -->
     <string name="scheduled_task_subtitle">%1$s · %2$s</string>
     <string name="scheduled_task_paused">Paused</string>
+    <string name="scheduled_task_failed">Failed — tap retry to run again</string>
+    <string name="scheduled_task_retry">Retry task</string>
     <string name="scheduled_tasks_none">No tasks yet</string>
     <!-- %1$d is the number of saved tasks. -->
     <string name="scheduled_tasks_count">%1$d saved</string>
@@ -15,17 +17,22 @@
     <string name="scheduled_task_prompt_placeholder">What should Pigkin do?</string>
     <string name="scheduled_task_date">Date</string>
     <string name="scheduled_task_time">Time</string>
+    <string name="scheduled_model_default">Pi default</string>
+    <string name="scheduled_thinking_default">Model default</string>
     <string name="scheduled_task_recurrence">Repeat</string>
     <string name="scheduled_once">Once</string>
     <string name="scheduled_daily">Daily</string>
     <string name="scheduled_weekly">Weekly</string>
     <string name="scheduled_monthly">Monthly</string>
-    <string name="scheduled_task_icon">Icon</string>
-    <string name="scheduled_icon_bell">Bell</string>
-    <string name="scheduled_icon_checklist">Checklist</string>
-    <string name="scheduled_icon_repeat">Repeat</string>
-    <string name="scheduled_icon_check">Check</string>
-    <string name="scheduled_icon_shield">Shield</string>
+    <string name="scheduled_task_days">Days</string>
+    <string name="scheduled_task_no_days">Pick at least one day</string>
+    <string name="scheduled_sunday">Sun</string>
+    <string name="scheduled_monday">Mon</string>
+    <string name="scheduled_tuesday">Tue</string>
+    <string name="scheduled_wednesday">Wed</string>
+    <string name="scheduled_thursday">Thu</string>
+    <string name="scheduled_friday">Fri</string>
+    <string name="scheduled_saturday">Sat</string>
     <string name="scheduled_task_reminder">Reminder</string>
     <string name="scheduled_task_reminder_summary">Notify me when this task runs</string>
     <string name="scheduled_task_enabled">Enabled</string>

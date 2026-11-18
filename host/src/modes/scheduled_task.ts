@@ -18,10 +18,23 @@ function prompt(params: JsonObject): string {
   return value;
 }
 
+/** An optional string param, trimmed; blank and non-strings are omitted. */
+function optionalText(params: JsonObject, key: string): string | undefined {
+  const value = params[key];
+  if (typeof value !== "string") return undefined;
+  const text = value.trim();
+  return text === "" ? undefined : text;
+}
+
 /** Runs a prompt once with the bundled Pi and returns its final stdout. Mirrors backend/internal/modes/scheduled_task.go. */
 export async function scheduledTaskRun(ctx: ModeContext): Promise<JsonObject> {
   const text = prompt(ctx.params);
-  const args = [await piEntry(ctx.env.root), "--print", text];
+  const model = optionalText(ctx.params, "model");
+  const thinking = optionalText(ctx.params, "thinking");
+  const args = [await piEntry(ctx.env.root)];
+  if (model) args.push("--model", model);
+  if (thinking) args.push("--thinking", thinking);
+  args.push("--print", text);
   const env = {
     ...(await termuxSessionEnv(ctx.env)),
     PIGKIN_ROOT: ctx.env.root,

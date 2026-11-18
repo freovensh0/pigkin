@@ -19,7 +19,7 @@ internal object ScheduledTaskRunner {
   suspend fun run(context: Context, id: String) {
     val task = ScheduledTaskStore.tasks.value.firstOrNull { it.id == id } ?: return
     val result = try {
-      hostClient.scheduledTaskRun(task.prompt)
+      hostClient.scheduledTaskRun(task.prompt, task.modelId, task.thinking)
     } catch (ignored: Exception) {
       null
     }
@@ -27,4 +27,7 @@ internal object ScheduledTaskRunner {
     if (task.reminder) ScheduledTaskNotifications.post(context.applicationContext, task, result, failed)
     ScheduledTaskStore.markRun(id, failed)
   }
+
+  /** Runs a task now, after the caller has retried a failed one; used by the UI. */
+  suspend fun runNow(context: Context, id: String) = run(context, id)
 }

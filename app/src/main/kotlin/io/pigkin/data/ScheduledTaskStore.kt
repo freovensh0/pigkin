@@ -21,7 +21,22 @@ internal data class ScheduledTask(
   val reminder: Boolean,
   val enabled: Boolean,
   val lastRunAtMillis: Long? = null,
+  val days: List<Int> = emptyList(),
+  val modelId: String? = null,
+  val thinking: String? = null,
+  val failed: Boolean = false,
 )
+
+/** A failed run pauses its task and leaves it unscheduled until the user retries it. */
+internal fun afterRun(task: ScheduledTask, failed: Boolean, now: Long): ScheduledTask {
+  if (failed) return task.copy(enabled = false, failed = true, lastRunAtMillis = now)
+  val updated = task.copy(
+    dueAtMillis = nextDueAtMillis(task.dueAtMillis, task.recurrence, now, task.days) ?: task.dueAtMillis,
+    lastRunAtMillis = now,
+    failed = false,
+  )
+  return if (task.recurrence == ScheduledTaskRecurrence.ONCE) updated.copy(enabled = false) else updated
+}
 
 /** Scheduled tasks in the `scheduled_tasks` SharedPreferences file. The [tasks] flow is the source of truth. */
 internal object ScheduledTaskStore {
@@ -50,7 +65,7 @@ internal object ScheduledTaskStore {
 
   fun save(task: ScheduledTask) {
     write(state.value.filterNot { it.id == task.id } + task)
-    if (task.enabled) ScheduledTaskAlarms.schedule(task) else ScheduledTaskAlarms.cancel(task.id)
+    if (task.enabled && !task.failed) ScheduledTaskAlarms.schedule(task) else ScheduledTaskAlarms.cancel(task.id)
   }
 
   fun remove(id: String) {
@@ -60,21 +75,16 @@ internal object ScheduledTaskStore {
 
   fun markRun(id: String, failed: Boolean) {
     val task = state.value.firstOrNull { it.id == id } ?: return
-    val now = System.currentTimeMillis()
-    val updated = when {
-      failed -> task.copy(lastRunAtMillis = now)
-
-      task.recurrence == ScheduledTaskRecurrence.ONCE -> task.copy(enabled = false, lastRunAtMillis = now)
-
-      else -> task.copy(
-        dueAtMillis = nextDueAtMillis(task.dueAtMillis, task.recurrence, now) ?: task.dueAtMillis,
-        lastRunAtMillis = now,
-      )
-    }
+    val updated = afterRun(task, failed, System.currentTimeMillis())
     write(state.value.map { if (it.id == id) updated else it })
-    // A failed run consumed its alarm: leave it unscheduled so the next foreground retry is the only one.
-    if (failed) return
-    if (updated.enabled) ScheduledTaskAlarms.schedule(updated) else ScheduledTaskAlarms.cancel(id)
+    // A failed run consumed its alarm: leave it unscheduled so an explicit retry is the only way to run it again.
+    if (!updated.enabled || updated.failed) ScheduledTaskAlarms.cancel(id) else ScheduledTaskAlarms.schedule(updated)
+  }
+
+  /** Enables a failed task without scheduling or running it; the caller runs it explicitly. */
+  fun retry(id: String) {
+    val task = state.value.firstOrNull { it.id == id } ?: return
+    write(state.value.map { if (it.id == id) task.copy(failed = false, enabled = true) else it })
   }
 
   private fun write(tasks: List<ScheduledTask>) {
@@ -96,6 +106,7 @@ internal object ScheduledTaskStore {
   private fun JSONObject.toTask(): ScheduledTask? = try {
     val recurrence = ScheduledTaskRecurrence.entries
       .firstOrNull { it.name == optString("recurrence") } ?: return null
+    val savedDays = optJSONArray("days")
     ScheduledTask(
       id = getString("id"),
       prompt = getString("prompt"),
@@ -105,6 +116,16 @@ internal object ScheduledTaskStore {
       reminder = optBoolean("reminder"),
       enabled = optBoolean("enabled", true),
       lastRunAtMillis = if (isNull("lastRunAtMillis")) null else getLong("lastRunAtMillis"),
+      days = if (savedDays == null) {
+        emptyList()
+      } else {
+        (0 until savedDays.length()).mapNotNull { index ->
+          savedDays.optInt(index).takeIf { it > 0 }
+        }
+      },
+      modelId = if (isNull("modelId")) null else optString("modelId"),
+      thinking = if (isNull("thinking")) null else optString("thinking"),
+      failed = optBoolean("failed", false),
     )
   } catch (error: JSONException) {
     Log.w(TAG, "Discarding a malformed scheduled task", error)
@@ -120,6 +141,10 @@ internal object ScheduledTaskStore {
     .put("reminder", reminder)
     .put("enabled", enabled)
     .putOpt("lastRunAtMillis", lastRunAtMillis)
+    .put("days", JSONArray(days))
+    .putOpt("modelId", modelId)
+    .putOpt("thinking", thinking)
+    .put("failed", failed)
 
   private const val FILE = "scheduled_tasks"
   private const val KEY_TASKS = "tasks"

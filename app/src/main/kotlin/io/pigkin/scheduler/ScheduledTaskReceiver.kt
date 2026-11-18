@@ -17,11 +17,13 @@ class ScheduledTaskReceiver : BroadcastReceiver() {
 
       ACTION_RUN_TASK -> {
         val id = intent.getStringExtra(EXTRA_TASK_ID) ?: return
+        val retry = intent.getBooleanExtra(EXTRA_RETRY, false)
         val pending = goAsync()
         val app = context.applicationContext
         ScheduledTaskRunner.scope.launch {
           try {
             ScheduledTaskStore.init(app)
+            if (retry) ScheduledTaskStore.retry(id)
             ScheduledTaskRunner.run(app, id)
           } finally {
             pending.finish()

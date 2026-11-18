@@ -28,7 +28,8 @@
 
     <string name="scheduled_task_notification_channel">Scheduled tasks</string>
     <string name="scheduled_task_notification_title">Scheduled task</string>
-    <string name="scheduled_task_notification_failed">The scheduled task could not run. It will retry when Pigkin opens.</string>
+    <string name="scheduled_task_notification_failed">The scheduled task could not run. It is paused until you retry it.</string>
+    <string name="scheduled_task_notification_retry">Retry</string>
 
     <!-- Shown over every screen while Pigkin waits for its helper in Termux's Google Play build. -->
     <string name="termux_waking">Starting Pigkin\'s helper in Termux…</string>

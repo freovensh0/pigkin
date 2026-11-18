@@ -20,9 +20,11 @@ import io.pigkin.R
 import io.pigkin.data.ScheduledTask
 import io.pigkin.data.ScheduledTaskRecurrence
 import io.pigkin.data.ScheduledTaskStore
+import io.pigkin.scheduler.ScheduledTaskRunner
 import io.pigkin.ui.chat.ConfirmDialog
 import io.pigkin.ui.components.LucideIcon
 import io.pigkin.ui.theme.pigkinColors
+import java.util.Date
 import kotlinx.coroutines.launch
 
 /** Settings' row into the scheduled tasks, counting them without starting a host just for opening Settings. */
@@ -55,6 +57,7 @@ internal fun ScheduledTasksSection(onOpenScheduledTasks: () -> Unit) {
 /** The saved tasks, each with its next run, then Add task. */
 @Composable
 internal fun ScheduledTasksScreen(onBack: () -> Unit, onAdd: () -> Unit, onEdit: (String) -> Unit) {
+  val context = LocalContext.current
   val tasks by ScheduledTaskStore.tasks.collectAsStateWithLifecycle()
   val scope = rememberCoroutineScope()
   var pendingDelete by remember { mutableStateOf<ScheduledTask?>(null) }
@@ -67,7 +70,17 @@ internal fun ScheduledTasksScreen(onBack: () -> Unit, onAdd: () -> Unit, onEdit:
       SettingsSection(title = null) {
         tasks.forEachIndexed { index, task ->
           if (index > 0) SettingsDivider()
-          TaskRow(task, { onEdit(task.id) }) { pendingDelete = task }
+          TaskRow(
+            task = task,
+            onEdit = { onEdit(task.id) },
+            onDelete = { pendingDelete = task },
+            onRetry = {
+              scope.launch {
+                ScheduledTaskStore.retry(task.id)
+                ScheduledTaskRunner.runNow(context.applicationContext, task.id)
+              }
+            },
+          )
         }
       }
     }
@@ -93,29 +106,40 @@ internal fun ScheduledTasksScreen(onBack: () -> Unit, onAdd: () -> Unit, onEdit:
 }
 
 @Composable
-private fun TaskRow(task: ScheduledTask, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun TaskRow(task: ScheduledTask, onEdit: () -> Unit, onDelete: () -> Unit, onRetry: () -> Unit) {
   val context = LocalContext.current
-  val subtitle = if (task.enabled) {
-    stringResource(
+  val subtitle = when {
+    task.failed -> stringResource(R.string.scheduled_task_failed)
+
+    !task.enabled -> stringResource(R.string.scheduled_task_paused)
+
+    else -> stringResource(
       R.string.scheduled_task_subtitle,
-      formatScheduledDue(context, task.dueAtMillis),
+      if (task.recurrence == ScheduledTaskRecurrence.ONCE) {
+        formatScheduledDue(context, task.dueAtMillis)
+      } else {
+        formatScheduledTime(context, task.dueAtMillis)
+      },
       stringResource(task.recurrence.label),
     )
-  } else {
-    stringResource(R.string.scheduled_task_paused)
   }
   SettingsRow(
     title = task.prompt,
     subtitle = subtitle,
     onClick = onEdit,
     leading = {
-      LucideIcon(
-        icon = iconFor(task.icon),
-        contentDescription = null,
-        tint = pigkinColors.foregroundMuted,
-      )
+      LucideIcon(icon = R.drawable.ic_lucide_bell, contentDescription = null, tint = pigkinColors.foregroundMuted)
     },
   ) {
+    if (task.failed) {
+      IconButton(onClick = onRetry, modifier = Modifier.size(48.dp)) {
+        LucideIcon(
+          icon = R.drawable.ic_lucide_refresh_cw,
+          contentDescription = stringResource(R.string.scheduled_task_retry),
+          tint = pigkinColors.accent,
+        )
+      }
+    }
     IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
       LucideIcon(
         icon = R.drawable.ic_lucide_trash_2,
@@ -133,6 +157,9 @@ internal fun formatScheduledDue(context: Context, millis: Long): String = DateUt
   DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_YEAR,
 )
 
+internal fun formatScheduledTime(context: Context, millis: Long): String =
+  android.text.format.DateFormat.getTimeFormat(context).format(Date(millis))
+
 internal val ScheduledTaskRecurrence.label: Int
   get() = when (this) {
     ScheduledTaskRecurrence.ONCE -> R.string.scheduled_once
@@ -140,12 +167,3 @@ internal val ScheduledTaskRecurrence.label: Int
     ScheduledTaskRecurrence.WEEKLY -> R.string.scheduled_weekly
     ScheduledTaskRecurrence.MONTHLY -> R.string.scheduled_monthly
   }
-
-/** The icon keys are stored in the task, so a renamed drawable never leaves a blank row. */
-internal fun iconFor(key: String): Int = when (key) {
-  "checklist" -> R.drawable.ic_lucide_list_checks
-  "repeat" -> R.drawable.ic_lucide_refresh_cw
-  "check" -> R.drawable.ic_lucide_circle_check
-  "shield" -> R.drawable.ic_lucide_shield_check
-  else -> R.drawable.ic_lucide_bell
-}
