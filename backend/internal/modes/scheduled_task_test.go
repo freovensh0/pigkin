@@ -1,6 +1,8 @@
 package modes
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -43,20 +45,25 @@ func TestScheduledTaskPrompt(t *testing.T) {
 
 func TestScheduledTaskArgs(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		model    string
-		thinking string
-		want     []string
+		name        string
+		model       string
+		thinking    string
+		id          string
+		sessionPath string
+		want        []string
 	}{
-		{"neither", "", "", []string{"entry", "--print", "say hi"}},
-		{"model", "openai/gpt-4o", "", []string{"entry", "--model", "openai/gpt-4o", "--print", "say hi"}},
-		{"thinking", "", "high", []string{"entry", "--thinking", "high", "--print", "say hi"}},
-		{"both", "sonnet", "medium", []string{"entry", "--model", "sonnet", "--thinking", "medium", "--print", "say hi"}},
-		{"blank omitted", " \t ", "\n", []string{"entry", "--print", "say hi"}},
-		{"trimmed", "  opus  ", " high ", []string{"entry", "--model", "opus", "--thinking", "high", "--print", "say hi"}},
+		{"neither", "", "", "", "", []string{"entry", "--print", "say hi"}},
+		{"model", "openai/gpt-4o", "", "", "", []string{"entry", "--model", "openai/gpt-4o", "--print", "say hi"}},
+		{"thinking", "", "high", "", "", []string{"entry", "--thinking", "high", "--print", "say hi"}},
+		{"both", "sonnet", "medium", "", "", []string{"entry", "--model", "sonnet", "--thinking", "medium", "--print", "say hi"}},
+		{"blank omitted", " \t ", "\n", "", "", []string{"entry", "--print", "say hi"}},
+		{"trimmed", "  opus  ", " high ", "", "", []string{"entry", "--model", "opus", "--thinking", "high", "--print", "say hi"}},
+		{"first run", "", "", "task-1", "", []string{"entry", "--session-dir", "/cfg/scheduled", "--session-id", "task-1", "--print", "say hi"}},
+		{"later run", "", "", "task-1", "/cfg/scheduled/old.jsonl", []string{"entry", "--session", "/cfg/scheduled/old.jsonl", "--print", "say hi"}},
+		{"invalid id", "", "", "bad/id", "", []string{"entry", "--print", "say hi"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := scheduledTaskArgs("entry", "say hi", tc.model, tc.thinking)
+			got := scheduledTaskArgs("entry", "say hi", tc.model, tc.thinking, tc.id, tc.sessionPath, "/cfg/scheduled")
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("args = %q, want %q", got, tc.want)
 			}
@@ -65,12 +72,28 @@ func TestScheduledTaskArgs(t *testing.T) {
 }
 
 func TestScheduledTaskResult(t *testing.T) {
-	got := scheduledTaskResult("  hello\n\n")
+	got := scheduledTaskResult("  hello\n\n", "/cfg/scheduled/a.jsonl", "/home/user")
 	result, ok := got["result"].(string)
 	if !ok || result != "hello" {
 		t.Fatalf("result = %v", got)
 	}
-	if len(got) != 1 {
-		t.Fatalf("result has extra fields: %v", got)
+	if got["sessionPath"] != "/cfg/scheduled/a.jsonl" || got["cwd"] != "/home/user" || len(got) != 3 {
+		t.Fatalf("result has unexpected fields: %v", got)
+	}
+}
+
+func TestScheduledTaskSession(t *testing.T) {
+	dir := t.TempDir()
+	if got := scheduledTaskSession(dir, "task-1"); got != "" {
+		t.Fatalf("session before the first run = %q", got)
+	}
+	for _, name := range []string{"2026-01-01_task-2.jsonl", "2026-01-02_task-1.jsonl"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := filepath.Join(dir, "2026-01-02_task-1.jsonl")
+	if got := scheduledTaskSession(dir, "task-1"); got != want {
+		t.Fatalf("session = %q, want %q", got, want)
 	}
 }

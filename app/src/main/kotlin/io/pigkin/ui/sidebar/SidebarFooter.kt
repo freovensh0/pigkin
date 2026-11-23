@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.pigkin.R
 import io.pigkin.appGraph
+import io.pigkin.data.ScheduledTaskStore
 import io.pigkin.host.TermuxWaker
 import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.StatusDot
@@ -30,9 +31,19 @@ import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import kotlinx.coroutines.launch
 
-/** A card at the foot of the sidebar: Termux/Pi health (tap fixes what needs attention), Archive and Settings. */
+/**
+ * A card at the foot of the sidebar: Termux/Pi health (tap fixes what needs attention), the scheduled tasks, then
+ * Archive and Settings.
+ */
 @Composable
-internal fun SidebarFooter(onOpenArchive: () -> Unit, onOpenSettings: () -> Unit, onOpenOnboarding: () -> Unit) {
+internal fun SidebarFooter(
+  onOpenArchive: () -> Unit,
+  onOpenSettings: () -> Unit,
+  onOpenOnboarding: () -> Unit,
+  onOpenScheduledTasks: () -> Unit,
+) {
+  val tasks by ScheduledTaskStore.tasks.collectAsStateWithLifecycle()
+  val failed = tasks.any { it.failed }
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -45,6 +56,13 @@ internal fun SidebarFooter(onOpenArchive: () -> Unit, onOpenSettings: () -> Unit
     horizontalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s6),
   ) {
     HostStatus(onOpenOnboarding, Modifier.weight(1f))
+    HeaderButton(
+      icon = R.drawable.ic_lucide_bell,
+      contentDescription = stringResource(R.string.scheduled_tasks_title),
+      onClick = onOpenScheduledTasks,
+      filled = true,
+      tint = if (failed) pigkinColors.destructive else pigkinColors.foreground,
+    )
     HeaderButton(
       icon = R.drawable.ic_lucide_archive,
       contentDescription = stringResource(R.string.archive_open),

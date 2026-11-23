@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { HostError, piEntry } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
@@ -9,6 +11,8 @@ import { commandFailed } from "./ensure.js";
 const TIMEOUT_MS = 5 * 60 * 1000;
 /** Pi's stderr is kept only for a bounded failure diagnostic. */
 const STDERR_LIMIT = 4096;
+/** The characters Pi accepts in a --session-id. */
+const SESSION_ID = /^[A-Za-z0-9._-]+$/;
 
 function prompt(params: JsonObject): string {
   const value = params.prompt;
@@ -26,14 +30,40 @@ function optionalText(params: JsonObject, key: string): string | undefined {
   return text === "" ? undefined : text;
 }
 
-/** Runs a prompt once with the bundled Pi and returns its final stdout. Mirrors backend/internal/modes/scheduled_task.go. */
+/** Where a task's runs keep their session, in a folder of their own so they don't mix with the user's chats. */
+function sessionsDir(ctx: ModeContext): string {
+  return join(ctx.env.configDir, "scheduled");
+}
+
+/**
+ * The session file of the task [id] in [dir], as Pi names it `<timestamp>_<id>.jsonl`; undefined before its first run.
+ */
+async function findSession(dir: string, id: string): Promise<string | undefined> {
+  const names = await readdir(dir).catch(() => []);
+  const name = names.find((entry) => entry.endsWith(`_${id}.jsonl`));
+  return name === undefined ? undefined : join(dir, name);
+}
+
+/**
+ * Runs a prompt once with the bundled Pi and returns its final stdout. Each task keeps one session that its runs
+ * append to, so the app can open it as the task's chat; [sessionPath] reopens it and [id] starts it on the first run.
+ * Mirrors backend/internal/modes/scheduled_task.go.
+ */
 export async function scheduledTaskRun(ctx: ModeContext): Promise<JsonObject> {
   const text = prompt(ctx.params);
   const model = optionalText(ctx.params, "model");
   const thinking = optionalText(ctx.params, "thinking");
+  const id = optionalText(ctx.params, "id");
+  const saved = optionalText(ctx.params, "sessionPath");
+  const dir = sessionsDir(ctx);
   const args = [await piEntry(ctx.env.root)];
   if (model) args.push("--model", model);
   if (thinking) args.push("--thinking", thinking);
+  if (saved) {
+    args.push("--session", saved);
+  } else if (id !== undefined && SESSION_ID.test(id)) {
+    args.push("--session-dir", dir, "--session-id", id);
+  }
   args.push("--print", text);
   const env = {
     ...(await termuxSessionEnv(ctx.env)),
@@ -41,7 +71,9 @@ export async function scheduledTaskRun(ctx: ModeContext): Promise<JsonObject> {
     HOME: ctx.env.home,
     PREFIX: ctx.env.prefix,
   };
-  return { result: await runPi(ctx, args, env) };
+  const result = await runPi(ctx, args, env);
+  const sessionPath = saved ?? (id === undefined ? undefined : await findSession(dir, id));
+  return { result, sessionPath, cwd: ctx.env.home };
 }
 
 async function runPi(ctx: ModeContext, args: string[], env: NodeJS.ProcessEnv): Promise<string> {

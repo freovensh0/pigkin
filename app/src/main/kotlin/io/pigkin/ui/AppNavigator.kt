@@ -61,7 +61,7 @@ sealed interface Destination {
    */
   data class ArchivedSubagent(val path: String, val toolCallId: String) : Destination
 
-  /** The prompts Pigkin runs at a chosen time, reached from Settings. */
+  /** The prompts Pigkin runs at a chosen time, reached from the sidebar. */
   data object ScheduledTasks : Destination
 
   /** [id] null adds a scheduled task; otherwise edits the one with that id. */

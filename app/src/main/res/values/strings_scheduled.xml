@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="scheduled_settings_section">Automation</string>
     <string name="scheduled_tasks_title">Scheduled tasks</string>
+    <string name="scheduled_tasks_back">Back</string>
+    <string name="scheduled_section_attention">Needs attention</string>
+    <string name="scheduled_section_active">Active</string>
+    <string name="scheduled_section_paused">Paused</string>
     <!-- %1$s is the locale-formatted next run; %2$s is the repeat label. -->
     <string name="scheduled_task_subtitle">%1$s · %2$s</string>
-    <string name="scheduled_task_paused">Paused</string>
-    <string name="scheduled_task_failed">Failed — tap retry to run again</string>
+    <!-- %1$s is the task's schedule, as scheduled_task_subtitle shows it. -->
+    <string name="scheduled_task_paused_schedule">Paused · %1$s</string>
+    <string name="scheduled_task_failed">Failed — retry to run again</string>
     <string name="scheduled_task_retry">Retry task</string>
-    <string name="scheduled_tasks_none">No tasks yet</string>
-    <!-- %1$d is the number of saved tasks. -->
-    <string name="scheduled_tasks_count">%1$d saved</string>
+    <string name="scheduled_run_now">Run now</string>
+    <string name="scheduled_pause_task">Pause</string>
+    <string name="scheduled_resume_task">Resume</string>
+    <string name="scheduled_task_open">Open task</string>
+    <string name="scheduled_task_actions">Task actions</string>
     <string name="scheduled_tasks_empty">No scheduled tasks yet. Add one to run a prompt at a chosen time.</string>
     <string name="scheduled_add_task">Add task</string>
     <string name="scheduled_edit_task">Edit task</string>

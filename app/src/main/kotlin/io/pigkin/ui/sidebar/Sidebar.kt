@@ -79,6 +79,7 @@ internal class SidebarLinks(
   val onOpenRemoteHost: (hostId: String?) -> Unit,
   val onOpenArchive: () -> Unit,
   val onOpenOnboarding: () -> Unit,
+  val onOpenScheduledTasks: () -> Unit,
 )
 
 /**
@@ -135,6 +136,7 @@ internal fun Sidebar(
       onOpenArchive = links.onOpenArchive,
       onOpenSettings = links.onOpenSettings,
       onOpenOnboarding = links.onOpenOnboarding,
+      onOpenScheduledTasks = links.onOpenScheduledTasks,
     )
   }
   menuFor?.let { workspace ->

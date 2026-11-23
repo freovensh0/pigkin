@@ -202,7 +202,8 @@ private fun Screen(
 
     Destination.RemoteHosts, is Destination.RemoteHostEditor -> RemoteHostPages(top, navigator, actions)
 
-    Destination.ScheduledTasks, is Destination.ScheduledTaskEditor -> ScheduledTaskPages(top, navigator)
+    Destination.ScheduledTasks, is Destination.ScheduledTaskEditor ->
+      ScheduledTaskPages(top, navigator, requestedChat)
 
     Destination.Providers -> ProvidersScreen(
       onBack = { navigator.pop() },
@@ -270,6 +271,7 @@ private fun MainPage(
       onOpenRemoteHost = { navigator.push(Destination.RemoteHostEditor(it, fromPicker = true)) },
       onOpenArchive = { navigator.push(Destination.Archive) },
       onOpenOnboarding = { navigator.push(Destination.Onboarding) },
+      onOpenScheduledTasks = { navigator.push(Destination.ScheduledTasks) },
     )
   }
   MainScreen(
@@ -316,7 +318,6 @@ private fun SettingsPages(top: Destination, navigator: AppNavigator) {
         onOpenRemoteHosts = { navigator.push(Destination.RemoteHosts) },
         onOpenBackups = { navigator.push(Destination.Backups) },
         onOpenLicenses = { navigator.push(Destination.Licenses) },
-        onOpenScheduledTasks = { navigator.push(Destination.ScheduledTasks) },
       ),
     )
   }
@@ -349,9 +350,13 @@ private fun RemoteHostPages(top: Destination, navigator: AppNavigator, actions: 
   }
 }
 
-/** The scheduled tasks list, or one task's editor. */
+/** The scheduled tasks list, or one task's editor; opening a task's runs shows its chat on the main screen. */
 @Composable
-private fun ScheduledTaskPages(top: Destination, navigator: AppNavigator) {
+private fun ScheduledTaskPages(
+  top: Destination,
+  navigator: AppNavigator,
+  requestedChat: MutableStateFlow<ChatLocation?>,
+) {
   when (top) {
     is Destination.ScheduledTaskEditor -> ScheduledTaskEditorScreen(
       taskId = top.id,
@@ -363,6 +368,7 @@ private fun ScheduledTaskPages(top: Destination, navigator: AppNavigator) {
       onBack = { navigator.pop() },
       onAdd = { navigator.push(Destination.ScheduledTaskEditor(null)) },
       onEdit = { navigator.push(Destination.ScheduledTaskEditor(it)) },
+      onOpenChat = { requestedChat.value = it },
     )
   }
 }

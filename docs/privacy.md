@@ -3,7 +3,7 @@ title: Privacy policy
 description: What data Pigkin keeps on your phone, what leaves it, and where it goes.
 ---
 
-_Last updated: November 18, 2026_
+_Last updated: November 23, 2026_
 
 Pigkin is an app for running the [Pi](https://pi.dev) coding agent in [Termux](https://termux.dev) on your Android phone. It's made by Jeph, an independent developer, and is open source, so you can check everything on this page in [its code](https://github.com/freovensh0/pigkin).
 
@@ -15,7 +15,7 @@ Pigkin is an app for running the [Pi](https://pi.dev) coding agent in [Termux](h
 
 ## What stays on your phone
 
-Pigkin keeps its own settings, such as the theme and the folders you've opened as workspaces, in its private app storage. It also keeps there which chats you've archived, and when you last opened each chat, which auto-archive uses to find chats you haven't used in a while. Scheduled tasks you add in **Settings → Scheduled tasks** are kept there too: their prompts, next run times, repeat settings, the model and thinking level you choose for each run, and whether you want a notification. The result of a run is shown in that notification and isn't saved by Pigkin.
+Pigkin keeps its own settings, such as the theme and the folders you've opened as workspaces, in its private app storage. It also keeps there which chats you've archived, and when you last opened each chat, which auto-archive uses to find chats you haven't used in a while. Scheduled tasks you add from the bell in the sidebar are kept there too: their prompts, next run times, repeat settings, the model and thinking level you choose for each run, and whether you want a notification. Each task's runs append to one session kept in Pi's configuration in Termux, under `~/.pigkin/pi/scheduled` (`~/.pigkin-dev/pi/scheduled` in Pigkin Dev), so you can open the task to read past results and follow up on them. The result is also shown in the notification when you leave its reminder on.
 
 If you turn on [local models](/docs/local-models/) under **Settings → Providers and models**, the models you download are kept in Pigkin's private app storage too, and aren't included in Android's backup. A local model runs entirely on the phone: your messages, the files and command output the agent reads, and the model's replies never leave it. The agent reaches the model over a connection that only accepts requests from the phone itself and only with a key Pigkin gives the agent, so other apps and devices can't use it.
 

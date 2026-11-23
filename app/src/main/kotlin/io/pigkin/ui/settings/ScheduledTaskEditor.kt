@@ -62,6 +62,9 @@ private data class TaskDraft(
     },
     modelId = modelId,
     thinking = thinking,
+    failed = saved?.failed ?: false,
+    sessionPath = saved?.sessionPath,
+    sessionCwd = saved?.sessionCwd,
   )
 }
 

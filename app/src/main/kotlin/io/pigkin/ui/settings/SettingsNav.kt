@@ -9,5 +9,4 @@ internal data class SettingsNav(
   val onOpenRemoteHosts: () -> Unit,
   val onOpenBackups: () -> Unit,
   val onOpenLicenses: () -> Unit,
-  val onOpenScheduledTasks: () -> Unit,
 )

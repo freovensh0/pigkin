@@ -135,14 +135,33 @@ internal class HostClient(context: Context, private val foreground: Flow<Boolean
     call("hello", JSONObject())
   }
 
-  /** Runs [prompt] once with Pi and returns its final answer, for a scheduled task, on the given model and thinking level. */
-  suspend fun scheduledTaskRun(prompt: String, model: String? = null, thinking: String? = null): String = utilityCall(
-    "scheduled_task_run",
-    JSONObject().put("prompt", prompt).apply {
-      model?.takeIf { it.isNotBlank() }?.let { put("model", it.trim()) }
-      thinking?.takeIf { it.isNotBlank() }?.let { put("thinking", it.trim()) }
-    },
-  ).getString("result")
+  /**
+   * Runs [prompt] once with Pi on the given model and thinking level, for the scheduled task [id], and returns its
+   * final answer with the session it appended to: [sessionPath] when the task ran before, so its chat keeps one
+   * history from the first run on.
+   */
+  suspend fun scheduledTaskRun(
+    prompt: String,
+    model: String? = null,
+    thinking: String? = null,
+    id: String? = null,
+    sessionPath: String? = null,
+  ): ScheduledTaskRun {
+    val data = utilityCall(
+      "scheduled_task_run",
+      JSONObject().put("prompt", prompt).apply {
+        model?.takeIf { it.isNotBlank() }?.let { put("model", it.trim()) }
+        thinking?.takeIf { it.isNotBlank() }?.let { put("thinking", it.trim()) }
+        id?.let { put("id", it) }
+        sessionPath?.let { put("sessionPath", it) }
+      },
+    )
+    return ScheduledTaskRun(
+      result = data.optString("result"),
+      sessionPath = data.optString("sessionPath").ifEmpty { null },
+      cwd = data.optString("cwd").ifEmpty { null },
+    )
+  }
 
   /** The transcripts of the subagents the chat saved at [path] ran, oldest first, read from their files' headers. */
   suspend fun subagentSessions(path: String): List<SubagentSession> =

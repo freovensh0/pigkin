@@ -26,6 +26,12 @@ internal data class HostHello(
 }
 
 /**
+ * A scheduled task's run: Pi's final answer, the session it appended to, which the task's chat opens, and the folder
+ * that chat runs in.
+ */
+internal data class ScheduledTaskRun(val result: String, val sessionPath: String?, val cwd: String?)
+
+/**
  * One file in the backups folder. [createdAt] is the backup's own time (epoch milliseconds), or the file's for one that
  * isn't a readable backup, which carries the reason in [error].
  */

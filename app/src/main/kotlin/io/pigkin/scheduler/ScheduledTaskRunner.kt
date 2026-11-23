@@ -18,14 +18,14 @@ internal object ScheduledTaskRunner {
   @Suppress("TooGenericExceptionCaught") // Any failure must reach the user as a notification, never crash the receiver.
   suspend fun run(context: Context, id: String) {
     val task = ScheduledTaskStore.tasks.value.firstOrNull { it.id == id } ?: return
-    val result = try {
-      hostClient.scheduledTaskRun(task.prompt, task.modelId, task.thinking)
+    val run = try {
+      hostClient.scheduledTaskRun(task.prompt, task.modelId, task.thinking, task.id, task.sessionPath)
     } catch (ignored: Exception) {
       null
     }
-    val failed = result == null
-    if (task.reminder) ScheduledTaskNotifications.post(context.applicationContext, task, result, failed)
-    ScheduledTaskStore.markRun(id, failed)
+    val failed = run == null
+    if (task.reminder) ScheduledTaskNotifications.post(context.applicationContext, task, run?.result, failed)
+    ScheduledTaskStore.markRun(id, failed, run?.sessionPath, run?.cwd)
   }
 
   /** Runs a task now, after the caller has retried a failed one; used by the UI. */

@@ -98,7 +98,6 @@ private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, nav: 
     ) {
       ModelsSection(accounts = graph.accountRepository, onOpenProviders = nav.onOpenProviders)
       ChatsSection(preferences = graph.preferences)
-      ScheduledTasksSection(onOpenScheduledTasks = nav.onOpenScheduledTasks)
       AppearanceSection(preferences = graph.preferences)
       ExtensionsSection(graph = graph, snackbar = snackbar)
       AgentSection(

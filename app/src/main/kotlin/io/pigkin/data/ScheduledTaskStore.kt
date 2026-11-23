@@ -25,6 +25,10 @@ internal data class ScheduledTask(
   val modelId: String? = null,
   val thinking: String? = null,
   val failed: Boolean = false,
+  /** The session the task's runs append to, which the app opens as the task's chat; null before its first run. */
+  val sessionPath: String? = null,
+  /** The folder Pi ran the session in, where the task's chat opens. */
+  val sessionCwd: String? = null,
 )
 
 /** A failed run pauses its task and leaves it unscheduled until the user retries it. */
@@ -73,9 +77,10 @@ internal object ScheduledTaskStore {
     ScheduledTaskAlarms.cancel(id)
   }
 
-  fun markRun(id: String, failed: Boolean) {
+  fun markRun(id: String, failed: Boolean, sessionPath: String? = null, sessionCwd: String? = null) {
     val task = state.value.firstOrNull { it.id == id } ?: return
     val updated = afterRun(task, failed, System.currentTimeMillis())
+      .copy(sessionPath = sessionPath ?: task.sessionPath, sessionCwd = sessionCwd ?: task.sessionCwd)
     write(state.value.map { if (it.id == id) updated else it })
     // A failed run consumed its alarm: leave it unscheduled so an explicit retry is the only way to run it again.
     if (!updated.enabled || updated.failed) ScheduledTaskAlarms.cancel(id) else ScheduledTaskAlarms.schedule(updated)
@@ -126,6 +131,8 @@ internal object ScheduledTaskStore {
       modelId = if (isNull("modelId")) null else optString("modelId"),
       thinking = if (isNull("thinking")) null else optString("thinking"),
       failed = optBoolean("failed", false),
+      sessionPath = if (isNull("sessionPath")) null else optString("sessionPath"),
+      sessionCwd = if (isNull("sessionCwd")) null else optString("sessionCwd"),
     )
   } catch (error: JSONException) {
     Log.w(TAG, "Discarding a malformed scheduled task", error)
@@ -145,6 +152,8 @@ internal object ScheduledTaskStore {
     .putOpt("modelId", modelId)
     .putOpt("thinking", thinking)
     .put("failed", failed)
+    .putOpt("sessionPath", sessionPath)
+    .putOpt("sessionCwd", sessionCwd)
 
   private const val FILE = "scheduled_tasks"
   private const val KEY_TASKS = "tasks"
