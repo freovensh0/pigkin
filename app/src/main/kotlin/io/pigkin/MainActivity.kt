@@ -80,9 +80,9 @@ class MainActivity : ComponentActivity() {
     // A recreated activity gets its launch intent again, but that chat was opened the first time.
     if (savedInstanceState == null) requestedChat.value = ChatNotification.location(intent)
     enableEdgeToEdge()
-    // Android keeps an app behind the home screen on Back only when the home screen opened it, and the launcher icons
-    // open this through LauncherActivity. Registered before the screens' own handlers, so it runs only when none of
-    // them takes Back.
+    // Android keeps an app behind the home screen on Back only when the home screen opened it, and the launcher's
+    // entry opens this through LauncherActivity. Registered before the screens' own handlers, so it runs only when
+    // none of them takes Back.
     onBackPressedDispatcher.addCallback(this) { if (isTaskRoot) moveTaskToBack(false) else finish() }
     val graph = appGraph
     setContent {
