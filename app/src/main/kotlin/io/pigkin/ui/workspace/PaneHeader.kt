@@ -33,6 +33,7 @@ import io.pigkin.ui.components.PotIcon
 import io.pigkin.ui.components.roundButton
 import io.pigkin.ui.sidebar.rememberFolderNames
 import io.pigkin.ui.theme.PigkinFonts
+import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import java.text.NumberFormat
 
@@ -103,7 +104,7 @@ internal fun TabsButton(tabs: Int, onClick: () -> Unit) {
       text = count,
       modifier = Modifier.clearAndSetSemantics {},
       color = colors.foreground,
-      fontSize = if (count.length > 2) 7.sp else 9.sp,
+      fontSize = PigkinTokens.FontSize.sm,
       fontWeight = FontWeight.ExtraBold,
       style = LocalTextStyle.current.copy(fontFeatureSettings = PigkinFonts.TABULAR, platformStyle = NO_FONT_PADDING),
       maxLines = 1,
@@ -128,7 +129,7 @@ internal fun SidebarButton(onToggleSidebar: () -> Unit) {
   }
 }
 
-private val POT_SHAPE = RoundedCornerShape(13.dp)
+private val POT_SHAPE = RoundedCornerShape(8.dp)
 private val POT_SIZE = 24.dp
 private const val MAX_SHOWN_TABS = 99
 private val TABS_ICON_SIZE = 22.dp

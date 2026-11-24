@@ -130,4 +130,4 @@ private fun HostStatus(onOpenOnboarding: () -> Unit, modifier: Modifier) {
   }
 }
 
-private val FOOTER_SHAPE = RoundedCornerShape(22.dp)
+private val FOOTER_SHAPE = RoundedCornerShape(12.dp)

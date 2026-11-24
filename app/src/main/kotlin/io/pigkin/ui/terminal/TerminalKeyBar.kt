@@ -195,5 +195,5 @@ private fun RowScope.BarButton(
   }
 }
 
-private val KEY_RADIUS = 10.dp
+private val KEY_RADIUS = 4.dp
 private const val ARMED_RING_ALPHA = 0.5f

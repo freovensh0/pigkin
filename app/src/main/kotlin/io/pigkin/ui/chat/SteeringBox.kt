@@ -40,9 +40,9 @@ private const val STEERING_MAX_LINES = 6
 
 private const val DISABLED_ALPHA = 0.5f
 
-private val BOX_SHAPE = RoundedCornerShape(20.dp)
+private val BOX_SHAPE = RoundedCornerShape(8.dp)
 private val BUTTON_HEIGHT = 30.dp
-private val LINE_SIZE = 13.5.sp
+private val LINE_SIZE = 14.sp
 private val LINE_HEIGHT = 19.5.sp
 
 /**
@@ -102,7 +102,7 @@ internal fun SteeringBox(
         if (compact) {
           SteeringLine(summary, Modifier.weight(1f))
         } else {
-          CapsLabel(stringResource(R.string.chat_steering), colors.accent, Modifier.weight(1f), fontSize = 11.sp)
+          CapsLabel(stringResource(R.string.chat_steering), colors.accent, Modifier.weight(1f), fontSize = 12.sp)
         }
         actions()
       }
@@ -137,8 +137,8 @@ internal fun SteerButton(label: String, enabled: Boolean, filled: Boolean, onCli
       .background(if (filled) colors.accentSoft else Color.Transparent)
       .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
       .padding(horizontal = if (filled) PigkinTokens.Spacing.s12 else 10.dp, vertical = 7.dp),
-    color = colors.accent,
-    fontSize = 12.5.sp,
+    color = colors.foreground,
+    fontSize = 12.sp,
     fontWeight = FontWeight.Bold,
     maxLines = 1,
   )

@@ -164,7 +164,7 @@ private fun StackedSnackbar(state: SnackbarStackState, entry: SnackbarEntry) {
             ) { Text(text = label, fontWeight = FontWeight.ExtraBold) }
           }
         },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         containerColor = colors.foreground,
         contentColor = colors.surface0,
       ) { Text(text = entry.message, fontWeight = FontWeight.Medium) }

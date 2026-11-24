@@ -2,9 +2,6 @@ package io.pigkin.ui.onboarding
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,6 +30,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -46,7 +44,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import io.pigkin.R
 import io.pigkin.appGraph
 import io.pigkin.ui.auth.LoginSheet
+import io.pigkin.ui.components.LocalPotsSimmer
 import io.pigkin.ui.components.RoundIconButton
 import io.pigkin.ui.components.SimmeringPot
 import io.pigkin.ui.settings.isSignedIn
@@ -188,24 +186,12 @@ private fun PassHiddenStep(page: String, step: SetupStep?, state: OnboardingStat
 
 @Composable
 private fun WelcomePage(onStart: () -> Unit) {
-  var arrived by remember { mutableStateOf(false) }
-  LaunchedEffect(Unit) { arrived = true }
-  // The pot settles in from slightly smaller once the page appears.
-  val scale by animateFloatAsState(
-    targetValue = if (arrived) 1f else WELCOME_START_SCALE,
-    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-    label = "welcome pot",
-  )
   WizardPage(
     illustration = {
-      SimmeringPot(
-        modifier = Modifier.graphicsLayer {
-          scaleX = scale
-          scaleY = scale
-        },
-        size = POT_SIZE,
-        tint = pigkinColors.foreground,
-      )
+      // The pot is the app's mark here, not a loading spinner, so it holds still.
+      CompositionLocalProvider(LocalPotsSimmer provides false) {
+        SimmeringPot(size = POT_SIZE, tint = pigkinColors.foreground)
+      }
     },
     title = stringResource(R.string.onboarding_welcome_title),
     body = stringResource(R.string.onboarding_welcome_body),
@@ -216,7 +202,11 @@ private fun WelcomePage(onStart: () -> Unit) {
 @Composable
 private fun DonePage(signedIn: Boolean, onFinish: () -> Unit) {
   WizardPage(
-    illustration = { SimmeringPot(size = POT_SIZE, tint = pigkinColors.foreground) },
+    illustration = {
+      CompositionLocalProvider(LocalPotsSimmer provides false) {
+        SimmeringPot(size = POT_SIZE, tint = pigkinColors.foreground)
+      }
+    },
     title = stringResource(R.string.onboarding_done_title),
     body = stringResource(if (signedIn) R.string.onboarding_done_body else R.string.onboarding_done_body_no_model),
     buttons = { WizardPrimary(stringResource(R.string.onboarding_start), onFinish) },
@@ -293,8 +283,7 @@ private val HistorySaver = listSaver<SnapshotStateList<String>, String>(
 
 private const val WELCOME = OnboardingState.WELCOME
 private const val DONE = "done"
-private const val PAGE_MILLIS = 320
+private const val PAGE_MILLIS = 200
 private const val SLIDE_FRACTION = 5
-private const val WELCOME_START_SCALE = 0.85f
 private val POT_SIZE = 112.dp
 private val NOTE_LINE_HEIGHT = 19.sp

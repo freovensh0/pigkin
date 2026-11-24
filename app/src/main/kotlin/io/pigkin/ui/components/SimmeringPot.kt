@@ -1,15 +1,16 @@
 package io.pigkin.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -32,9 +33,8 @@ import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import kotlin.math.PI
 import kotlin.math.sin
-import kotlinx.coroutines.delay
 
-/** How often the pot moves. Each step redraws the window, so it steps this often instead of every display frame. */
+/** The loop is cut into steps this long, so each pose holds for a readable beat instead of sliding. */
 private const val FRAME_MILLIS = 100L
 
 /** One loop: the pot shakes, a wisp leaves, the pot rests, and a second wisp leaves with a hop of the lid. */
@@ -89,9 +89,8 @@ private val HOP_FRAME = (WISP_LEAVE_MILLIS[1] / FRAME_MILLIS).toInt()
 val LocalPotsSimmer = compositionLocalOf { true }
 
 /**
- * Pigkin's loading indicator: the launcher icon's pot simmering. It shakes on its feet with the lid rattling,
- * lets out a wisp of steam, rests, and lets out another as the lid hops, every [LOOP_MILLIS]. Every pot on screen
- * steps on the same [FRAME_MILLIS] boundaries, so they share frames with each other. Pots hold still while
+ * Pigkin's loading indicator: the launcher icon's pot simmering. It shakes on its feet with the lid rattling, lets
+ * out a wisp of steam, rests, and lets out another as the lid hops, every [LOOP_MILLIS]. Pots hold still while
  * [LocalPotsSimmer] is false.
  */
 @Composable
@@ -102,21 +101,20 @@ fun SimmeringPot(
 ) {
   val icon = ImageVector.vectorResource(R.drawable.ic_launcher_foreground)
   val pot = remember(icon) { Pot(icon) }
-  var step by remember { mutableLongStateOf(0L) }
   val simmer = LocalPotsSimmer.current
-  LaunchedEffect(simmer) {
-    if (!simmer) return@LaunchedEffect
-    // Awaiting a frame rather than only delaying pauses the loop while the app is in the background.
-    while (true) {
-      val now = withFrameMillis { frameMillis ->
-        step = frameMillis / FRAME_MILLIS
-        frameMillis
-      }
-      delay(FRAME_MILLIS - now % FRAME_MILLIS)
+  // A Compose animation, so the phone's animation scale applies and pots still redraw in the draw phase only.
+  val time =
+    if (simmer) {
+      rememberInfiniteTransition(label = "simmer").animateFloat(
+        initialValue = 0f,
+        targetValue = LOOP_MILLIS.toFloat(),
+        animationSpec = infiniteRepeatable(tween(LOOP_MILLIS.toInt(), easing = LinearEasing)),
+        label = "simmer time",
+      )
+    } else {
+      remember { mutableFloatStateOf(0f) }
     }
-  }
-  // Reading the step only while drawing redraws the pot without recomposing anything.
-  Canvas(modifier.size(size)) { pot.draw(this, step * FRAME_MILLIS, tint) }
+  Canvas(modifier.size(size)) { pot.draw(this, time.value.toLong(), tint) }
 }
 
 /** The launcher icon's parts as paths, and the scratch paths for drawing its steam. */

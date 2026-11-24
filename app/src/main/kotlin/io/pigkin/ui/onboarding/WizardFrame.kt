@@ -132,7 +132,7 @@ private fun PageHeading(tag: String?, title: String, body: String) {
         modifier = Modifier
           .background(colors.accentSoft, CircleShape)
           .padding(horizontal = PigkinTokens.Spacing.s8, vertical = PigkinTokens.Spacing.s2),
-        color = colors.accent,
+        color = colors.foreground,
         fontSize = TAG_SIZE,
         fontWeight = FontWeight.Bold,
         letterSpacing = TAG_SPACING,
@@ -143,7 +143,6 @@ private fun PageHeading(tag: String?, title: String, body: String) {
       color = colors.foreground,
       fontSize = TITLE_SIZE,
       fontWeight = FontWeight.ExtraBold,
-      letterSpacing = TITLE_TRACKING,
       textAlign = TextAlign.Center,
     )
     Text(
@@ -198,8 +197,7 @@ private val PAGE_MAX_WIDTH = 480.dp
 private val ILLUSTRATED_MIN_HEIGHT = 480.dp
 
 // Larger than the app's type scale: each page has one title, which carries the page.
-private val TITLE_SIZE = 24.sp
+private val TITLE_SIZE = 20.sp
 private val BODY_LINE_HEIGHT = 22.sp
-private val TITLE_TRACKING = (-0.025).em
-private val TAG_SIZE = 11.sp
+private val TAG_SIZE = 12.sp
 private val TAG_SPACING = 0.06.em

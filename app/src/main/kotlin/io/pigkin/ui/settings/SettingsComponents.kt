@@ -208,7 +208,7 @@ private fun ErrorDetail(detail: String) {
   }
 }
 
-private val PANEL_RADIUS = 16.dp
+private val PANEL_RADIUS = 8.dp
 private const val DETAIL_BACKGROUND_ALPHA = 0.7f
 
 /** Where a [SettingsRow]'s text starts after its leading icon: the row's padding, the 20dp icon box and the gap. */

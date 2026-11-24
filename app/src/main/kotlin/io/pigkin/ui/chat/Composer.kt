@@ -86,7 +86,7 @@ private enum class PrimaryAction { Send, Stop, Idle, Sending }
 
 private const val MAX_PICKED_IMAGES = 6
 
-private val TRAY_SHAPE = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+private val TRAY_SHAPE = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
 
 /** The toolbar's attach button and chips. */
 private val TOOL_SIZE = 30.dp
@@ -245,7 +245,7 @@ private fun AttachmentTray(attachments: List<Attachment>, onRemove: (Attachment)
 
 @Composable
 private fun AttachmentThumbnail(attachment: Attachment.Image, onRemove: () -> Unit) {
-  val shape = RoundedCornerShape(13.dp)
+  val shape = RoundedCornerShape(8.dp)
   Box(modifier = Modifier.size(46.dp)) {
     Image(
       bitmap = attachment.thumbnail,
@@ -262,7 +262,7 @@ private fun AttachmentThumbnail(attachment: Attachment.Image, onRemove: () -> Un
 private fun FileChip(file: Attachment.File, onRemove: () -> Unit) {
   val colors = pigkinColors
   val context = LocalContext.current
-  val shape = RoundedCornerShape(13.dp)
+  val shape = RoundedCornerShape(8.dp)
   Box {
     Row(
       modifier =
@@ -286,7 +286,7 @@ private fun FileChip(file: Attachment.File, onRemove: () -> Unit) {
         Text(
           text = Formatter.formatShortFileSize(context, file.bytes.size.toLong()),
           color = colors.foregroundMuted,
-          fontSize = 11.sp,
+          fontSize = 12.sp,
           maxLines = 1,
         )
       }

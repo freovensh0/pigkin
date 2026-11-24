@@ -105,7 +105,6 @@ fun HeaderBar(
         color = pigkinColors.foreground,
         fontSize = PigkinTokens.FontSize.title,
         fontWeight = FontWeight.ExtraBold,
-        letterSpacing = TITLE_TRACKING,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
       )
@@ -143,5 +142,3 @@ private fun HeaderFolder(folder: String, @DrawableRes icon: Int) {
     )
   }
 }
-
-private val TITLE_TRACKING = (-0.025).em

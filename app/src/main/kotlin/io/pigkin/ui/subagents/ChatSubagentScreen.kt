@@ -66,7 +66,7 @@ import io.pigkin.ui.workspace.rememberWorkspaceTabs
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-private val TRAY_SHAPE = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+private val TRAY_SHAPE = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
 private val SEND_SIZE = 40.dp
 private val SEND_ICON_SIZE = 18.dp
 

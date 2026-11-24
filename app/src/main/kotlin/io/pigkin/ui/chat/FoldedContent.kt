@@ -78,7 +78,7 @@ internal fun FoldedContent(
         Text(
           text = stringResource(if (expanded) R.string.chat_show_less else R.string.chat_show_more),
           modifier = Modifier.clickable(onClick = onToggle).padding(top = PigkinTokens.Spacing.s8),
-          color = colors.accent,
+          color = colors.foreground,
           fontSize = PigkinTokens.FontSize.meta,
           fontWeight = FontWeight.Bold,
         )

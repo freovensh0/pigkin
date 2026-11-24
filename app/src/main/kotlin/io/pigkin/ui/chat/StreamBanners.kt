@@ -90,7 +90,7 @@ private fun StatusCard(
           modifier = Modifier.fillMaxWidth(),
           color = pigkinColors.foregroundMuted,
           fontFamily = PigkinFonts.mono,
-          fontSize = 11.5.sp,
+          fontSize = 12.sp,
           lineHeight = PigkinTokens.LineHeight.code,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
@@ -266,7 +266,7 @@ private fun BannerAction(label: String, filled: Boolean, @DrawableRes icon: Int?
     ) {
       LucideIcon(icon = icon, contentDescription = null, size = PigkinTokens.IconSize.sm, tint = content)
     }
-    Text(text = label, color = content, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
+    Text(text = label, color = content, fontSize = 14.sp, fontWeight = FontWeight.Bold)
   }
 }
 
@@ -295,4 +295,4 @@ private fun BannerCard(
   )
 }
 
-private val BannerShape = RoundedCornerShape(20.dp)
+private val BannerShape = RoundedCornerShape(8.dp)

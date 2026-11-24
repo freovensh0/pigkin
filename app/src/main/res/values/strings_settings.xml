@@ -5,7 +5,6 @@
     <string name="settings_copy">Copy</string>
     <string name="settings_section_models">Models</string>
     <string name="settings_section_chats">Chats</string>
-    <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_extensions">Extensions</string>
     <string name="settings_section_agent">Agent</string>
     <string name="settings_section_configuration">Configuration</string>
@@ -109,15 +108,6 @@
     <string name="settings_auto_archive_more">More days</string>
     <string name="settings_auto_archive_summary">Archives a chat after a set number of days without a new message or being opened</string>
 
-    <string name="settings_theme">Theme</string>
-    <!-- Theme names. System follows the phone's dark mode, using Porcelain by day and Stone by night. The others are
-         named after materials: porcelain, clay, cobalt (the blue glaze), stone and obsidian (black volcanic glass). -->
-    <string name="settings_theme_system">System</string>
-    <string name="settings_theme_porcelain">Porcelain</string>
-    <string name="settings_theme_clay">Clay</string>
-    <string name="settings_theme_cobalt">Cobalt</string>
-    <string name="settings_theme_stone">Stone</string>
-    <string name="settings_theme_obsidian">Obsidian</string>
 
     <string name="settings_in_app_notifications">In-app notifications</string>
     <string name="settings_in_app_notifications_summary">Show a pill when another chat finishes or needs your answer</string>

@@ -88,9 +88,8 @@ fun PigkinDialog(
       Text(
         text = title,
         color = colors.foreground,
-        fontSize = 19.sp,
+        fontSize = 20.sp,
         fontWeight = FontWeight.ExtraBold,
-        letterSpacing = (-0.02).em,
         lineHeight = 24.sp,
       )
       if (text != null) {
@@ -128,7 +127,7 @@ private fun DialogIconTile(@DrawableRes icon: Int, destructive: Boolean) {
     modifier = Modifier
       .padding(bottom = PigkinTokens.Spacing.s12)
       .size(40.dp)
-      .clip(RoundedCornerShape(14.dp))
+      .clip(RoundedCornerShape(8.dp))
       .background(if (destructive) colors.dangerSoft else colors.accentSoft),
     contentAlignment = Alignment.Center,
   ) {
@@ -141,7 +140,7 @@ private fun DialogIconTile(@DrawableRes icon: Int, destructive: Boolean) {
   }
 }
 
-private val DIALOG_SHAPE = RoundedCornerShape(28.dp)
+private val DIALOG_SHAPE = RoundedCornerShape(12.dp)
 
 /** The colours of a [PillButton]. */
 enum class PillTone { Primary, Destructive, Tonal }
@@ -166,7 +165,7 @@ fun PillButton(
     onClick = onClick,
     modifier = modifier.heightIn(min = 40.dp),
     enabled = enabled,
-    shape = RoundedCornerShape(20.dp),
+    shape = RoundedCornerShape(8.dp),
     colors = ButtonDefaults.buttonColors(
       containerColor = container,
       contentColor = content,
@@ -209,7 +208,7 @@ fun DialogTextField(
   val colors = pigkinColors
   val interaction = remember { MutableInteractionSource() }
   val focused by interaction.collectIsFocusedAsState()
-  val shape = RoundedCornerShape(14.dp)
+  val shape = RoundedCornerShape(8.dp)
   val style = LocalTextStyle.current.merge(
     TextStyle(color = colors.foreground, fontSize = PigkinTokens.FontSize.content),
   )

@@ -283,8 +283,8 @@ internal fun LeadingRow(text: String, color: Color = pigkinColors.foreground, le
   }
 }
 
-private val CODE_RADIUS = 14.dp
-private val CODE_SIZE = 24.sp
+private val CODE_RADIUS = 4.dp
+private val CODE_SIZE = 20.sp
 private val CODE_TRACKING = 0.08.em
 
 private fun openUrl(context: Context, url: String): Boolean = try {

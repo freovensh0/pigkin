@@ -10,7 +10,6 @@ import io.pigkin.localmodel.catalog.LocalModelSettings
 import io.pigkin.ui.files.ExplorerSort
 import io.pigkin.ui.files.SortKey
 import io.pigkin.ui.git.ExplorerTab
-import io.pigkin.ui.theme.AppTheme
 import io.pigkin.workspace.SavedLayout
 import io.pigkin.workspace.savedLayoutOf
 import io.pigkin.workspace.toJson
@@ -34,7 +33,6 @@ internal class Preferences(context: Context) {
   private val setupCompleteState = MutableStateFlow(prefs.getBoolean(SETUP_COMPLETE, false))
   private val setupCommandCopiedForState = MutableStateFlow(prefs.getString(SETUP_COMMAND_COPIED_FOR, null))
   private val setupPagesPassedState = MutableStateFlow(readStringSet(SETUP_PAGES_PASSED))
-  private val themeState = MutableStateFlow(readTheme())
   private val lastProjectCwdState = MutableStateFlow(prefs.getString(LAST_PROJECT_CWD, null))
   private val workspacesState = MutableStateFlow(readWorkspaces())
   private val archivedState = MutableStateFlow(readLongMap(ARCHIVED_SESSIONS))
@@ -84,8 +82,6 @@ internal class Preferences(context: Context) {
 
   /** Onboarding pages the user moved past without finishing them: the welcome page and skipped optional steps. */
   val setupPagesPassed: StateFlow<Set<String>> = setupPagesPassedState.asStateFlow()
-
-  val theme: StateFlow<AppTheme> = themeState.asStateFlow()
 
   /** The workspace folder last opened, or last started a chat in, from the sidebar. */
   val lastProjectCwd: StateFlow<String?> = lastProjectCwdState.asStateFlow()
@@ -175,11 +171,6 @@ internal class Preferences(context: Context) {
     if (updated.size == setupPagesPassedState.value.size) return
     prefs.edit { putString(SETUP_PAGES_PASSED, JSONArray(updated).toString()) }
     setupPagesPassedState.value = updated
-  }
-
-  fun setTheme(theme: AppTheme) {
-    prefs.edit { putString(THEME, theme.name) }
-    themeState.value = theme
   }
 
   fun setLastProjectCwd(cwd: String?) {
@@ -378,13 +369,6 @@ internal class Preferences(context: Context) {
     prefs.edit { putString(LAYOUT, layout.toJson()) }
   }
 
-  /** The saved theme. Before there were palettes to pick, the setting was Light or Dark, which kept their colours. */
-  private fun readTheme(): AppTheme = when (val name = prefs.getString(THEME, null)) {
-    "Light" -> AppTheme.Porcelain
-    "Dark" -> AppTheme.Cobalt
-    else -> AppTheme.entries.firstOrNull { it.name == name } ?: AppTheme.System
-  }
-
   private fun readWorkspaces(): List<String> {
     val array = JSONArray(prefs.getString(WORKSPACES, null) ?: return emptyList())
     return List(array.length()) { array.getString(it) }
@@ -433,7 +417,6 @@ internal class Preferences(context: Context) {
     const val SETUP_COMPLETE = "setupComplete"
     const val SETUP_COMMAND_COPIED_FOR = "setupCommandCopiedFor"
     const val SETUP_PAGES_PASSED = "setupPagesPassed"
-    const val THEME = "theme"
     const val LAST_PROJECT_CWD = "lastProjectCwd"
     const val WORKSPACES = "workspaces"
     const val ARCHIVED_SESSIONS = "archivedSessions"

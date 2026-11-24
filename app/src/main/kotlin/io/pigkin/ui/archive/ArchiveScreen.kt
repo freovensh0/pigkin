@@ -387,7 +387,7 @@ private fun ArchivedRow(
   }
 }
 
-private val ROW_RADIUS = 16.dp
+private val ROW_RADIUS = 8.dp
 private const val SELECTED_RING_ALPHA = 0.5f
 
 /** The chat's [FolderLine], then how many subagents it ran, whose transcripts stay with it. */

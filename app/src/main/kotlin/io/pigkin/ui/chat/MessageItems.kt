@@ -58,7 +58,7 @@ import io.pigkin.ui.theme.pigkinColors
 import java.util.Date
 import kotlinx.coroutines.delay
 
-private val PromptShape = RoundedCornerShape(20.dp)
+private val PromptShape = RoundedCornerShape(8.dp)
 private val ImageMaxEdge = 160.dp
 private val PROMPT_LINE_HEIGHT = 21.sp
 
@@ -102,7 +102,12 @@ internal fun UserMessage(
           onToggle = onToggle,
         ) {
           SelectionContainer {
-            Text(text = item.text, color = colors.foreground, fontSize = 14.5.sp, lineHeight = PROMPT_LINE_HEIGHT)
+            Text(
+              text = item.text,
+              color = colors.foreground,
+              fontSize = PigkinTokens.FontSize.base,
+              lineHeight = PROMPT_LINE_HEIGHT,
+            )
           }
         }
       }
@@ -125,7 +130,7 @@ private fun PromptHeader(item: TimelineItem.User, task: Boolean) {
       text = stringResource(R.string.separator_dot) + if (task) stringResource(R.string.subagent_task_from) else time,
       modifier = Modifier.weight(1f),
       color = colors.foregroundMuted,
-      fontSize = 10.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.Medium,
       maxLines = 1,
     )

@@ -1,7 +1,7 @@
 package io.pigkin.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -76,8 +76,8 @@ import kotlinx.coroutines.launch
 
 private enum class Panel { Sidebar, Chat, Explorer }
 
-/** Paseo's panel slide: 220ms, standard easing. */
-private val PanelAnimation = tween<Float>(durationMillis = 220, easing = FastOutSlowInEasing)
+/** The panel slide: 200ms, ease out. */
+private val PanelAnimation = tween<Float>(durationMillis = 200, easing = LinearOutSlowInEasing)
 
 /**
  * Each pane's sliding panels: its sidebar, its screen and its explorer, which slide within that pane's width; which

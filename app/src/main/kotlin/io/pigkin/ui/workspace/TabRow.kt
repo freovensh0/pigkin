@@ -212,10 +212,10 @@ private fun TabRow(
   }
 }
 
-private val ROW_SHAPE = RoundedCornerShape(16.dp)
+private val ROW_SHAPE = RoundedCornerShape(8.dp)
 private val MARK_TILE_SIZE = 32.dp
-private val MARK_TILE_SHAPE = RoundedCornerShape(10.dp)
-private val TITLE_SIZE = 14.5.sp
+private val MARK_TILE_SHAPE = RoundedCornerShape(4.dp)
+private val TITLE_SIZE = 14.sp
 
 /** A row's second line; a long one keeps its end, where a folder path names the folder. */
 @Composable

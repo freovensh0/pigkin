@@ -133,7 +133,7 @@ private fun imageAltAnnotator(): MarkdownAnnotator {
   }
 }
 
-private val IMAGE_ALT_FONT_SIZE = 10.sp
+private val IMAGE_ALT_FONT_SIZE = 12.sp
 
 @Composable
 private fun typography(body: TextStyle): MarkdownTypography {
@@ -147,8 +147,8 @@ private fun typography(body: TextStyle): MarkdownTypography {
   )
   return markdownTypography(
     h1 = body.copy(fontSize = PigkinTokens.FontSize.xxl, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold),
-    h2 = body.copy(fontSize = PigkinTokens.FontSize.xl, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold),
-    h3 = body.copy(fontSize = PigkinTokens.FontSize.lg, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
+    h2 = body.copy(fontSize = PigkinTokens.FontSize.xl, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+    h3 = body.copy(fontSize = PigkinTokens.FontSize.lg, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
     h4 = body.copy(fontWeight = FontWeight.SemiBold),
     h5 = body.copy(fontWeight = FontWeight.SemiBold),
     h6 = body.copy(fontWeight = FontWeight.SemiBold),
@@ -160,7 +160,7 @@ private fun typography(body: TextStyle): MarkdownTypography {
     ordered = body,
     bullet = body,
     list = body,
-    textLink = TextLinkStyles(style = SpanStyle(color = colors.accent, textDecoration = TextDecoration.Underline)),
+    textLink = TextLinkStyles(style = SpanStyle(color = colors.foreground, textDecoration = TextDecoration.Underline)),
     // The front matter table's cell type, a size under the body so more of a row fits across.
     table = body.copy(fontSize = PigkinTokens.FontSize.base, lineHeight = 20.sp),
     alertTitle = body.copy(fontWeight = FontWeight.SemiBold),

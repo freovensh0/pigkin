@@ -1,7 +1,7 @@
 package io.pigkin.ui
 
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.IntOffset
  * deeper screen always draws over a shallower one, however it got there.
  */
 internal fun stackTransition(from: Int, to: Int): ContentTransform {
-  val slide = tween<IntOffset>(durationMillis = SCREEN_SLIDE_MILLIS, easing = FastOutSlowInEasing)
-  val fade = tween<Float>(durationMillis = SCREEN_SLIDE_MILLIS, easing = FastOutSlowInEasing)
+  val slide = tween<IntOffset>(durationMillis = SCREEN_SLIDE_MILLIS, easing = LinearOutSlowInEasing)
+  val fade = tween<Float>(durationMillis = SCREEN_SLIDE_MILLIS, easing = LinearOutSlowInEasing)
   val transform = when {
     to > from -> slideInHorizontally(slide) { it } togetherWith slideOutHorizontally(slide) { -it / 4 }
     to < from -> slideInHorizontally(slide) { -it / 4 } togetherWith slideOutHorizontally(slide) { it }
@@ -29,4 +29,4 @@ internal fun stackTransition(from: Int, to: Int): ContentTransform {
   return transform.apply { targetContentZIndex = to.toFloat() }
 }
 
-private const val SCREEN_SLIDE_MILLIS = 220
+private const val SCREEN_SLIDE_MILLIS = 200

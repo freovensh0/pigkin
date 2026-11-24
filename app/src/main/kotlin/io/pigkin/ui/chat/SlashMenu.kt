@@ -167,7 +167,7 @@ internal fun SlashCommandMenu(menu: SlashMenu, query: String, onRan: () -> Unit,
   Box(
     modifier =
       modifier
-        .shadow(8.dp, MENU_SHAPE, ambientColor = SHADOW, spotColor = SHADOW)
+        .shadow(2.dp, MENU_SHAPE, ambientColor = SHADOW, spotColor = SHADOW)
         .clip(MENU_SHAPE)
         .background(colors.surface1)
         .heightIn(max = 220.dp),
@@ -209,7 +209,7 @@ private fun CommandRow(command: SlashCommand, highlighted: Boolean, onClick: () 
       text = "/${command.name}",
       color = if (highlighted) colors.accent else colors.foreground,
       fontFamily = PigkinFonts.mono,
-      fontSize = 12.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.SemiBold,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
@@ -247,8 +247,8 @@ private fun MenuRow(onClick: (() -> Unit)?, modifier: Modifier = Modifier, conte
   )
 }
 
-private val MENU_SHAPE = RoundedCornerShape(20.dp)
-private val ROW_SHAPE = RoundedCornerShape(16.dp)
+private val MENU_SHAPE = RoundedCornerShape(8.dp)
+private val ROW_SHAPE = RoundedCornerShape(8.dp)
 
 /** Black at 20%, for a card floating over the chat. */
 private val SHADOW = Color.Black.copy(alpha = 0.2f)

@@ -55,8 +55,6 @@
     <string name="onboarding_setup_changed">Termux was reinstalled, which removed Pigkin\'s setup, the agent and its sign-in. Paste the command again.</string>
     <string name="onboarding_setup_action">Copy command &amp; open Termux</string>
     <string name="onboarding_setup_done">Termux is ready for Pigkin.</string>
-    <string name="onboarding_demo_paste">Paste</string>
-    <string name="onboarding_demo_installing">Installing Node.js…</string>
     <string name="onboarding_demo_done">Pigkin setup done</string>
 
     <string name="onboarding_notifications_title">Notifications</string>

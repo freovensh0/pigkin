@@ -49,7 +49,7 @@ internal fun MarkdownTable(content: String, node: ASTNode, style: TextStyle) {
   val table = remember(content, node) { parseTable(content, node) }
   if (table.columns == 0) return
   val colors = pigkinColors
-  val shape = RoundedCornerShape(16.dp)
+  val shape = RoundedCornerShape(8.dp)
   val annotator = annotatorSettings()
   val headerStyle = style.copy(color = colors.foregroundMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
   val rows = listOf(table.header) + table.body

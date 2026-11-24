@@ -63,7 +63,7 @@ internal fun SubagentToolRow(call: TimelineItem.ToolCall, subagents: StreamSubag
     Text(
       text = statusText,
       color = if (facts.phase == SubagentPhase.Asking) pigkinColors.dotWarning else pigkinColors.foregroundMuted,
-      fontSize = 11.5.sp,
+      fontSize = 12.sp,
       fontFamily = PigkinFonts.mono,
       style = LocalTextStyle.current.copy(fontFeatureSettings = PigkinFonts.TABULAR),
       maxLines = 1,

@@ -215,7 +215,7 @@ private fun BannerTextButton(label: String, onClick: () -> Unit) {
   Text(
     text = label,
     modifier = Modifier
-      .clip(RoundedCornerShape(10.dp))
+      .clip(RoundedCornerShape(4.dp))
       .clickable(role = Role.Button, onClick = onClick)
       .padding(horizontal = 10.dp, vertical = 9.dp),
     color = pigkinColors.accent,
@@ -228,5 +228,5 @@ private fun BannerTextButton(label: String, onClick: () -> Unit) {
 private val CHECK_INTERVAL = 10.seconds
 
 /** Rounded to a pill at one line's height, and still a rounded card when the reason wraps. */
-private val BANNER_SHAPE = RoundedCornerShape(22.dp)
-private val BANNER_ELEVATION = 6.dp
+private val BANNER_SHAPE = RoundedCornerShape(12.dp)
+private val BANNER_ELEVATION = 2.dp

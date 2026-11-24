@@ -159,7 +159,7 @@ private fun MachineItems(
     LucideIcon(icon = R.drawable.ic_lucide_plus, contentDescription = null, tint = colors.accent)
     Text(
       text = stringResource(R.string.remote_add_host),
-      color = colors.accent,
+      color = colors.foreground,
       fontSize = PigkinTokens.FontSize.base,
       fontWeight = FontWeight.SemiBold,
     )
@@ -240,4 +240,4 @@ private fun MenuDetail(text: String) {
   )
 }
 
-private val MACHINE_SHAPE = RoundedCornerShape(14.dp)
+private val MACHINE_SHAPE = RoundedCornerShape(8.dp)

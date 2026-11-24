@@ -351,7 +351,7 @@ private fun TabCount(count: Int) {
       .background(colors.accentSoft, CircleShape)
       .defaultMinSize(minWidth = 20.dp)
       .padding(horizontal = PigkinTokens.Spacing.s6),
-    color = colors.accent,
+    color = colors.foreground,
     fontSize = PigkinTokens.FontSize.sm,
     fontWeight = FontWeight.Bold,
     style = LocalTextStyle.current.copy(fontFeatureSettings = PigkinFonts.TABULAR),

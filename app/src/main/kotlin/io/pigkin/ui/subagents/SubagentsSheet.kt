@@ -281,7 +281,7 @@ private fun RunLine(run: SubagentRun, phase: SubagentPhase, question: String?) {
   Text(
     text = text,
     color = color,
-    fontSize = if (code) 11.5.sp else PigkinTokens.FontSize.sm,
+    fontSize = if (code) 12.sp else PigkinTokens.FontSize.sm,
     fontFamily = if (code) PigkinFonts.mono else null,
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,
@@ -323,7 +323,7 @@ private fun RingDot(color: Color) {
 @Composable
 internal fun StopButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val colors = pigkinColors
-  val shape = RoundedCornerShape(20.dp)
+  val shape = RoundedCornerShape(8.dp)
   Row(
     modifier = modifier
       .heightIn(min = 40.dp)

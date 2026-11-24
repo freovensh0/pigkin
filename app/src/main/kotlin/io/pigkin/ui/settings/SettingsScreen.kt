@@ -40,7 +40,6 @@ import io.pigkin.data.AccountRepository
 import io.pigkin.data.BundledExtension
 import io.pigkin.data.PiExtensionUpdate
 import io.pigkin.data.PiExtensionUpdateOutcome
-import io.pigkin.data.Preferences
 import io.pigkin.ui.chat.ConfirmDialog
 import io.pigkin.ui.components.HeaderBar
 import io.pigkin.ui.components.HeaderButton
@@ -98,7 +97,6 @@ private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, nav: 
     ) {
       ModelsSection(accounts = graph.accountRepository, onOpenProviders = nav.onOpenProviders)
       ChatsSection(preferences = graph.preferences)
-      AppearanceSection(preferences = graph.preferences)
       ExtensionsSection(graph = graph, snackbar = snackbar)
       AgentSection(
         graph = graph,
@@ -139,14 +137,6 @@ private fun ModelsSection(accounts: AccountRepository, onOpenProviders: () -> Un
     ) {
       Chevron()
     }
-  }
-}
-
-@Composable
-private fun AppearanceSection(preferences: Preferences) {
-  val theme by preferences.theme.collectAsStateWithLifecycle()
-  SettingsSection(title = stringResource(R.string.settings_section_appearance)) {
-    ThemePicker(selected = theme, onSelect = preferences::setTheme)
   }
 }
 

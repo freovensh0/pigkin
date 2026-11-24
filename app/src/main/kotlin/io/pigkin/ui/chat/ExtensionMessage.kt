@@ -62,7 +62,7 @@ private const val FOLD_SLACK_LINES = 3
 /** The notice's line height. */
 private val NOTICE_LINE_HEIGHT = 20.sp
 
-private val CardShape = RoundedCornerShape(16.dp)
+private val CardShape = RoundedCornerShape(8.dp)
 
 /**
  * A message an extension posted, as Pi's terminal shows it: the extension's message type in plum over its content, on
@@ -171,7 +171,7 @@ internal fun ExtensionNoticeCard(item: TimelineItem.ExtensionNotice, modifier: M
           Text(
             text = item.appNotice?.let { stringResource(it.text) } ?: item.message,
             color = colors.foreground,
-            fontSize = 13.5.sp,
+            fontSize = 14.sp,
             lineHeight = NOTICE_LINE_HEIGHT,
           )
         }

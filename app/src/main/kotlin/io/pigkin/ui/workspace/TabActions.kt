@@ -131,7 +131,7 @@ private fun ActionTile(action: TabAction, dismiss: (then: () -> Unit) -> Unit, m
     Text(
       text = stringResource(action.label),
       color = tint,
-      fontSize = 12.5.sp,
+      fontSize = 12.sp,
       lineHeight = 15.sp,
       textAlign = TextAlign.Center,
       maxLines = 2,
@@ -143,11 +143,11 @@ private fun ActionTile(action: TabAction, dismiss: (then: () -> Unit) -> Unit, m
 /** A muted label in capitals over a part of the session sheet. */
 @Composable
 internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-  CapsLabel(text = text, color = pigkinColors.foregroundMuted, modifier = modifier, fontSize = 11.sp)
+  CapsLabel(text = text, color = pigkinColors.foregroundMuted, modifier = modifier, fontSize = 12.sp)
 }
 
 private const val TILES_PER_ROW = 3
 private const val DISABLED_ALPHA = 0.4f
 private val TILE_GAP = 8.dp
 private val TILE_HEIGHT = 68.dp
-private val TILE_SHAPE = RoundedCornerShape(14.dp)
+private val TILE_SHAPE = RoundedCornerShape(8.dp)

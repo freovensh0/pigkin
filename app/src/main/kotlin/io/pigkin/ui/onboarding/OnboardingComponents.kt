@@ -103,7 +103,7 @@ internal fun StepCard(spec: StepSpec, number: Int, modifier: Modifier = Modifier
           modifier = Modifier
             .background(colors.accentSoft, RoundedCornerShape(BADGE_RADIUS))
             .padding(horizontal = PigkinTokens.Spacing.s8, vertical = PigkinTokens.Spacing.s2),
-          color = colors.accent,
+          color = colors.foreground,
           fontSize = BADGE_TEXT_SIZE,
           fontWeight = FontWeight.Bold,
         )
@@ -308,5 +308,5 @@ private val ButtonPadding = PaddingValues(horizontal = PigkinTokens.Spacing.s16,
 private val CARD_TITLE_LINE_HEIGHT = 20.sp
 private val BADGE_SIZE = 24.dp
 private val BADGE_RADIUS = 8.dp
-private val BADGE_TEXT_SIZE = 11.sp
-private val COMMAND_RADIUS = 14.dp
+private val BADGE_TEXT_SIZE = 12.sp
+private val COMMAND_RADIUS = 4.dp

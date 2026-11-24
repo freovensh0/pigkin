@@ -156,7 +156,7 @@ private fun ThinkingLevels(controller: ChatController, model: JSONObject?, curre
         Text(
           text = thinkingLevelLabel(level),
           color = textColor,
-          fontSize = 12.5.sp,
+          fontSize = 12.sp,
           fontWeight = FontWeight.Bold,
           maxLines = 1,
         )

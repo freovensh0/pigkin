@@ -52,7 +52,7 @@ internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
   )
 }
 
-private val SECTION_LABEL_SIZE = 11.5.sp
+private val SECTION_LABEL_SIZE = 12.sp
 private val SECTION_LABEL_TRACKING = 0.06.em
 
 /**
@@ -137,7 +137,7 @@ internal fun SettingsProgressLine(text: String) {
 }
 
 /** The shape of a settings form field: the same rounded well as a dialog's field. */
-internal val SettingsFieldShape = RoundedCornerShape(14.dp)
+internal val SettingsFieldShape = RoundedCornerShape(4.dp)
 
 /** A settings form field's colours: a raised well with a hairline that turns cobalt while focused. */
 @Composable

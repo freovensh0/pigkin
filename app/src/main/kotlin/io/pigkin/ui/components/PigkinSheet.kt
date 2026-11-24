@@ -98,7 +98,7 @@ fun PigkinSheet(
       BottomSheetDefaults.DragHandle(
         width = 40.dp,
         height = 4.dp,
-        shape = RoundedCornerShape(2.dp),
+        shape = RoundedCornerShape(4.dp),
         color = pigkinColors.surface3,
       )
     },
@@ -181,7 +181,7 @@ private const val TOUCH_HOLD_MILLIS = 120L
 /** The share of a closing sheet's content still on screen when the action it closed for runs. */
 private const val OUT_OF_SIGHT_FRACTION = 0.1f
 
-private val SHEET_SHAPE = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+private val SHEET_SHAPE = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
 
 /**
  * Keeps a touch from moving the sheet where it can't go. Material hands a list's leftover scroll and fling to the

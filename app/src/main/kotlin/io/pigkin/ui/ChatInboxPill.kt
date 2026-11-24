@@ -282,8 +282,8 @@ private fun InboxTray(entries: List<InboxEntry>, onOpen: (InboxEntry) -> Unit, o
           .clip(CircleShape)
           .clickable(onClick = onClearAll)
           .padding(horizontal = PigkinTokens.Spacing.s12, vertical = PigkinTokens.Spacing.s8),
-        color = colors.accent,
-        fontSize = 12.5.sp,
+        color = colors.foreground,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
       )
@@ -321,7 +321,7 @@ private fun InboxRow(entry: InboxEntry, now: Long, onOpen: (InboxEntry) -> Unit)
       Text(
         text = entry.title ?: stringResource(R.string.chat_new_chat),
         color = colors.foreground,
-        fontSize = 13.5.sp,
+        fontSize = 14.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -418,15 +418,15 @@ private fun timeAgo(at: Long, now: Long): String = if (now - at < DateUtils.MINU
 /** Wide enough for a short title and what happened; a longer title is cut short rather than cover the chat. */
 private val PILL_MAX_WIDTH = 260.dp
 private val PILL_HEIGHT = 34.dp
-private val PILL_ELEVATION = 6.dp
+private val PILL_ELEVATION = 2.dp
 private val PILL_BADGE_SIZE = 22.dp
-private val PILL_TEXT_SIZE = 12.5.sp
+private val PILL_TEXT_SIZE = 12.sp
 private const val PILL_DIM_ALPHA = 0.65f
-private val TRAY_SHAPE = RoundedCornerShape(26.dp)
+private val TRAY_SHAPE = RoundedCornerShape(12.dp)
 private val TRAY_MAX_WIDTH = 400.dp
 private val TRAY_LIST_MAX_HEIGHT = 320.dp
-private val TRAY_ELEVATION = 12.dp
-private val ROW_SHAPE = RoundedCornerShape(18.dp)
+private val TRAY_ELEVATION = 2.dp
+private val ROW_SHAPE = RoundedCornerShape(8.dp)
 private val ROW_BADGE_SIZE = 28.dp
 private const val BADGE_ICON_SCALE = 0.6f
 private val DOT_SIZE = 19.dp

@@ -284,14 +284,14 @@ private fun CardHeader(request: ExtensionUiRequest, asker: SubagentAsker, number
       if (asker != SubagentAsker.Unknown) {
         HeaderPill(
           text = named ?: stringResource(R.string.chat_dialog_from_subagents),
-          color = colors.accent,
+          color = colors.foreground,
           background = colors.accentSoft,
           icon = R.drawable.ic_lucide_bot,
           description = named?.let { stringResource(R.string.chat_dialog_from_subagent, it) },
         )
       }
       Text(text = title, color = colors.foreground, style = LocalTextStyle.current.merge(TITLE_STYLE))
-      request.message?.let { Text(text = it, color = colors.foregroundMuted, fontSize = 13.5.sp, lineHeight = 20.sp) }
+      request.message?.let { Text(text = it, color = colors.foregroundMuted, fontSize = 14.sp, lineHeight = 20.sp) }
     }
     request.expiresAt?.let { SecondsLeft(it) }
     if (count > 1) {
@@ -509,16 +509,16 @@ private fun SubmitButtons(canSubmit: Boolean, onSubmit: () -> Unit, onDismiss: (
 
 private const val MILLIS_PER_SECOND = 1000L
 
-private val CARD_SHAPE = RoundedCornerShape(22.dp)
+private val CARD_SHAPE = RoundedCornerShape(12.dp)
 private val ROW_SHAPE = RoundedCornerShape(12.dp)
-private val FIELD_SHAPE = RoundedCornerShape(14.dp)
+private val FIELD_SHAPE = RoundedCornerShape(8.dp)
 
 /** The space between the header, the answers and the buttons. */
 private val CARD_GAP = 10.dp
 
 /** The text of the small pills in the card's header. */
 private val PILL_TEXT_STYLE = TextStyle(
-  fontSize = 11.5.sp,
+  fontSize = 12.sp,
   fontWeight = FontWeight.Bold,
   fontFeatureSettings = PigkinFonts.TABULAR,
 )
@@ -526,8 +526,7 @@ private val PILL_MIN_HEIGHT = 22.dp
 
 /** The card's title; the header's floor is two lines of it. */
 private val TITLE_STYLE = TextStyle(
-  fontSize = 15.5.sp,
+  fontSize = 16.sp,
   fontWeight = FontWeight.ExtraBold,
   lineHeight = 20.sp,
-  letterSpacing = (-0.015).em,
 )

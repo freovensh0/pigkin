@@ -107,7 +107,7 @@ internal fun ToolRow(
     Text(
       text = presentation.title,
       color = colors.foreground,
-      fontSize = 12.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.SemiBold,
       maxLines = 1,
     )
@@ -115,7 +115,7 @@ internal fun ToolRow(
       text = presentation.summary.orEmpty(),
       modifier = Modifier.weight(1f),
       color = if (presentation.isError) colors.destructive else colors.foregroundMuted,
-      fontSize = if (presentation.code) 11.5.sp else 12.5.sp,
+      fontSize = if (presentation.code) 12.sp else 12.sp,
       fontFamily = if (presentation.code) PigkinFonts.mono else null,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
@@ -155,7 +155,7 @@ private fun FigureText(figure: StepFigure) {
     StepFigure.Stopped -> colored(stringResource(R.string.chat_figure_stopped), colors.foregroundMuted)
   }
   if (text.isEmpty()) return
-  Text(text = text, fontSize = 11.5.sp, fontFamily = PigkinFonts.mono, maxLines = 1, softWrap = false)
+  Text(text = text, fontSize = 12.sp, fontFamily = PigkinFonts.mono, maxLines = 1, softWrap = false)
 }
 
 private fun colored(text: String, color: Color) = AnnotatedString(text, SpanStyle(color = color))
@@ -193,7 +193,7 @@ internal fun ErrorRow(message: String, modifier: Modifier = Modifier) {
       tint = colors.destructive,
     )
     SelectionContainer(modifier = Modifier.weight(1f)) {
-      Text(text = message, color = colors.destructive, fontSize = 13.5.sp, lineHeight = 19.5.sp)
+      Text(text = message, color = colors.destructive, fontSize = 14.sp, lineHeight = 19.5.sp)
     }
   }
 }

@@ -161,9 +161,8 @@ private fun TabsSheetTitle(name: String, path: String, remote: Boolean) {
     Text(
       text = name,
       color = colors.foreground,
-      fontSize = 22.sp,
+      fontSize = 20.sp,
       fontWeight = FontWeight.ExtraBold,
-      letterSpacing = (-0.025).em,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
     )

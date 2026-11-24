@@ -187,7 +187,7 @@ private fun HostKeyDialog(host: String, prompt: RemotePrompt, onAnswer: (String?
       modifier = Modifier
         .fillMaxWidth()
         .padding(top = 14.dp)
-        .clip(RoundedCornerShape(14.dp))
+        .clip(RoundedCornerShape(8.dp))
         .background(colors.surface0)
         .padding(horizontal = 14.dp, vertical = 10.dp),
       verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s4),
@@ -278,7 +278,7 @@ private fun RememberRow(checked: Boolean, onChange: (Boolean) -> Unit) {
     modifier = Modifier
       .fillMaxWidth()
       .padding(top = PigkinTokens.Spacing.s12)
-      .clip(RoundedCornerShape(10.dp))
+      .clip(RoundedCornerShape(4.dp))
       .toggleable(value = checked, role = Role.Checkbox, onValueChange = onChange)
       .padding(vertical = PigkinTokens.Spacing.s4),
     verticalAlignment = Alignment.Top,
@@ -315,7 +315,7 @@ private fun RememberRow(checked: Boolean, onChange: (Boolean) -> Unit) {
 internal fun ShowToggle(shown: Boolean, onToggle: () -> Unit) {
   Row(
     modifier = Modifier
-      .clip(RoundedCornerShape(10.dp))
+      .clip(RoundedCornerShape(4.dp))
       .clickable(role = Role.Button, onClick = onToggle)
       .heightIn(min = 36.dp)
       .padding(horizontal = 10.dp),

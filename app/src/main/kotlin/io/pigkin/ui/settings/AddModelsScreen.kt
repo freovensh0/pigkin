@@ -189,7 +189,7 @@ private fun AddCustomModelRow(modelId: String, lookup: CustomModelLookup, onAdd:
       Text(
         text = stringResource(R.string.models_add_custom, modelId),
         modifier = Modifier.weight(1f),
-        color = colors.accent,
+        color = colors.foreground,
         fontSize = PigkinTokens.FontSize.base,
       )
     }

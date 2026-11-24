@@ -107,10 +107,10 @@ private fun CommitCount(count: Int) {
     text = count.toString(),
     modifier = Modifier
       .semantics { contentDescription = description }
-      .background(colors.accentSoft, RoundedCornerShape(9.dp))
+      .background(colors.accentSoft, RoundedCornerShape(4.dp))
       .padding(horizontal = PigkinTokens.Spacing.s6, vertical = PigkinTokens.Spacing.s2),
-    color = colors.accent,
-    fontSize = 11.sp,
+    color = colors.foreground,
+    fontSize = 12.sp,
     fontWeight = FontWeight.Bold,
     style = LocalTextStyle.current.copy(fontFeatureSettings = PigkinFonts.TABULAR),
     maxLines = 1,

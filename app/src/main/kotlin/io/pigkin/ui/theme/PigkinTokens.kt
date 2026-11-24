@@ -19,14 +19,14 @@ object PigkinTokens {
 
   object FontSize {
     val code = 12.sp
-    val content = 15.sp
+    val content = 14.sp
     val sm = 12.sp
     val base = 14.sp
     val lg = 16.sp
-    val xl = 18.sp
+    val xl = 16.sp
     val xxl = 20.sp
-    val meta = 13.sp
-    val title = 17.sp
+    val meta = 12.sp
+    val title = 16.sp
   }
 
   object LineHeight {
@@ -36,11 +36,11 @@ object PigkinTokens {
 
   object Radius {
     val sm = 4.dp
-    val base = 7.dp
-    val md = 12.dp
-    val lg = 14.dp
-    val xl = 18.dp
-    val xxl = 22.dp
+    val base = 4.dp
+    val md = 8.dp
+    val lg = 8.dp
+    val xl = 8.dp
+    val xxl = 12.dp
   }
 
   object IconSize {

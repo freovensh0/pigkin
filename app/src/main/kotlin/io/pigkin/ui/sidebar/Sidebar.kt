@@ -331,9 +331,8 @@ private fun SidebarHeader(onClose: () -> Unit) {
       text = stringResource(R.string.shell_sidebar_title),
       modifier = Modifier.weight(1f),
       color = pigkinColors.foreground,
-      fontSize = 26.sp,
-      fontWeight = FontWeight.ExtraBold,
-      letterSpacing = (-0.025).em,
+      fontSize = PigkinTokens.FontSize.xxl,
+      fontWeight = FontWeight.Bold,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
     )

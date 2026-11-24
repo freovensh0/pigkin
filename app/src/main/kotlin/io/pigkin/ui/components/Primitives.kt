@@ -197,7 +197,7 @@ internal fun CapsLabel(
   text: String,
   color: Color,
   modifier: Modifier = Modifier,
-  fontSize: TextUnit = 10.5.sp,
+  fontSize: TextUnit = 12.sp,
   fontWeight: FontWeight = FontWeight.ExtraBold,
 ) {
   Text(

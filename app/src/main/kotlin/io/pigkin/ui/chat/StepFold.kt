@@ -115,7 +115,7 @@ private fun FoldSummary(fold: TimelineItem.Steps, modifier: Modifier) {
         },
       ),
       color = colors.foreground,
-      fontSize = 12.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.SemiBold,
       maxLines = 1,
     )
@@ -124,7 +124,7 @@ private fun FoldSummary(fold: TimelineItem.Steps, modifier: Modifier) {
       text = separator + pluralStringResource(R.plurals.chat_steps_count, count, numbers.format(count)),
       modifier = Modifier.weight(1f, fill = false),
       color = colors.foregroundMuted,
-      fontSize = 12.5.sp,
+      fontSize = 12.sp,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
     )

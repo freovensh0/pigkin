@@ -103,7 +103,7 @@ private fun FileTile(name: String) {
   Box(
     modifier = Modifier
       .size(28.dp)
-      .background(pigkinColors.infoSoft, RoundedCornerShape(9.dp)),
+      .background(pigkinColors.infoSoft, RoundedCornerShape(4.dp)),
     contentAlignment = Alignment.Center,
   ) {
     Image(

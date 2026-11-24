@@ -90,8 +90,8 @@ private val PANEL_MAX_HEIGHT = 180.dp
 /** The same while the keyboard is up or a dialog waits: four lines, so the field and the dialog keep their room. */
 private val PANEL_TIGHT_MAX_HEIGHT = 68.dp
 
-private val PANEL_SHAPE = RoundedCornerShape(14.dp)
-private val PANEL_FONT_SIZE = 11.sp
+private val PANEL_SHAPE = RoundedCornerShape(8.dp)
+private val PANEL_FONT_SIZE = 12.sp
 private val PANEL_LINE_HEIGHT = 17.sp
 private val EXPAND_SIZE = 26.dp
 
@@ -101,7 +101,7 @@ private val PANEL_TEXT_TOP = 4.5.dp
 /** How far a tab strip or a panel fades at an edge it scrolls past. */
 private val SCROLL_FADE = 24.dp
 
-private const val TAB_RISE_MILLIS = 220
+private const val TAB_RISE_MILLIS = 200
 private const val SHEET_MAX_HEIGHT = 0.9f
 
 /** A widget with its key, as a tab or panel shows it. */
@@ -277,7 +277,7 @@ private fun SubagentsTabChip(tab: SubagentsTab, modifier: Modifier) {
     Text(
       text = stringResource(R.string.subagents_title),
       color = colors.foregroundMuted,
-      fontSize = 11.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.SemiBold,
       maxLines = 1,
     )
@@ -285,7 +285,7 @@ private fun SubagentsTabChip(tab: SubagentsTab, modifier: Modifier) {
       Text(
         text = count,
         color = colors.foregroundMuted,
-        fontSize = 11.5.sp,
+        fontSize = 12.sp,
         style = LocalTextStyle.current.copy(fontFeatureSettings = PigkinFonts.TABULAR),
         maxLines = 1,
       )
@@ -338,7 +338,7 @@ private fun WidgetTab(
       text = label,
       modifier = Modifier.widthIn(max = TAB_LABEL_MAX_WIDTH),
       color = content,
-      fontSize = 11.5.sp,
+      fontSize = 12.sp,
       fontWeight = FontWeight.SemiBold,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,

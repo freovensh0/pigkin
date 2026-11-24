@@ -31,7 +31,7 @@ internal fun CodeBox(
   modifier: Modifier = Modifier,
   label: String? = null,
   background: Color = pigkinColors.surface1,
-  radius: Dp = 16.dp,
+  radius: Dp = 8.dp,
   padding: Dp = PigkinTokens.Spacing.s12,
   content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -41,7 +41,7 @@ internal fun CodeBox(
         text = label,
         modifier = Modifier.padding(start = padding, top = PigkinTokens.Spacing.s8, end = padding),
         color = pigkinColors.foregroundMuted,
-        fontSize = 11.5.sp,
+        fontSize = 12.sp,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
       )

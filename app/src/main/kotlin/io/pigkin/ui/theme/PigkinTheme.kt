@@ -21,8 +21,8 @@ val pigkinColors: PigkinColors
   get() = LocalPigkinColors.current
 
 @Composable
-fun PigkinTheme(theme: AppTheme, content: @Composable () -> Unit) {
-  val colors = theme.colors(systemDark = isSystemInDarkTheme())
+fun PigkinTheme(content: @Composable () -> Unit) {
+  val colors = if (isSystemInDarkTheme()) StoneColors else PorcelainColors
   val base = if (colors.isDark) darkColorScheme() else lightColorScheme()
   val scheme =
     base.copy(

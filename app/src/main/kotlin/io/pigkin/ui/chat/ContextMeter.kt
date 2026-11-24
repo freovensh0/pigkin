@@ -153,11 +153,11 @@ private fun ringColor(percent: Double, colors: PigkinColors): Color = when {
 @Composable
 private fun ContextDetails(usage: ContextUsage?, percent: Int?) {
   val colors = pigkinColors
-  val shape = RoundedCornerShape(22.dp)
+  val shape = RoundedCornerShape(12.dp)
   Column(
     modifier =
       Modifier
-        .shadow(8.dp, shape, ambientColor = SHADOW, spotColor = SHADOW)
+        .shadow(2.dp, shape, ambientColor = SHADOW, spotColor = SHADOW)
         .background(colors.surface2, shape)
         .padding(horizontal = PigkinTokens.Spacing.s16, vertical = 14.dp)
         .widthIn(min = 220.dp, max = 280.dp),
@@ -166,7 +166,7 @@ private fun ContextDetails(usage: ContextUsage?, percent: Int?) {
     Text(
       stringResource(R.string.context_window_title),
       color = colors.foreground,
-      fontSize = 13.5.sp,
+      fontSize = 14.sp,
       fontWeight = FontWeight.ExtraBold,
     )
     val tokens = usage?.tokens
@@ -217,7 +217,7 @@ private fun Detail(text: String) {
 private val RING_SIZE = 23.dp
 private val RING_STROKE = 2.6.dp
 private val BAR_HEIGHT = 8.dp
-private val DETAIL_SIZE = 13.sp
+private val DETAIL_SIZE = 14.sp
 private val DETAIL_LINE_HEIGHT = 19.5.sp
 
 /** Centred above the anchor and kept [gap] from it, shifted to stay on screen; below when there's no room above. */

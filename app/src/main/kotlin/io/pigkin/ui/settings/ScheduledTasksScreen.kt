@@ -320,7 +320,7 @@ private fun EmptyTasks(onAdd: () -> Unit, modifier: Modifier) {
   }
 }
 
-private val TASK_SHAPE = RoundedCornerShape(16.dp)
+private val TASK_SHAPE = RoundedCornerShape(8.dp)
 
 private val ScheduledTask.statusIcon: Int
   get() = if (failed) R.drawable.ic_lucide_triangle_alert else R.drawable.ic_lucide_bell

@@ -87,8 +87,7 @@ class MainActivity : ComponentActivity() {
     onBackPressedDispatcher.addCallback(this) { if (isTaskRoot) moveTaskToBack(false) else finish() }
     val graph = appGraph
     setContent {
-      val theme by graph.preferences.theme.collectAsStateWithLifecycle()
-      PigkinTheme(theme) {
+      PigkinTheme {
         // The app's theme can differ from the system's, so the bars' icons follow the app's.
         val dark = pigkinColors.isDark
         LaunchedEffect(dark) { enableEdgeToEdge(statusBarStyle(dark), navigationBarStyle(dark)) }

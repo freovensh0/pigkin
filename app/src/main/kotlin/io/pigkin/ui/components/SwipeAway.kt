@@ -4,9 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -117,7 +116,7 @@ private class SwipeOffset {
   var dragging by mutableStateOf(false)
 
   suspend fun springBack() {
-    offset.animateTo(0f, spring(stiffness = Spring.StiffnessMediumLow))
+    offset.animateTo(0f, tween(SLIDE_OUT_MILLIS, easing = LinearOutSlowInEasing))
   }
 }
 
@@ -177,7 +176,7 @@ private fun SwipeMark(@DrawableRes icon: Int, armed: Boolean, modifier: Modifier
   val background by animateColorAsState(if (armed) colors.accent else colors.surface3, label = "swipeMark")
   val scale by animateFloatAsState(
     targetValue = if (armed) 1.2f else 0.9f,
-    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+    animationSpec = tween(SLIDE_OUT_MILLIS, easing = LinearOutSlowInEasing),
     label = "swipeMarkScale",
   )
   Box(

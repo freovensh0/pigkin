@@ -325,13 +325,13 @@ private fun tileColor(cwd: String, colors: PigkinColors): Color {
   return tints[Math.floorMod(cwd.hashCode(), tints.size)]
 }
 
-private val ROW_RADIUS = 18.dp
+private val ROW_RADIUS = 8.dp
 private val ROW_SHAPE = RoundedCornerShape(ROW_RADIUS)
 private val TILE_SIZE = 36.dp
 private val TILE_SHAPE = RoundedCornerShape(12.dp)
 private val BUTTON_SIZE = 32.dp
 private val TILE_LETTER_SIZE = 16.sp
-private val SUBTITLE_SIZE = 12.5.sp
+private val SUBTITLE_SIZE = 12.sp
 private const val TILE_WASH_ALPHA = 0.14f
 private const val SHOWN_BORDER_ALPHA = 0.55f
 private val BADGE_OFFSET = 4.dp
