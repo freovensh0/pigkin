@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.icu.text.ListFormatter
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import io.pigkin.ui.components.RoundIconButton
 import io.pigkin.ui.components.SimmeringPot
 import io.pigkin.ui.components.SnackbarStack
 import io.pigkin.ui.components.SnackbarStackState
+import io.pigkin.ui.onboarding.PermissionsScreen
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import kotlinx.coroutines.launch
@@ -59,6 +61,27 @@ import kotlinx.coroutines.launch
 internal fun SettingsScreen(nav: SettingsNav) {
   val graph = LocalContext.current.appGraph
   val snackbar = remember { SnackbarStackState() }
+  var page by rememberSaveable { mutableStateOf<SettingsSubpage?>(null) }
+  BackHandler(enabled = page != null) { page = null }
+  val shown = page
+  if (shown != null) {
+    when (shown) {
+      SettingsSubpage.Permissions -> PermissionsScreen(onBack = { page = null })
+
+      SettingsSubpage.RunningAgents -> RunningAgentsScreen(onBack = { page = null })
+
+      SettingsSubpage.RemoteHosts -> RemoteHostsScreen(
+        onBack = { page = null },
+        onAdd = { nav.onOpenRemoteHost(null) },
+        onOpenHost = nav.onOpenRemoteHost,
+      )
+
+      SettingsSubpage.Backups -> BackupsScreen(onBack = { page = null })
+
+      SettingsSubpage.Licenses -> LicensesScreen(onBack = { page = null })
+    }
+    return
+  }
   Box(modifier = Modifier.fillMaxSize().background(pigkinColors.surface0)) {
     Column(modifier = Modifier.fillMaxSize()) {
       HeaderBar(
@@ -71,7 +94,7 @@ internal fun SettingsScreen(nav: SettingsNav) {
           )
         },
       )
-      SettingsContent(graph = graph, snackbar = snackbar, nav = nav)
+      SettingsContent(graph = graph, snackbar = snackbar, onOpenPage = { page = it })
     }
     SnackbarStack(
       snackbar,
@@ -81,7 +104,7 @@ internal fun SettingsScreen(nav: SettingsNav) {
 }
 
 @Composable
-private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, nav: SettingsNav) {
+private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, onOpenPage: (SettingsSubpage) -> Unit) {
   Column(
     modifier =
       Modifier
@@ -95,47 +118,18 @@ private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, nav: 
       modifier = Modifier.widthIn(max = PigkinTokens.contentMaxWidth).fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s24),
     ) {
-      ModelsSection(accounts = graph.accountRepository, onOpenProviders = nav.onOpenProviders)
       ChatsSection(preferences = graph.preferences)
       ExtensionsSection(graph = graph, snackbar = snackbar)
       AgentSection(
         graph = graph,
-        onOpenRunningAgents = nav.onOpenRunningAgents,
-        onOpenPermissions = nav.onOpenPermissions,
+        onOpenRunningAgents = { onOpenPage(SettingsSubpage.RunningAgents) },
+        onOpenPermissions = { onOpenPage(SettingsSubpage.Permissions) },
       )
-      RemoteHostsSection(remoteHosts = graph.remoteHosts, onOpenRemoteHosts = nav.onOpenRemoteHosts)
-      ConfigurationSection(graph = graph, snackbar = snackbar, onOpenBackups = nav.onOpenBackups)
-      AboutSection(onOpenLicenses = nav.onOpenLicenses)
-    }
-  }
-}
-
-/**
- * One row into the providers page, naming the providers added so far. It shows what the last refresh found and asks
- * for none itself, since that would start the host just for opening Settings.
- */
-@Composable
-private fun ModelsSection(accounts: AccountRepository, onOpenProviders: () -> Unit) {
-  val status by accounts.status.collectAsStateWithLifecycle()
-  val locale = LocalConfiguration.current.locales[0]
-  val added = status?.let { current ->
-    subscriptions.filter { current.isSignedIn(it.id) }.map { stringResource(it.title) } + current.custom.map { it.id }
-  }
-  val summary = when {
-    added == null -> null
-    added.isEmpty() -> stringResource(R.string.settings_providers_none)
-    else -> ListFormatter.getInstance(locale).format(added)
-  }
-  SettingsSection(title = stringResource(R.string.settings_section_models)) {
-    SettingsRow(
-      title = stringResource(R.string.providers_title),
-      subtitle = summary,
-      onClick = onOpenProviders,
-      leading = {
-        LucideIcon(icon = R.drawable.ic_lucide_plug, contentDescription = null, tint = pigkinColors.foregroundMuted)
-      },
-    ) {
-      Chevron()
+      RemoteHostsSection(remoteHosts = graph.remoteHosts, onOpenRemoteHosts = {
+        onOpenPage(SettingsSubpage.RemoteHosts)
+      })
+      ConfigurationSection(graph = graph, snackbar = snackbar, onOpenBackups = { onOpenPage(SettingsSubpage.Backups) })
+      AboutSection(onOpenLicenses = { onOpenPage(SettingsSubpage.Licenses) })
     }
   }
 }

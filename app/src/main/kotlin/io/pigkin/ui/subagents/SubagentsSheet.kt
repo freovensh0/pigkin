@@ -2,16 +2,21 @@ package io.pigkin.ui.subagents
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -44,14 +49,14 @@ import io.pigkin.agent.SubagentRun
 import io.pigkin.agent.TimelineState
 import io.pigkin.agent.askingSubagent
 import io.pigkin.ui.components.CapsLabel
+import io.pigkin.ui.components.HeaderBar
+import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.LucideIcon
-import io.pigkin.ui.components.PigkinSheet
 import io.pigkin.ui.theme.PigkinFonts
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import java.text.NumberFormat
 
-private const val SHEET_MAX_HEIGHT = 0.9f
 private val RING_SIZE = 14.dp
 
 /**
@@ -72,27 +77,40 @@ internal fun rememberChatSubagents(process: AgentProcess, timeline: TimelineStat
 }
 
 /**
- * The chat's subagents in a sheet that grows to most of the screen and then scrolls: a header with how many there
- * are, how many are running and queued and the tokens they used, then the runs grouped Waiting for you, Running and
- * Finished. A waiting run's line is the [question] the chat's card asks. Tapping a run opens it through [onOpen], with
- * its tool call's id; [onStopAll] stops every active one. Closes once the chat has no subagents left, as after the
- * user's next message.
+ * The chat's subagents on their own screen: a header with how many there are, how many are running and queued and
+ * the tokens they used, then the runs grouped Waiting for you, Running and Finished. A waiting run's line is the
+ * [question] the chat's card asks. Tapping a run opens it through [onOpen]; [onStopAll] stops every active one. The
+ * screen closes itself once the chat has no subagents left.
  */
 @Composable
-internal fun SubagentsSheet(
+internal fun SubagentsScreen(
   subagents: ChatSubagents,
   question: String?,
   onOpen: (toolCallId: String) -> Unit,
   onStopAll: () -> Unit,
-  onDismiss: () -> Unit,
+  onBack: () -> Unit,
 ) {
   val groups = subagents.groups()
-  PigkinSheet(onDismissRequest = onDismiss, maxHeightFraction = SHEET_MAX_HEIGHT) { dismiss ->
-    LaunchedEffect(subagents.runs.isEmpty()) { if (subagents.runs.isEmpty()) dismiss {} }
+  LaunchedEffect(subagents.runs.isEmpty()) { if (subagents.runs.isEmpty()) onBack() }
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(pigkinColors.surface0)
+      .windowInsetsPadding(WindowInsets.safeDrawing),
+  ) {
+    HeaderBar(
+      title = stringResource(R.string.subagents_title),
+      leading = {
+        HeaderButton(
+          icon = R.drawable.ic_lucide_chevron_left,
+          contentDescription = stringResource(R.string.settings_back),
+          onClick = onBack,
+        )
+      },
+    )
     SheetHeader(subagents)
-    LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-      val open = { toolCallId: String -> dismiss { onOpen(toolCallId) } }
-      val row = @Composable { run: SubagentRun -> RunRow(run, subagents, question, open) }
+    LazyColumn(modifier = Modifier.weight(1f)) {
+      val row = @Composable { run: SubagentRun -> RunRow(run, subagents, question, onOpen) }
       group(R.string.subagents_group_waiting, groups.waiting, row, warning = true)
       group(R.string.subagents_group_running, groups.running, row)
       group(R.string.subagents_group_finished, groups.finished, row)

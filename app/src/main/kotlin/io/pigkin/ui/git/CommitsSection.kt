@@ -75,7 +75,6 @@ internal fun CommitsSection(
 ) {
   val content = workspace.commits
   val colors = pigkinColors
-  val scope = rememberCoroutineScope()
   val navigationBar = WindowInsets.navigationBars.asPaddingValues()
   Column(modifier = Modifier.fillMaxWidth().padding(bottom = navigationBar.calculateBottomPadding())) {
     HorizontalDivider(thickness = 1.dp, color = colors.border)

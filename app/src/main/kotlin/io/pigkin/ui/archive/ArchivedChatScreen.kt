@@ -1,5 +1,7 @@
 package io.pigkin.ui.archive
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +55,8 @@ import io.pigkin.ui.components.SimmeringPot
 import io.pigkin.ui.components.SnackbarStack
 import io.pigkin.ui.components.SnackbarStackState
 import io.pigkin.ui.sidebar.rememberFolderNames
+import io.pigkin.ui.stackTransition
+import io.pigkin.ui.subagents.ArchivedSubagentScreen
 import io.pigkin.ui.subagents.ChatSubagents
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
@@ -83,29 +88,90 @@ internal fun ArchivedChatScreen(
   actions: ShellActions,
   onBack: () -> Unit,
   onRestored: (ChatLocation) -> Unit,
-  onOpenSubagent: (toolCallId: String) -> Unit,
 ) {
   val graph = LocalContext.current.appGraph
   val archived by graph.sessionArchive.archived.collectAsStateWithLifecycle()
   val marks by graph.preferences.archivedSessions.collectAsStateWithLifecycle()
   val session = archived.firstOrNull { it.session.path == path }?.session
-  val genericError = stringResource(R.string.shell_error_generic)
   val snackbar = remember { SnackbarStackState() }
-  val scope = rememberCoroutineScope()
   var attempt by remember { mutableIntStateOf(0) }
   val transcript by rememberTranscript(path, attempt)
   var toolKey by remember { mutableStateOf<String?>(null) }
+  var subagent by rememberSaveable { mutableStateOf<String?>(null) }
+  BackHandler(enabled = subagent != null) { subagent = null }
   var confirmingDelete by remember { mutableStateOf(false) }
   var busy by remember { mutableStateOf(false) }
   LaunchedEffect(marks) { if (path !in marks) onBack() }
+  AnimatedContent(
+    targetState = subagent,
+    transitionSpec = { stackTransition(from = archivedDepth(initialState), to = archivedDepth(targetState)) },
+    label = "archived subagent",
+  ) { shownSubagent ->
+    if (shownSubagent != null) {
+      ArchivedSubagentScreen(path, shownSubagent, onBack = { subagent = null })
+    } else {
+      ArchivedChatBody(
+        session,
+        transcript,
+        busy,
+        snackbar,
+        actions,
+        onBack,
+        onRestored,
+        ArchivedChatCallbacks(
+          onRetry = { attempt += 1 },
+          onTool = { toolKey = it },
+          onSubagent = { subagent = it },
+          onDelete = { confirmingDelete = true },
+        ),
+      )
+    }
+  }
+  val tool = toolKey?.let { key -> (transcript as? Transcript.Loaded)?.state?.items?.firstOrNull { it.key == key } }
+  // A transcript is settled history, so no tool call has arguments still streaming.
+  tool?.let { ToolCallSheet(it, streamingArguments = { null }, onDismiss = { toolKey = null }) }
+  if (confirmingDelete) {
+    ArchivedDeleteDialog(
+      path,
+      actions,
+      snackbar,
+      session?.subagents ?: 0,
+      onDismiss = { confirmingDelete = false },
+      onBusy = { busy = it },
+    )
+  }
+}
+
+/** A subagent's depth over its archived chat. */
+private fun archivedDepth(id: String?): Int = if (id == null) 0 else 1
+
+/** The callbacks the archived chat's body needs from its screen. */
+private data class ArchivedChatCallbacks(
+  val onRetry: () -> Unit,
+  val onTool: (String) -> Unit,
+  val onSubagent: (String) -> Unit,
+  val onDelete: () -> Unit,
+)
+
+@Composable
+private fun ArchivedChatBody(
+  session: SessionInfo?,
+  transcript: Transcript,
+  busy: Boolean,
+  snackbar: SnackbarStackState,
+  actions: ShellActions,
+  onBack: () -> Unit,
+  onRestored: (ChatLocation) -> Unit,
+  callbacks: ArchivedChatCallbacks,
+) {
   Column(modifier = Modifier.fillMaxSize().background(pigkinColors.surface0)) {
-    TranscriptHeader(session, deleteEnabled = !busy, onBack, onDelete = { confirmingDelete = true })
+    TranscriptHeader(session, deleteEnabled = !busy, onBack, onDelete = callbacks.onDelete)
     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
       TranscriptBody(
         transcript,
-        onRetry = { attempt += 1 },
-        onOpenTool = { toolKey = it },
-        onOpenSubagent = onOpenSubagent,
+        onRetry = callbacks.onRetry,
+        onOpenTool = callbacks.onTool,
+        onOpenSubagent = callbacks.onSubagent,
       )
       SnackbarStack(snackbar, Modifier.align(Alignment.BottomCenter).padding(PigkinTokens.Spacing.s16))
     }
@@ -118,27 +184,36 @@ internal fun ArchivedChatScreen(
       },
     )
   }
-  val tool = toolKey?.let { key -> (transcript as? Transcript.Loaded)?.state?.items?.firstOrNull { it.key == key } }
-  // A transcript is settled history, so no tool call has arguments still streaming.
-  tool?.let { ToolCallSheet(it, streamingArguments = { null }, onDismiss = { toolKey = null }) }
-  if (confirmingDelete) {
-    DeleteDialog(
-      count = 1,
-      onConfirm = {
-        confirmingDelete = false
-        busy = true
-        // The delete outlives this screen, which leaves once the archive no longer holds the chat.
-        val result = graph.scope.async { actions.deleteArchived(listOf(path)) }
-        scope.launch {
-          val failure = result.await() ?: return@launch
-          busy = false
-          snackbar.show(failure.ifBlank { genericError })
-        }
-      },
-      onDismiss = { confirmingDelete = false },
-      subagents = session?.subagents ?: 0,
-    )
-  }
+}
+
+/** The delete confirmation, which keeps working after this screen leaves the archive. */
+@Composable
+private fun ArchivedDeleteDialog(
+  path: String,
+  actions: ShellActions,
+  snackbar: SnackbarStackState,
+  subagents: Int,
+  onDismiss: () -> Unit,
+  onBusy: (Boolean) -> Unit,
+) {
+  val scope = rememberCoroutineScope()
+  val context = LocalContext.current
+  val genericError = stringResource(R.string.shell_error_generic)
+  DeleteDialog(
+    count = 1,
+    onConfirm = {
+      onDismiss()
+      onBusy(true)
+      val result = context.appGraph.scope.async { actions.deleteArchived(listOf(path)) }
+      scope.launch {
+        val failure = result.await() ?: return@launch
+        onBusy(false)
+        snackbar.show(failure.ifBlank { genericError })
+      }
+    },
+    onDismiss = onDismiss,
+    subagents = subagents,
+  )
 }
 
 /** The chat's messages from its session file; a new [attempt] reads them again. */

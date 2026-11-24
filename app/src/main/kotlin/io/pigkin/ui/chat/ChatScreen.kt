@@ -44,7 +44,7 @@ import io.pigkin.ui.components.SnackbarStack
 import io.pigkin.ui.components.SnackbarStackState
 import io.pigkin.ui.stackTransition
 import io.pigkin.ui.subagents.ChatSubagentScreen
-import io.pigkin.ui.subagents.SubagentsSheet
+import io.pigkin.ui.subagents.SubagentsScreen
 import io.pigkin.ui.subagents.rememberChatSubagents
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
@@ -55,6 +55,7 @@ import io.pigkin.ui.workspace.ShownTabActions
 import io.pigkin.ui.workspace.SidebarButton
 import io.pigkin.ui.workspace.TabAction
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 /**
  * One chat in a pane: header, stream and composer for [process]; a null process shows a starting placeholder. What
@@ -80,64 +81,77 @@ internal fun ChatScreen(
   // Everything below is per chat. Collecting a chat's flows outside this key would show the previous chat's
   // timeline for a frame after a switch, until the collector of the new one has run.
   key(process) {
-    val context = LocalContext.current
-    val snackbar = paneChats.snackbar
-    var sheet by remember { mutableStateOf<ChatSheet?>(null) }
-    val navigator = rememberNavigator(
-      onSheet = { sheet = it },
-      onNewChat = { actions.newChat(controls.pane, process.cwd) },
-      onOpenTabs = controls.onOpenTabs,
-      onOpenSettings = onOpenSettings,
-    )
-    val controller = remember {
-      ChatController(process, views[process], context.applicationContext, paneChats.scope, snackbar, navigator)
-    }
-    LaunchedEffect(controller) { controller.collectEffects() }
-    LaunchedEffect(controller) { controller.steering.collectQueue() }
-    // The pane's own: a subagent shows in place of its chat and never in the other pane or as a tab of its own.
-    var subagent by rememberSaveable { mutableStateOf<String?>(null) }
-    // Not while the chat slides out of the pane: Back then belongs to the screen taking its place.
-    BackHandler(enabled = subagent != null && !controls.leaving) { subagent = null }
-    AnimatedContent(
-      targetState = subagent,
-      transitionSpec = { stackTransition(from = initialState.depth, to = targetState.depth) },
-      label = "subagent",
-    ) { shownSubagent ->
-      if (shownSubagent != null) {
-        ChatSubagentScreen(
-          controller = controller,
-          toolCallId = shownSubagent,
-          chatTitle = chatTitle(process),
-          controls = controls,
-          onBack = { subagent = null },
-        )
-      } else {
-        ChatContent(
-          controller,
-          snackbar,
-          controls,
-          onOpenProviders,
-          onOpenOnboarding,
-          onSheet = { sheet = it },
-          onOpenSubagent = { subagent = it },
-        )
-      }
-    }
-    PublishChatActions(
-      controller,
-      controls.shownTab,
-      onSheet = { sheet = it },
-      onNewChat = { actions.newChat(controls.pane, it) },
-      onNewTerminal = { context.appGraph.terminals.open(controls.pane, process.cwd) },
-      onArchive = actions::archive,
-    )
-    ChatSheets(controller, sheet, onSheet = { sheet = it }, onOpenSubagent = { subagent = it })
-    ChatDialogs(controller, sheet, onSheet = { sheet = it }, onArchive = actions::archive)
+    ChatPane(process, paneChats, actions, views, controls, onOpenSettings, onOpenProviders, onOpenOnboarding)
   }
 }
 
-/** A subagent's depth over its chat, for the slide between them; none is the chat itself. */
-private val String?.depth: Int get() = if (this == null) 0 else 1
+/** One chat's own state and screens, kept under its process key so switching chats never mixes their streams. */
+@Composable
+private fun ChatPane(
+  process: AgentProcess,
+  paneChats: PaneChats,
+  actions: ShellActions,
+  views: ChatViews,
+  controls: PaneControls,
+  onOpenSettings: () -> Unit,
+  onOpenProviders: () -> Unit,
+  onOpenOnboarding: () -> Unit,
+) {
+  val context = LocalContext.current
+  val snackbar = paneChats.snackbar
+  var sheet by remember { mutableStateOf<ChatSheet?>(null) }
+  // A list picker is a screen over the chat, not a sheet full of rows.
+  var drill by remember { mutableStateOf<ChatDrill?>(null) }
+  val openSheet: (ChatSheet) -> Unit = { asked ->
+    routeChatSheet(asked, { picked -> drill = picked }, { askedSheet -> sheet = askedSheet })
+  }
+  val navigator = rememberNavigator(
+    onSheet = openSheet,
+    onNewChat = { actions.newChat(controls.pane, process.cwd) },
+    onOpenTabs = controls.onOpenTabs,
+    onOpenSettings = onOpenSettings,
+  )
+  val controller = remember {
+    ChatController(process, views[process], context.applicationContext, paneChats.scope, snackbar, navigator)
+  }
+  LaunchedEffect(controller) { controller.collectEffects() }
+  LaunchedEffect(controller) { controller.steering.collectQueue() }
+  // The pane's own: a subagent shows in place of its chat and never in the other pane or as a tab of its own.
+  var subagent by rememberSaveable { mutableStateOf<String?>(null) }
+  // Not while the chat slides out of the pane: Back then belongs to the screen taking its place.
+  BackHandler(enabled = (drill != null || subagent != null) && !controls.leaving) {
+    if (drill != null) drill = null else subagent = null
+  }
+  ChatPaneScreens(
+    ChatScreensState(
+      controller, snackbar, controls, subagent, drill, process,
+      ChatPaneCallbacks(
+        onOpenProviders,
+        onOpenOnboarding,
+        openSheet,
+        onOpenSubagent = { subagent = it },
+        onCloseSubagent = { subagent = null },
+      ),
+      onSetSubagent = { subagent = it },
+      onClearDrill = { drill = null },
+    ),
+  )
+  PublishChatActions(
+    controller,
+    controls.shownTab,
+    onSheet = { asked -> if (asked == null) sheet = null else openSheet(asked) },
+    onNewChat = { actions.newChat(controls.pane, it) },
+    onNewTerminal = { context.appGraph.terminals.open(controls.pane, process.cwd) },
+    onArchive = actions::archive,
+  )
+  ChatSheets(controller, sheet, onSheet = { asked -> if (asked == null) sheet = null else openSheet(asked) })
+  ChatDialogs(
+    controller,
+    sheet,
+    onSheet = { asked -> if (asked == null) sheet = null else openSheet(asked) },
+    onArchive = actions::archive,
+  )
+}
 
 /** A [ChatNavigator] that outlives recompositions and always calls the latest callbacks. */
 @Composable
@@ -167,7 +181,7 @@ private fun rememberNavigator(
 /** The chat's header, stream, question card and composer; a subagent's tool row or the Subagents list opens it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChatContent(
+internal fun ChatContent(
   controller: ChatController,
   snackbar: SnackbarStackState,
   controls: PaneControls,
@@ -379,25 +393,12 @@ private fun PublishChatActions(
 }
 
 @Composable
-private fun ChatSheets(
-  controller: ChatController,
-  sheet: ChatSheet?,
-  onSheet: (ChatSheet?) -> Unit,
-  onOpenSubagent: (toolCallId: String) -> Unit,
-) {
+private fun ChatSheets(controller: ChatController, sheet: ChatSheet?, onSheet: (ChatSheet?) -> Unit) {
   val process = controller.process
   val timeline by process.screenTimeline.collectAsStateWithLifecycle()
   val sessionName by process.sessionName.collectAsStateWithLifecycle()
   val dismiss = { onSheet(null) }
   when (sheet) {
-    is ChatSheet.Model -> ModelSheet(
-      controller,
-      timeline.model,
-      timeline.thinkingLevel,
-      sheet.query,
-      onDismiss = dismiss,
-    )
-
     is ChatSheet.Tool -> {
       val item = timeline.items.firstOrNull { it.key == sheet.key }
       if (item != null) ToolCallSheet(item, process.timeline::streamingArguments, onDismiss = dismiss)
@@ -405,21 +406,11 @@ private fun ChatSheets(
 
     is ChatSheet.SessionInfo -> SessionInfoSheet(sheet.stats, sessionName, controller.home, onDismiss = dismiss)
 
-    is ChatSheet.Fork -> ForkSheet(sheet.messages, onDismiss = dismiss) { controller.builtins.fork(it) }
-
     is ChatSheet.Widget -> {
       val widgets by process.extensionWidgets.collectAsStateWithLifecycle()
       val widget = widgets[sheet.key]
       if (widget != null) WidgetSheet(KeyedWidget(sheet.key, widget), controller.view.widgetTabs, onDismiss = dismiss)
     }
-
-    ChatSheet.Subagents -> SubagentsSheet(
-      subagents = rememberChatSubagents(process, timeline),
-      question = timeline.pendingUi?.title,
-      onOpen = onOpenSubagent,
-      onStopAll = { controller.scope.launch { process.stopAllSubagents() } },
-      onDismiss = dismiss,
-    )
 
     else -> Unit
   }

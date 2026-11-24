@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +31,7 @@ import io.pigkin.host.HostRejected
 import io.pigkin.host.TermuxBuild
 import io.pigkin.ui.chat.ConfirmDialog
 import io.pigkin.ui.components.RoundIconButton
+import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.components.SimmeringPot
 import io.pigkin.ui.components.SnackbarStackState
 import io.pigkin.ui.theme.PigkinFonts
@@ -191,6 +193,7 @@ private fun SavedSection(
   onRestore: (BackupInfo) -> Unit,
   onDelete: (BackupInfo) -> Unit,
 ) {
+  var query by rememberSaveable { mutableStateOf("") }
   SettingsSection(title = stringResource(R.string.backups_saved)) {
     when (list) {
       BackupList.Loading -> SettingsRow(title = stringResource(R.string.backups_loading)) { SimmeringPot() }
@@ -204,8 +207,14 @@ private fun SavedSection(
       }
 
       is BackupList.Loaded -> {
-        if (list.backups.backups.isEmpty()) SettingsRow(title = stringResource(R.string.backups_empty))
-        list.backups.backups.forEachIndexed { index, backup ->
+        SearchField(query, { query = it }, stringResource(R.string.backups_search))
+        val shown = list.backups.backups.filter { it.name.contains(query, ignoreCase = true) }
+        if (list.backups.backups.isEmpty()) {
+          SettingsRow(title = stringResource(R.string.backups_empty))
+        } else if (shown.isEmpty()) {
+          SettingsRow(title = stringResource(R.string.backups_no_match))
+        }
+        shown.forEachIndexed { index, backup ->
           if (index > 0) SettingsDivider()
           BackupRow(backup, enabled, onRestore = { onRestore(backup) }, onDelete = { onDelete(backup) })
         }

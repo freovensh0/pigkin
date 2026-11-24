@@ -1,15 +1,20 @@
 package io.pigkin.ui.workspace
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
@@ -23,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,8 +55,11 @@ import io.pigkin.appGraph
 import io.pigkin.host.SessionInfo
 import io.pigkin.ui.ShellActions
 import io.pigkin.ui.chat.ConfirmDialog
+import io.pigkin.ui.components.HeaderBar
+import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.LucideIcon
 import io.pigkin.ui.components.PigkinSheet
+import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.components.SnackbarStackOverlay
 import io.pigkin.ui.components.SnackbarStackState
 import io.pigkin.ui.components.SwipeAway
@@ -63,17 +72,14 @@ import io.pigkin.workspace.Pane
 import io.pigkin.workspace.WorkspaceTab
 
 /**
- * The session sheet: the workspace's name and path over the tabs in the workspace folder [cwd] of what [pane] shows,
+ * The tabs screen: the workspace's name and path over the tabs in the workspace folder [cwd] of what [pane] shows,
  * its terminals, its open files, its open commits and then its chats, the shown one highlighted, and under them what
- * the shown tab can do, from [shownTab]. Tapping a tab shows it in [pane] instead and closes the sheet; tapping one the
- * other pane shows calls [onSwapPanes], so that pane comes to this side. A chat is archived by swiping it right or from
- * its actions sheet, which also renames it and, when [onShownInSplit] is given, opens it in split screen, calling that
- * once the second pane shows it; the sheet stays open and shows the shell's [snackbar], so the archive's Undo is in
- * reach. A terminal, a file or a commit closes by swiping it right or from its actions sheet, which also renames a
- * terminal.
+ * the shown tab can do, from [shownTab]. Tapping a tab shows it in [pane] instead and closes the screen; tapping one
+ * the other pane shows calls [onSwapPanes]. A chat is archived by swiping it right or from its actions, which also
+ * renames it and, when [onShownInSplit] is given, opens it in split screen.
  */
 @Composable
-internal fun WorkspaceTabsSheet(
+internal fun WorkspaceTabsScreen(
   pane: Pane,
   cwd: String,
   actions: ShellActions,
@@ -81,7 +87,7 @@ internal fun WorkspaceTabsSheet(
   shownTab: ShownTabActions,
   onShownInSplit: (() -> Unit)?,
   onSwapPanes: () -> Unit,
-  onDismiss: () -> Unit,
+  onBack: () -> Unit,
 ) {
   val graph = LocalContext.current.appGraph
   val tabs = rememberWorkspaceTabs(pane, cwd)
@@ -89,104 +95,78 @@ internal fun WorkspaceTabsSheet(
   val archiving = remember(actions) { TabArchiving(actions) }
   val closing = remember(actions) { TabClosing(actions) }
   var menu by remember { mutableStateOf<TabMenu?>(null) }
+  var query by rememberSaveable { mutableStateOf("") }
   LaunchedEffect(Unit) { graph.sessionRepository.refresh() }
   LaunchedEffect(tabs.chats) { archiving.forgetGone(tabs.chats) }
-  var closedAs by remember { mutableStateOf<ClosedAs?>(null) }
   // A short window, such as a phone on its side, has no room for the tiles under the tabs without squeezing the tabs
   // out, so there the tiles scroll at the end of the list instead.
   val pinActions = LocalWindowInfo.current.containerDpSize.height >= PINNED_ACTIONS_MIN_HEIGHT
-  PigkinSheet(onDismissRequest = onDismiss) { dismiss ->
-    // A chat opens before the sheet closes, since a chat that can't open keeps it open with a notice. The sheet then
-    // keeps showing what it showed, so the opened chat doesn't reorder the rows or swap the tiles as it slides away.
-    val closeOnOpened = {
-      closedAs = ClosedAs(tabs, shownTab.current)
-      dismiss { closedAs = null }
-    }
-    val swapPanes = { dismiss(onSwapPanes) }
-    val show = { tab: WorkspaceTab -> dismiss { if (!graph.tabs.show(pane, tab)) onSwapPanes() } }
-    val closed = closedAs
-    val actionTiles = if (closed != null) closed.actions else shownTab.current
-    TabsSheetTitle(name = names.name(cwd), path = names.path(cwd), remote = names.isRemote(cwd))
-    TabsLabels()
-    TabList(
-      tabs = closed?.tabs ?: tabs,
-      archiving = archiving,
-      closing = closing,
-      callbacks = TabListCallbacks(
-        onOpenChat = { session -> if (actions.openChat(pane, session.cwd, session.path)) closeOnOpened() },
-        onShow = show,
-        onSwapPanes = swapPanes,
-        onActions = { menu = it },
-      ),
-      footer = actionTiles?.takeUnless { pinActions }?.let { { TabActionGrid(it, dismiss) } },
-      modifier = Modifier.weight(1f, fill = false),
-    )
-    if (pinActions) actionTiles?.let { TabActionGrid(it, dismiss) }
-    SnackbarStackOverlay(snackbar)
-    // Within the sheet's content, so opening a chat in split screen from the actions sheet slides this one away too.
-    menu?.let { shownMenu ->
-      // Only chats no pane shows open in split screen: the second pane's own rows already show there.
-      val path = (shownMenu as? TabMenu.Chat)?.session?.path
-      val openInSplit = onShownInSplit?.let { shown ->
-        { session: SessionInfo ->
-          if (actions.openChat(Pane.Secondary, session.cwd, session.path)) {
-            shown()
-            closeOnOpened()
-          }
-        }
-      }?.takeIf { path != tabs.shown.chat && path != tabs.shown.elsewhereChat }
-      TabMenuSheet(shownMenu, actions, archiving, openInSplit, onDismiss = { menu = null })
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(pigkinColors.surface0)
+      .windowInsetsPadding(WindowInsets.safeDrawing),
+  ) {
+    Column {
+      HeaderBar(
+        title = names.name(cwd),
+        folder = names.path(cwd).takeIf { it != names.name(cwd) },
+        leading = {
+          HeaderButton(
+            icon = R.drawable.ic_lucide_chevron_left,
+            contentDescription = stringResource(R.string.settings_back),
+            onClick = onBack,
+          )
+        },
+      )
+      TabsLabels()
+      SearchField(query, { query = it }, stringResource(R.string.shell_tabs_search))
+      TabList(
+        tabs = tabs,
+        archiving = archiving,
+        closing = closing,
+        query = query.trim(),
+        callbacks = TabListCallbacks(
+          onOpenChat = { session -> if (actions.openChat(pane, session.cwd, session.path)) onBack() },
+          onShow = { tab -> if (!graph.tabs.show(pane, tab)) onSwapPanes() },
+          onSwapPanes = onSwapPanes,
+          onActions = { menu = it },
+        ),
+        footer = shownTab.current?.takeUnless { pinActions }?.let { { TabActionGrid(it) } },
+        modifier = Modifier.weight(1f),
+      )
+      if (pinActions) shownTab.current?.let { TabActionGrid(it) }
+      SnackbarStackOverlay(snackbar)
+      TabMenuOverlay(menu, actions, archiving, tabs, onShownInSplit, onBack) { menu = null }
     }
   }
   ConfirmArchive(archiving)
   ConfirmCloseTab(closing)
 }
 
-/**
- * The workspace's name in bold over its folder, after a server icon for a [remote] one; a long path keeps its end, the
- * folder that tells workspaces apart. The home folder's name is its path, `~`, so it has no second line.
- */
+/** One layer of actions over the tabs screen; only chats no pane shows can open in split screen. */
 @Composable
-private fun TabsSheetTitle(name: String, path: String, remote: Boolean) {
-  val colors = pigkinColors
-  Column(
-    modifier = Modifier.padding(
-      start = 20.dp,
-      end = 20.dp,
-      top = PigkinTokens.Spacing.s4,
-      bottom = PigkinTokens.Spacing.s12,
-    ),
-    verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s4),
-  ) {
-    Text(
-      text = name,
-      color = colors.foreground,
-      fontSize = 20.sp,
-      fontWeight = FontWeight.ExtraBold,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-    )
-    if (path == name) return@Column
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s6),
-    ) {
-      LucideIcon(
-        icon = if (remote) R.drawable.ic_lucide_server else R.drawable.ic_lucide_folder,
-        contentDescription = null,
-        size = PigkinTokens.IconSize.sm,
-        tint = colors.foregroundMuted,
-      )
-      Text(
-        text = path,
-        style = pathTextStyle,
-        color = colors.foregroundMuted,
-        fontSize = PigkinTokens.FontSize.meta,
-        maxLines = 1,
-        overflow = TextOverflow.StartEllipsis,
-      )
-    }
-  }
+private fun TabMenuOverlay(
+  menu: TabMenu?,
+  actions: ShellActions,
+  archiving: TabArchiving,
+  tabs: WorkspaceTabs,
+  onShownInSplit: (() -> Unit)?,
+  onBack: () -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val shownMenu = menu ?: return
+  val path = (shownMenu as? TabMenu.Chat)?.session?.path
+  val openInSplit =
+    onShownInSplit?.let { shown ->
+      { session: SessionInfo ->
+        if (actions.openChat(Pane.Secondary, session.cwd, session.path)) {
+          shown()
+          onBack()
+        }
+      }
+    }?.takeIf { path != tabs.shown.chat && path != tabs.shown.elsewhereChat }
+  TabMenuSheet(shownMenu, actions, archiving, openInSplit, onDismiss = onDismiss)
 }
 
 /** The labels over the tabs: what they are, and that a swipe closes one. */
@@ -241,9 +221,6 @@ private sealed interface TabMenu {
   data class Tab(val tab: WorkspaceTab) : TabMenu
 }
 
-/** The [tabs] and the shown tab's [actions] the session sheet showed when opening a chat closed it. */
-private class ClosedAs(val tabs: WorkspaceTabs, val actions: List<TabAction>?)
-
 /**
  * [menu]'s actions sheet: a chat's renames or archives it, and opens it in split screen through [openInSplit] when
  * given; a tab's are its kind's, with its close.
@@ -287,6 +264,7 @@ private class TabListCallbacks(
 @Composable
 private fun TabList(
   tabs: WorkspaceTabs,
+  query: String,
   archiving: TabArchiving,
   closing: TabClosing,
   callbacks: TabListCallbacks,
@@ -326,8 +304,14 @@ private fun TabList(
   }
   LazyColumn(modifier = modifier.scrollFades(listState, fadeTo), state = listState) {
     tabs.shownChat?.let { shown -> item(key = shown.path) { chatRow(shown) } }
-    tabRows(tabs, closing, callbacks)
-    items(tabs.otherChats, key = { it.path }) { chatRow(it) }
+    if (query.isEmpty()) tabRows(tabs, closing, callbacks)
+    items(
+      tabs.otherChats.filter {
+        it.name.orEmpty().contains(query, ignoreCase = true) ||
+          it.path.contains(query, ignoreCase = true)
+      },
+      key = { it.path },
+    ) { chatRow(it) }
     footer?.let { item(key = FOOTER_KEY) { it() } }
   }
 }

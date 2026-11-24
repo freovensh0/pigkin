@@ -1,13 +1,20 @@
 package io.pigkin.ui.chat
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -19,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.pigkin.R
+import io.pigkin.ui.components.HeaderBar
+import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.PigkinSheet
 import io.pigkin.ui.sidebar.tildePath
 import io.pigkin.ui.theme.PigkinTokens
@@ -96,20 +105,33 @@ private fun ContextRow(usage: JSONObject, numbers: NumberFormat) {
   InfoRow(R.string.session_context, value)
 }
 
-/** `/fork`: the user messages to fork from, newest first; picking one forks and fills the composer with it. */
+/** `/fork`: the user messages to fork from, newest first, on their own screen; picking one forks the chat. */
 @Composable
-internal fun ForkSheet(messages: List<JSONObject>, onDismiss: () -> Unit, onFork: (entryId: String) -> Unit) {
+internal fun ForkScreen(messages: List<JSONObject>, onFork: (entryId: String) -> Unit, onBack: () -> Unit) {
   val colors = pigkinColors
-  PigkinSheet(onDismissRequest = onDismiss, maxHeightFraction = SHEET_MAX_HEIGHT) { dismiss ->
-    SectionTitle(R.string.chat_fork_title)
-    Column(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-      messages.asReversed().forEach { message ->
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(pigkinColors.surface0)
+      .windowInsetsPadding(WindowInsets.safeDrawing),
+  ) {
+    HeaderBar(
+      title = stringResource(R.string.chat_fork_title),
+      leading = {
+        HeaderButton(
+          icon = R.drawable.ic_lucide_chevron_left,
+          contentDescription = stringResource(R.string.settings_back),
+          onClick = onBack,
+        )
+      },
+    )
+    LazyColumn(modifier = Modifier.weight(1f)) {
+      items(messages.asReversed(), key = { it.optString("entryId") }) { message ->
         Text(
           text = message.optString("text").trim(),
           modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp)
-            .clickable { dismiss { onFork(message.optString("entryId")) } }
+            .clickable { onFork(message.optString("entryId")) }
             .padding(horizontal = PigkinTokens.Spacing.s16, vertical = PigkinTokens.Spacing.s12),
           color = colors.foreground,
           fontSize = PigkinTokens.FontSize.base,

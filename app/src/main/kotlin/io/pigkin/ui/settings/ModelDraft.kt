@@ -100,13 +100,6 @@ internal class ProviderDrafts {
 
   fun subscription(id: String): SubscriptionForm = reuse("subscription:$id") { SubscriptionForm(id) }
 
-  /** The draft of the nearest subscription or provider page in [stack]. */
-  fun owner(stack: List<Destination>): ModelDraft = when (val page = stack.last(::ownsDraft)) {
-    is Destination.Subscription -> subscription(page.id)
-    is Destination.ProviderEditor -> provider(page.id)
-    else -> error("$page owns no draft")
-  }
-
   fun release() {
     key = null
     draft = null

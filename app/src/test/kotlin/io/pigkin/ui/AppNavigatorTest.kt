@@ -5,12 +5,11 @@ import org.junit.Test
 
 class AppNavigatorTest {
   @Test
-  fun anArchivedSubagentSurvivesBeingSavedWhateverItsPathHolds() {
+  fun anArchivedChatSurvivesBeingSavedWhateverItsPathHolds() {
     val stack = listOf(
       Destination.Main,
       Destination.Archive,
       Destination.ArchivedChat("/s/a b:c.jsonl"),
-      Destination.ArchivedSubagent("/s/a b:c.jsonl", "call_1|fc_2"),
     )
 
     val restored = AppNavigator.Saver.restore(stack.map(AppNavigator::key))

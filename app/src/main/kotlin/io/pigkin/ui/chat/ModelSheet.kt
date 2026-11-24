@@ -8,10 +8,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -38,8 +43,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.pigkin.R
 import io.pigkin.appGraph
 import io.pigkin.ui.components.EvenRows
+import io.pigkin.ui.components.HeaderBar
+import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.LucideIcon
-import io.pigkin.ui.components.PigkinSheet
 import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.components.SheetRow
 import io.pigkin.ui.components.SimmeringPot
@@ -47,30 +53,27 @@ import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import org.json.JSONObject
 
-/** The picker wraps its content up to this share of the screen, then scrolls inside. */
-private const val PICKER_MAX_HEIGHT = 0.8f
-
 /** A thinking level's pill, and the space between pills. */
 private val LEVEL_SHAPE = RoundedCornerShape(12.dp)
 private val LEVEL_GAP = 6.dp
 
-/** How long a pick takes to fill its pill or show its check, short enough to finish before the sheet starts to move. */
+/** How long a pick takes to fill its pill or show its check. */
 private const val PICK_MILLIS = 100
 
-/** A tap's pick, shown as picked while the sheet slides away: a [model], or a thinking [level]. */
+/** A tap's pick, kept while switching the model so a second tap doesn't start another switch. */
 private class Pick(val model: JSONObject? = null, val level: String? = null)
 
 /**
- * The composer's model picker: a search field (starting at [initialQuery]) over the models grouped by provider, and
- * under them, for a reasoning [model], the thinking levels Pi offers for it with [thinkingLevel] picked.
+ * The model picker: a search field over the models grouped by provider, and under them, for a reasoning model, the
+ * thinking levels Pi offers. Picking one switches Pi and returns to the chat.
  */
 @Composable
-internal fun ModelSheet(
+internal fun ModelScreen(
   controller: ChatController,
   model: JSONObject?,
   thinkingLevel: String?,
   initialQuery: String,
-  onDismiss: () -> Unit,
+  onBack: () -> Unit,
 ) {
   var models by remember { mutableStateOf<List<JSONObject>?>(null) }
   var query by rememberSaveable { mutableStateOf(initialQuery) }
@@ -89,26 +92,37 @@ internal fun ModelSheet(
       else -> models?.filter { "${it.optString("provider")}/${it.optString("id")}" in scope }
     }
   }
-  PigkinSheet(onDismissRequest = onDismiss, maxHeightFraction = PICKER_MAX_HEIGHT) { dismiss ->
-    // The sheet shows the pick at once and switches Pi once it has slid away, so Pi's answer can't reshape it on the
-    // way; other taps meanwhile are ignored. A finger that catches the sheet keeps it open to pick again.
-    fun pickAndClose(picked: Pick, switch: () -> Unit) {
+  Column(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(pigkinColors.surface0)
+      .windowInsetsPadding(WindowInsets.safeDrawing),
+  ) {
+    HeaderBar(
+      title = stringResource(R.string.chat_model),
+      leading = {
+        HeaderButton(
+          icon = R.drawable.ic_lucide_chevron_left,
+          contentDescription = stringResource(R.string.settings_back),
+          onClick = onBack,
+        )
+      },
+    )
+    SearchField(query, onQueryChange = { query = it }, placeholder = stringResource(R.string.chat_model_search))
+    fun pickAndSwitch(picked: Pick, switch: () -> Unit) {
       if (pick != null) return
       pick = picked
-      dismiss {
-        switch()
-        pick = null
-      }
+      switch()
+      onBack()
     }
-    SearchField(query, onQueryChange = { query = it }, placeholder = stringResource(R.string.chat_model_search))
-    ModelList(scoped, query.trim(), pick?.model ?: model, Modifier.weight(1f, fill = false)) { selected ->
-      pickAndClose(Pick(model = selected)) {
+    ModelList(scoped, query.trim(), pick?.model ?: model, Modifier.weight(1f)) { selected ->
+      pickAndSwitch(Pick(model = selected)) {
         controller.setModel(selected.optString("provider"), selected.optString("id"))
       }
     }
     if (supportsThinking(model)) {
       ThinkingLevels(controller, model, pick?.level ?: thinkingLevel) { level ->
-        pickAndClose(Pick(level = level)) { controller.setThinkingLevel(level) }
+        pickAndSwitch(Pick(level = level)) { controller.setThinkingLevel(level) }
       }
     }
   }

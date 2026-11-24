@@ -11,23 +11,8 @@ sealed interface Destination {
 
   data object Settings : Destination
 
-  /** Termux setup and Pigkin's Android permissions, reached from Settings. */
-  data object Permissions : Destination
-
-  /** How many chats keep their agent running and when idle ones stop, reached from Settings › Agent. */
-  data object RunningAgents : Destination
-
-  /** Backups of Pi's configuration in Termux, reached from Settings. */
-  data object Backups : Destination
-
   /** Downloading and running models on the phone, reached from Providers and models › Experimental. */
   data object LocalModels : Destination
-
-  /** The third-party licences the app ships, reached from Settings › About. */
-  data object Licenses : Destination
-
-  /** The licence asset at [path], one of [Licenses]. */
-  data class License(val path: String) : Destination
 
   /** The list of added providers. */
   data object Providers : Destination
@@ -35,17 +20,13 @@ sealed interface Destination {
   /** Picks which kind of provider to add. */
   data object AddProvider : Destination
 
-  /** A subscription Pigkin signs in to (`anthropic` or `openai-codex`). */
-  data class Subscription(val id: String) : Destination
+  /**
+   * A subscription Pigkin signs in to (`anthropic` or `openai-codex`); [openModels] starts on the model picker.
+   */
+  data class Subscription(val id: String, val openModels: Boolean = false) : Destination
 
   /** [id] null adds a provider; otherwise edits the custom provider with that id. */
   data class ProviderEditor(val id: String?) : Destination
-
-  /** Adds models to the draft of the nearest subscription or provider page below it. */
-  data object AddModels : Destination
-
-  /** One model of the draft of the nearest subscription or provider page below it. */
-  data class ModelEditor(val modelId: String) : Destination
 
   data object Onboarding : Destination
 
@@ -55,20 +36,14 @@ sealed interface Destination {
   /** The read-only transcript of the archived chat in session file [path]. */
   data class ArchivedChat(val path: String) : Destination
 
-  /**
-   * The read-only transcript of the subagent the archived chat in session file [path] started with its `subagent`
-   * tool call [toolCallId].
-   */
-  data class ArchivedSubagent(val path: String, val toolCallId: String) : Destination
-
   /** The prompts Pigkin runs at a chosen time, reached from the sidebar. */
   data object ScheduledTasks : Destination
 
   /** [id] null adds a scheduled task; otherwise edits the one with that id. */
   data class ScheduledTaskEditor(val id: String?) : Destination
 
-  /** The remote hosts the user added, reached from Settings. */
-  data object RemoteHosts : Destination
+  /** Picks a folder to add as a workspace, reached from the sidebar. */
+  data object AddWorkspace : Destination
 
   /**
    * [id] null adds a remote host; otherwise edits the host with that id. [fromPicker] when the folder picker opened
@@ -117,37 +92,25 @@ class AppNavigator(initial: List<Destination>) {
     fun key(d: Destination): String = when (d) {
       Destination.Main -> MAIN
       Destination.Settings -> SETTINGS
-      Destination.Permissions -> PERMISSIONS
-      Destination.RunningAgents -> RUNNING_AGENTS
-      Destination.Backups -> BACKUPS
       Destination.LocalModels -> LOCAL_MODELS
-      Destination.Licenses -> LICENSES
-      is Destination.License -> LICENSE + d.path
       Destination.Onboarding -> ONBOARDING
       Destination.Providers -> PROVIDERS
       Destination.AddProvider -> ADD_PROVIDER
-      is Destination.Subscription -> SUBSCRIPTION + d.id
+      is Destination.Subscription -> SUBSCRIPTION + d.id + if (d.openModels) "!models" else ""
       is Destination.ProviderEditor -> PROVIDER + d.id.orEmpty()
-      Destination.AddModels -> ADD_MODELS
-      is Destination.ModelEditor -> MODEL + d.modelId
-      Destination.Archive, is Destination.ArchivedChat, is Destination.ArchivedSubagent -> archiveKey(d)
-      Destination.RemoteHosts, is Destination.RemoteHostEditor -> remoteHostKey(d)
+      Destination.Archive, is Destination.ArchivedChat -> archiveKey(d)
+      Destination.AddWorkspace -> ADD_WORKSPACE
+      is Destination.RemoteHostEditor -> remoteHostKey(d)
       Destination.ScheduledTasks, is Destination.ScheduledTaskEditor -> scheduledTaskKey(d)
     }
 
     private fun archiveKey(d: Destination): String = when (d) {
       is Destination.ArchivedChat -> ARCHIVED_CHAT + d.path
-
-      // A tool call id has no line break; a path comes last, since it may hold any other character.
-      is Destination.ArchivedSubagent -> ARCHIVED_SUBAGENT + d.toolCallId + "\n" + d.path
-
       else -> ARCHIVE
     }
 
-    private fun remoteHostKey(d: Destination): String = when (d) {
-      is Destination.RemoteHostEditor -> (if (d.fromPicker) REMOTE_HOST_PICKER else REMOTE_HOST) + d.id.orEmpty()
-      else -> REMOTE_HOSTS
-    }
+    private fun remoteHostKey(d: Destination.RemoteHostEditor): String =
+      (if (d.fromPicker) REMOTE_HOST_PICKER else REMOTE_HOST) + d.id.orEmpty()
 
     private fun scheduledTaskKey(d: Destination): String = when (d) {
       is Destination.ScheduledTaskEditor -> SCHEDULED_TASK + d.id.orEmpty()
@@ -156,26 +119,18 @@ class AppNavigator(initial: List<Destination>) {
 
     /** The destinations that carry nothing but their key. */
     private val SCREENS = listOf(
-      Destination.Main, Destination.Settings, Destination.Permissions, Destination.RunningAgents, Destination.Backups,
-      Destination.LocalModels, Destination.Licenses, Destination.Onboarding, Destination.Providers,
-      Destination.AddProvider, Destination.AddModels, Destination.Archive, Destination.RemoteHosts,
-      Destination.ScheduledTasks,
+      Destination.Main, Destination.Settings, Destination.LocalModels, Destination.Onboarding, Destination.Providers,
+      Destination.AddProvider, Destination.Archive, Destination.AddWorkspace, Destination.ScheduledTasks,
     )
 
     private fun destination(key: String): Destination? = when {
       SCREENS.any { key(it) == key } -> SCREENS.first { key(it) == key }
 
-      key.startsWith(LICENSE) -> Destination.License(key.removePrefix(LICENSE))
-
       key.startsWith(ARCHIVED_CHAT) -> Destination.ArchivedChat(key.removePrefix(ARCHIVED_CHAT))
 
-      key.startsWith(ARCHIVED_SUBAGENT) -> key.removePrefix(ARCHIVED_SUBAGENT).let { rest ->
-        Destination.ArchivedSubagent(path = rest.substringAfter('\n'), toolCallId = rest.substringBefore('\n'))
+      key.startsWith(SUBSCRIPTION) -> key.removePrefix(SUBSCRIPTION).let { rest ->
+        Destination.Subscription(rest.removeSuffix("!models"), rest.endsWith("!models"))
       }
-
-      key.startsWith(MODEL) -> Destination.ModelEditor(key.removePrefix(MODEL))
-
-      key.startsWith(SUBSCRIPTION) -> Destination.Subscription(key.removePrefix(SUBSCRIPTION))
 
       key.startsWith(PROVIDER) -> Destination.ProviderEditor(key.removePrefix(PROVIDER).ifEmpty { null })
 
@@ -192,23 +147,15 @@ class AppNavigator(initial: List<Destination>) {
 
     private const val MAIN = "main"
     private const val SETTINGS = "settings"
-    private const val PERMISSIONS = "permissions"
-    private const val RUNNING_AGENTS = "running-agents"
-    private const val BACKUPS = "backups"
     private const val LOCAL_MODELS = "local-models"
-    private const val LICENSES = "licenses"
-    private const val LICENSE = "license:"
     private const val ONBOARDING = "onboarding"
     private const val PROVIDER = "provider:"
     private const val PROVIDERS = "providers"
     private const val ADD_PROVIDER = "add-provider"
     private const val SUBSCRIPTION = "subscription:"
-    private const val ADD_MODELS = "add-models"
-    private const val MODEL = "model:"
     private const val ARCHIVE = "archive"
     private const val ARCHIVED_CHAT = "archived-chat:"
-    private const val ARCHIVED_SUBAGENT = "archived-subagent:"
-    private const val REMOTE_HOSTS = "remote-hosts"
+    private const val ADD_WORKSPACE = "add-workspace"
     private const val REMOTE_HOST = "remote-host:"
     private const val REMOTE_HOST_PICKER = "remote-host-picker:"
     private const val SCHEDULED_TASKS = "scheduled-tasks"

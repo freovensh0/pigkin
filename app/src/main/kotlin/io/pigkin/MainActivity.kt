@@ -48,7 +48,6 @@ import io.pigkin.ui.onboarding.PermissionsScreen
 import io.pigkin.ui.settings.AddModelsScreen
 import io.pigkin.ui.settings.AddProviderScreen
 import io.pigkin.ui.settings.BackupsScreen
-import io.pigkin.ui.settings.LicenseScreen
 import io.pigkin.ui.settings.LicensesScreen
 import io.pigkin.ui.settings.LocalModelsScreen
 import io.pigkin.ui.settings.ModelEditorScreen
@@ -65,9 +64,9 @@ import io.pigkin.ui.settings.SettingsScreen
 import io.pigkin.ui.settings.SubscriptionScreen
 import io.pigkin.ui.settings.ownsDraft
 import io.pigkin.ui.settings.usesApiKey
+import io.pigkin.ui.sidebar.AddWorkspaceScreen
 import io.pigkin.ui.sidebar.SidebarLinks
 import io.pigkin.ui.stackTransition
-import io.pigkin.ui.subagents.ArchivedSubagentScreen
 import io.pigkin.ui.theme.PigkinTheme
 import io.pigkin.ui.theme.pigkinColors
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -192,14 +191,14 @@ private fun Screen(
   when (val top = shown.last()) {
     Destination.Main -> MainPage(navigator, actions, requestedChat, onSidePanelOpen)
 
-    Destination.Archive, is Destination.ArchivedChat, is Destination.ArchivedSubagent ->
+    Destination.AddWorkspace -> AddWorkspacePage(navigator)
+
+    Destination.Archive, is Destination.ArchivedChat ->
       ArchivePage(top, navigator, actions, requestedChat)
 
-    Destination.Settings, Destination.Permissions, Destination.Backups, Destination.RunningAgents,
-    Destination.LocalModels, Destination.Licenses, is Destination.License,
-    -> SettingsPages(top, navigator)
+    Destination.Settings, Destination.LocalModels -> SettingsPages(top, navigator)
 
-    Destination.RemoteHosts, is Destination.RemoteHostEditor -> RemoteHostPages(top, navigator, actions)
+    is Destination.RemoteHostEditor -> RemoteHostPages(top, navigator, actions)
 
     Destination.ScheduledTasks, is Destination.ScheduledTaskEditor ->
       ScheduledTaskPages(top, navigator, requestedChat)
@@ -223,25 +222,14 @@ private fun Screen(
 
     is Destination.Subscription -> SubscriptionScreen(
       form = remember { drafts.subscription(top.id) },
+      openModels = top.openModels,
       onBack = { navigator.pop() },
-      onAddModels = { navigator.push(Destination.AddModels) },
-      onOpenModel = { navigator.push(Destination.ModelEditor(it)) },
     )
 
     is Destination.ProviderEditor -> ProviderEditorScreen(
       form = remember { drafts.provider(top.id) },
       onBack = { navigator.pop() },
       onDone = { navigator.popTo(Destination.Providers) },
-      onAddModels = { navigator.push(Destination.AddModels) },
-      onOpenModel = { navigator.push(Destination.ModelEditor(it)) },
-    )
-
-    Destination.AddModels -> AddModelsScreen(draft = remember { drafts.owner(shown) }, onBack = { navigator.pop() })
-
-    is Destination.ModelEditor -> ModelEditorScreen(
-      draft = remember { drafts.owner(shown) },
-      modelId = top.modelId,
-      onBack = { navigator.pop() },
     )
 
     Destination.Onboarding -> OnboardingScreen(
@@ -255,7 +243,21 @@ private fun Screen(
   }
 }
 
-/** The main screen, whose links push the pages they open; the folder picker's host editor returns to the picker. */
+/** The folder picker pushed from the sidebar; a host editor opened from it returns here. */
+@Composable
+private fun AddWorkspacePage(navigator: AppNavigator) {
+  val preferences = LocalContext.current.appGraph.preferences
+  AddWorkspaceScreen(
+    onAdd = { cwd ->
+      preferences.addWorkspace(cwd)
+      navigator.pop()
+    },
+    onOpenHost = { navigator.push(Destination.RemoteHostEditor(it, fromPicker = true)) },
+    onBack = { navigator.pop() },
+  )
+}
+
+/** The main screen, whose links push the pages they open. */
 @Composable
 private fun MainPage(
   navigator: AppNavigator,
@@ -266,6 +268,7 @@ private fun MainPage(
   // Once per navigator, so the sidebar isn't recomposed for a new but equal set of links.
   val links = remember(navigator) {
     SidebarLinks(
+      onAddWorkspace = { navigator.push(Destination.AddWorkspace) },
       onOpenSettings = { navigator.push(Destination.Settings) },
       onOpenRemoteHost = { navigator.push(Destination.RemoteHostEditor(it, fromPicker = true)) },
       onOpenArchive = { navigator.push(Destination.Archive) },
@@ -285,38 +288,19 @@ private fun MainPage(
 
 /** Opens the models to add for the provider Pi ships [providerId], over its page so Save there keeps them. */
 private fun AppNavigator.pickModels(providerId: String) {
-  push(Destination.Subscription(providerId))
-  push(Destination.AddModels)
+  push(Destination.Subscription(providerId, openModels = true))
 }
 
 /** Settings, or one of the pages reached from it or Providers and models that needs nothing but the navigator. */
 @Composable
 private fun SettingsPages(top: Destination, navigator: AppNavigator) {
   when (top) {
-    Destination.Permissions -> PermissionsScreen(onBack = { navigator.pop() })
-
-    Destination.Backups -> BackupsScreen(onBack = { navigator.pop() })
-
-    Destination.RunningAgents -> RunningAgentsScreen(onBack = { navigator.pop() })
-
     Destination.LocalModels -> LocalModelsScreen(onBack = { navigator.pop() })
-
-    Destination.Licenses -> LicensesScreen(
-      onBack = { navigator.pop() },
-      onOpenLicense = { navigator.push(Destination.License(it)) },
-    )
-
-    is Destination.License -> LicenseScreen(path = top.path, onBack = { navigator.pop() })
 
     else -> SettingsScreen(
       SettingsNav(
         onBack = { navigator.pop() },
-        onOpenProviders = { navigator.push(Destination.Providers) },
-        onOpenRunningAgents = { navigator.push(Destination.RunningAgents) },
-        onOpenPermissions = { navigator.push(Destination.Permissions) },
-        onOpenRemoteHosts = { navigator.push(Destination.RemoteHosts) },
-        onOpenBackups = { navigator.push(Destination.Backups) },
-        onOpenLicenses = { navigator.push(Destination.Licenses) },
+        onOpenRemoteHost = { navigator.push(Destination.RemoteHostEditor(it)) },
       ),
     )
   }
@@ -389,13 +373,6 @@ private fun ArchivePage(
       actions = actions,
       onBack = { navigator.pop() },
       onRestored = { requestedChat.value = it },
-      onOpenSubagent = { navigator.push(Destination.ArchivedSubagent(top.path, it)) },
-    )
-
-    is Destination.ArchivedSubagent -> ArchivedSubagentScreen(
-      path = top.path,
-      toolCallId = top.toolCallId,
-      onBack = { navigator.pop() },
     )
 
     else -> ArchiveScreen(

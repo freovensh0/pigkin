@@ -36,7 +36,8 @@
     <string name="shell_time_days">%1$dd</string>
     <!-- The session sheet, opened from a screen's tabs button: the labels over its tabs, then over what the shown tab
          can do. -->
-    <string name="shell_tabs_label">Tabs</string>
+    <string name="shell_tabs_search">Search tabs and chats</string>
+        <string name="shell_tabs_label">Tabs</string>
     <string name="shell_tabs_swipe_hint">Swipe to close</string>
     <string name="shell_actions_label">Actions</string>
 

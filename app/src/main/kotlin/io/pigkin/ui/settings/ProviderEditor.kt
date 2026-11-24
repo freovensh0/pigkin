@@ -36,6 +36,7 @@ import io.pigkin.ui.components.PigkinDialog
 import io.pigkin.ui.components.SimmeringPot
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -44,22 +45,22 @@ import kotlinx.coroutines.launch
  * a save or removal, [onBack] leaves (asking first when there are unsaved edits).
  */
 @Composable
-internal fun ProviderEditorScreen(
-  form: ProviderForm,
-  onBack: () -> Unit,
-  onDone: () -> Unit,
-  onAddModels: () -> Unit,
-  onOpenModel: (modelId: String) -> Unit,
-) {
+internal fun ProviderEditorScreen(form: ProviderForm, onBack: () -> Unit, onDone: () -> Unit) {
   val accounts = LocalContext.current.appGraph.accountRepository
   val scope = rememberCoroutineScope()
   val failed = stringResource(R.string.provider_failed)
   var confirmRemove by remember { mutableStateOf(false) }
   var confirmDiscard by remember { mutableStateOf(false) }
+  var modelPage by remember { mutableStateOf<ModelPage?>(null) }
   val leave = { if (form.dirty) confirmDiscard = true else onBack() }
   val loading = loadSavedProvider(form, accounts, failed)
   val selection = rememberModelSelection()
-  BackHandler(enabled = form.dirty) { confirmDiscard = true }
+  BackHandler(enabled = form.dirty && modelPage == null) { confirmDiscard = true }
+  val page = modelPage
+  if (page != null) {
+    ModelPageScreen(page, form) { modelPage = null }
+    return
+  }
   SettingsPage(
     title = if (form.editing) form.id else stringResource(R.string.provider_title_new),
     onBack = leave,
@@ -79,8 +80,8 @@ internal fun ProviderEditorScreen(
       draft = form,
       selection = selection,
       emptyText = stringResource(modelsEmptyText(form)),
-      onAddModels = onAddModels,
-      onOpenModel = onOpenModel,
+      onAddModels = { modelPage = ModelPage.Add },
+      onOpenModel = { modelPage = ModelPage.Edit(it) },
     )
     ProviderActions(
       form = form,
@@ -88,26 +89,54 @@ internal fun ProviderEditorScreen(
       onRemove = { confirmRemove = true },
     )
   }
+  ProviderEditorDialogs(
+    confirmRemove,
+    confirmDiscard,
+    ProviderDialogContext(form, accounts, failed, scope),
+    onDone,
+    onBack,
+    ProviderDialogDismiss({ confirmRemove = false }, { confirmDiscard = false }),
+  )
+}
+
+/** The remove and unsaved-edits questions over the provider editor. */
+@Composable
+private fun ProviderEditorDialogs(
+  confirmRemove: Boolean,
+  confirmDiscard: Boolean,
+  context: ProviderDialogContext,
+  onDone: () -> Unit,
+  onBack: () -> Unit,
+  dismiss: ProviderDialogDismiss,
+) {
   if (confirmRemove) {
     RemoveDialog(
-      id = form.id,
+      id = context.form.id,
       onConfirm = {
-        confirmRemove = false
-        scope.launch { if (form.removeProvider(accounts, failed)) onDone() }
+        dismiss.remove()
+        context.scope.launch { if (context.form.removeProvider(context.accounts, context.failed)) onDone() }
       },
-      onDismiss = { confirmRemove = false },
+      onDismiss = dismiss.remove,
     )
   }
   if (confirmDiscard) {
-    DiscardDialog(
-      onDiscard = {
-        confirmDiscard = false
-        onBack()
-      },
-      onDismiss = { confirmDiscard = false },
-    )
+    DiscardDialog(onDiscard = {
+      dismiss.discard()
+      onBack()
+    }, onDismiss = dismiss.discard)
   }
 }
+
+/** What the provider's remove question needs to do the removal. */
+private data class ProviderDialogContext(
+  val form: ProviderForm,
+  val accounts: io.pigkin.data.AccountRepository,
+  val failed: String,
+  val scope: CoroutineScope,
+)
+
+/** How each provider-editor question goes away. */
+private data class ProviderDialogDismiss(val remove: () -> Unit, val discard: () -> Unit)
 
 /**
  * Reads a saved provider's details afresh, so changes made outside Pigkin (for example by the agent) show, then checks

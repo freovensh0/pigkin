@@ -63,7 +63,7 @@ import io.pigkin.ui.terminal.TerminalScreen
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import io.pigkin.ui.workspace.PaneControls
-import io.pigkin.ui.workspace.WorkspaceTabsSheet
+import io.pigkin.ui.workspace.WorkspaceTabsScreen
 import io.pigkin.ui.workspace.rememberPaneItems
 import io.pigkin.ui.workspace.splitScreenAvailable
 import io.pigkin.workspace.Pane
@@ -421,7 +421,8 @@ private fun WorkspacePanes(
           },
         )
         if (tabsOpen && item != null) {
-          WorkspaceTabsSheet(pane, item.cwd, actions, snackbar, controls.shownTab, onShownInSplit, swapPanes) {
+          BackHandler(enabled = tabsOpen) { tabsOpen = false }
+          WorkspaceTabsScreen(pane, item.cwd, actions, snackbar, controls.shownTab, onShownInSplit, swapPanes) {
             tabsOpen = false
           }
         }

@@ -2,6 +2,7 @@
 <resources>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
+    <string name="settings_search">Search</string>
     <string name="settings_copy">Copy</string>
     <string name="settings_section_models">Models</string>
     <string name="settings_section_chats">Chats</string>
@@ -62,7 +63,9 @@
     <string name="backups_created">Backed up.</string>
     <string name="backups_restoring">Restoring the backup from %1$s…</string>
     <string name="backups_restored">Restored. Chats use the restored configuration from now on.</string>
-    <string name="backups_saved">Saved backups</string>
+    <string name="backups_search">Search backups</string>
+    <string name="backups_no_match">No backup matches that search.</string>
+        <string name="backups_saved">Saved backups</string>
     <string name="backups_loading">Loading backups…</string>
     <string name="backups_retry">Retry</string>
     <string name="backups_empty">No backups yet</string>

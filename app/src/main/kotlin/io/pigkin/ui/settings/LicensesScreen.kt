@@ -1,6 +1,7 @@
 package io.pigkin.ui.settings
 
 import android.content.res.AssetManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,11 +30,18 @@ private const val SYNTAX_LICENSES = "syntax/licenses"
 
 /** The third-party licences the app ships, one row each, reached from Settings › About. */
 @Composable
-internal fun LicensesScreen(onBack: () -> Unit, onOpenLicense: (path: String) -> Unit) {
+internal fun LicensesScreen(onBack: () -> Unit) {
   val assets = LocalContext.current.assets
   val components = remember(assets) { licensePaths(assets, COMPONENT_LICENSES) }
   val grammars = remember(assets) { licensePaths(assets, SYNTAX_LICENSES) }
   var query by rememberSaveable { mutableStateOf("") }
+  var openPath by rememberSaveable { mutableStateOf<String?>(null) }
+  BackHandler(enabled = openPath != null) { openPath = null }
+  val path = openPath
+  if (path != null) {
+    LicenseScreen(path, onBack = { openPath = null })
+    return
+  }
   SettingsPage(title = stringResource(R.string.settings_licenses), onBack = onBack) {
     SettingsCaption(text = stringResource(R.string.settings_licenses_caption))
     SearchField(
@@ -47,8 +55,8 @@ internal fun LicensesScreen(onBack: () -> Unit, onOpenLicense: (path: String) ->
     if (shownComponents.isEmpty() && shownGrammars.isEmpty()) {
       SettingsCaption(text = stringResource(R.string.settings_licenses_no_match))
     }
-    LicenseSection(stringResource(R.string.settings_licenses_components), shownComponents, onOpenLicense)
-    LicenseSection(stringResource(R.string.settings_licenses_syntax), shownGrammars, onOpenLicense)
+    LicenseSection(stringResource(R.string.settings_licenses_components), shownComponents) { openPath = it }
+    LicenseSection(stringResource(R.string.settings_licenses_syntax), shownGrammars) { openPath = it }
   }
 }
 

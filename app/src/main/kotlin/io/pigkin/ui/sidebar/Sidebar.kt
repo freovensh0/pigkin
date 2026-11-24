@@ -75,6 +75,7 @@ import kotlinx.coroutines.flow.flowOf
  * folder picker, the archive, and setup.
  */
 internal class SidebarLinks(
+  val onAddWorkspace: () -> Unit,
   val onOpenSettings: () -> Unit,
   val onOpenRemoteHost: (hostId: String?) -> Unit,
   val onOpenArchive: () -> Unit,
@@ -103,7 +104,6 @@ internal fun Sidebar(
   val workspaces = remember(sessions, added) { workspaces(sessions, added) }
   val removal = remember(actions) { WorkspaceRemoval(actions) }
   var menuFor by remember { mutableStateOf<Workspace?>(null) }
-  val pickerOpen = rememberSaveable { mutableStateOf(false) }
   // Rows that left the list forget that they were leaving, so a workspace added back shows in place.
   LaunchedEffect(workspaces) { removal.forgetGone(workspaces) }
   val showThen = { cwd: String, open: () -> Boolean ->
@@ -128,7 +128,7 @@ internal fun Sidebar(
         onOpen = { cwd -> showThen(cwd) { actions.openWorkspace(pane, cwd) } },
         onNewChatIn = { cwd -> showThen(cwd) { actions.newChat(pane, cwd) } },
         onActions = { menuFor = it },
-        onAddWorkspace = { pickerOpen.value = true },
+        onAddWorkspace = links.onAddWorkspace,
       ),
       modifier = Modifier.weight(1f),
     )
@@ -152,39 +152,7 @@ internal fun Sidebar(
     )
   }
   RemoveWorkspaceDialog(removal, names)
-  AddWorkspacePicker(pickerOpen, workspaces, links.onOpenRemoteHost)
-}
-
-/**
- * The add-workspace sheet over the sidebar while [open], which adds the folder picked as a workspace: a remote one by
- * its stand-in folder, which the picker made. The sheet slides away before a host's editor covers the main screen,
- * and comes back once the editor closes.
- */
-@Composable
-private fun AddWorkspacePicker(
-  open: MutableState<Boolean>,
-  workspaces: List<Workspace>,
-  onOpenRemoteHost: (hostId: String?) -> Unit,
-) {
-  val preferences = LocalContext.current.appGraph.preferences
-  var reopen by rememberSaveable { mutableStateOf(false) }
-  // Only on returning from the editor is the sidebar composed afresh, so this runs then, not as the editor slides in.
-  LaunchedEffect(Unit) {
-    if (reopen) {
-      reopen = false
-      open.value = true
-    }
-  }
-  if (!open.value) return
-  AddWorkspaceSheet(
-    isWorkspace = { cwd -> workspaces.any { sameFolder(it.cwd, cwd) } },
-    onAdd = preferences::addWorkspace,
-    onOpenHost = { id ->
-      reopen = true
-      onOpenRemoteHost(id)
-    },
-    onDismiss = { open.value = false },
-  )
+  links.onAddWorkspace()
 }
 
 /** The Add workspace row's key in the list, which can't be a workspace's folder. */

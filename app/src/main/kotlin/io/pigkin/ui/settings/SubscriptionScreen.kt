@@ -44,12 +44,7 @@ import kotlinx.coroutines.launch
  * asks first when there are unsaved edits.
  */
 @Composable
-internal fun SubscriptionScreen(
-  form: SubscriptionForm,
-  onBack: () -> Unit,
-  onAddModels: () -> Unit,
-  onOpenModel: (modelId: String) -> Unit,
-) {
+internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onBack: () -> Unit) {
   val accounts = LocalContext.current.appGraph.accountRepository
   val status by accounts.status.collectAsStateWithLifecycle()
   val refreshError by accounts.refreshError.collectAsStateWithLifecycle()
@@ -58,24 +53,23 @@ internal fun SubscriptionScreen(
   var busy by remember { mutableStateOf(false) }
   var signingIn by rememberSaveable { mutableStateOf(false) }
   var confirmDiscard by remember { mutableStateOf(false) }
+  var modelPage by remember { mutableStateOf<ModelPage?>(if (openModels) ModelPage.Add else null) }
   val failed = stringResource(R.string.provider_failed)
   val id = form.providerId
-  val subscription = subscriptions.firstOrNull { it.id == id }
-  val name = subscription?.let { stringResource(it.title) } ?: id
+  val name = subscriptions.firstOrNull { it.id == id }?.let { stringResource(it.title) } ?: id
   val signedIn = status?.isSignedIn(id)
   // Reads Pi's files afresh, so changes made outside Pigkin (for example by the agent) show here.
   LaunchedEffect(form) { accounts.refresh() }
   LaunchedEffect(status) { status?.builtin?.firstOrNull { it.id == id }?.let(form::prefill) }
-  BackHandler(enabled = form.dirty) { confirmDiscard = true }
+  BackHandler(enabled = form.dirty && modelPage == null) { confirmDiscard = true }
   val selection = rememberModelSelection()
-  val signOut: () -> Unit = {
-    busy = true
-    scope.launch {
-      val error = signOut(accounts, id, failed)
-      busy = false
-      if (error == null) onBack() else snackbar.show(error)
-    }
+  // Editing a model stays on this page: another destination would put it three levels below the main screen.
+  val page = modelPage
+  if (page != null) {
+    ModelPageScreen(page, form) { modelPage = null }
+    return
   }
+  val signOut = rememberSignOut(accounts, id, failed, snackbar, onBack) { busy = it }
   SettingsPage(
     title = name,
     onBack = { if (form.dirty) confirmDiscard = true else onBack() },
@@ -90,24 +84,60 @@ internal fun SubscriptionScreen(
         busy = busy,
         onSave = { scope.launch { if (form.save(accounts, failed)) onBack() } },
         onSignOut = signOut,
-        onAddModels = onAddModels,
-        onOpenModel = onOpenModel,
+        onAddModels = { modelPage = ModelPage.Add },
+        onOpenModel = { modelPage = ModelPage.Edit(it) },
       )
     }
     listOfNotNull(status?.settingsError?.localized(), status?.modelsError?.localized(), refreshError).forEach {
       SettingsCaption(text = it, color = pigkinColors.destructive)
     }
   }
-  if (signingIn) LoginSheet(providerId = id, onDismiss = { signingIn = false })
-  if (confirmDiscard) {
-    DiscardDialog(
-      onDiscard = {
-        confirmDiscard = false
-        onBack()
-      },
-      onDismiss = { confirmDiscard = false },
-    )
+  SubscriptionOverlays(
+    signingIn,
+    confirmDiscard,
+    id,
+    onDismissSignIn = { signingIn = false },
+    onDiscard = {
+      confirmDiscard = false
+      onBack()
+    },
+    onDismissDiscard = { confirmDiscard = false },
+  )
+}
+
+/** Signs out, showing the provider's own error on the page when it fails. */
+@Composable
+private fun rememberSignOut(
+  accounts: io.pigkin.data.AccountRepository,
+  id: String,
+  failed: String,
+  snackbar: SnackbarStackState,
+  onBack: () -> Unit,
+  onBusy: (Boolean) -> Unit,
+): () -> Unit {
+  val scope = rememberCoroutineScope()
+  return {
+    onBusy(true)
+    scope.launch {
+      val error = signOut(accounts, id, failed)
+      onBusy(false)
+      if (error == null) onBack() else snackbar.show(error)
+    }
   }
+}
+
+/** The sign-in sheet and the unsaved-edits question over the subscription page. */
+@Composable
+private fun SubscriptionOverlays(
+  signingIn: Boolean,
+  confirmDiscard: Boolean,
+  id: String,
+  onDismissSignIn: () -> Unit,
+  onDiscard: () -> Unit,
+  onDismissDiscard: () -> Unit,
+) {
+  if (signingIn) LoginSheet(providerId = id, onDismiss = onDismissSignIn)
+  if (confirmDiscard) DiscardDialog(onDiscard = onDiscard, onDismiss = onDismissDiscard)
 }
 
 /** The provider's logo and name, with its sign-in state. */

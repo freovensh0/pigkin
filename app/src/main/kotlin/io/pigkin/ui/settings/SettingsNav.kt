@@ -1,12 +1,7 @@
 package io.pigkin.ui.settings
 
-/** Where each Settings row leads, kept together so the screen and its content stay small. */
-internal data class SettingsNav(
-  val onBack: () -> Unit,
-  val onOpenProviders: () -> Unit,
-  val onOpenRunningAgents: () -> Unit,
-  val onOpenPermissions: () -> Unit,
-  val onOpenRemoteHosts: () -> Unit,
-  val onOpenBackups: () -> Unit,
-  val onOpenLicenses: () -> Unit,
-)
+/** The one Settings page's subpages, shown over it instead of pushed as destinations. */
+internal enum class SettingsSubpage { Permissions, RunningAgents, RemoteHosts, Backups, Licenses }
+
+/** What Settings needs from outside: leaving it, and opening a remote host's editor. */
+internal data class SettingsNav(val onBack: () -> Unit, val onOpenRemoteHost: (hostId: String?) -> Unit)
