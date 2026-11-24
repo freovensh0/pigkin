@@ -132,7 +132,7 @@ class GitHostTest {
   fun `commits carry their total, which is never fewer than were listed`() {
     val reply = JSONObject(
       """
-      {"fingerprint":"c","baseRef":"main","total":742,"commits":[
+      {"fingerprint":"c","baseRef":"main","total":742,"next":"0123456789abcdef","commits":[
         {"sha":"0123456789abcdef","subject":"Add viewer","authorTime":1700000000}
       ]}
       """,
@@ -141,6 +141,7 @@ class GitHostTest {
     val commits = (parseGitCommits(reply) as GitReply.Loaded).value
     val commit = commits.commits.single()
     assertEquals(742, commits.total)
+    assertEquals("0123456789abcdef", commits.next)
     assertEquals("0123456", commit.shortSha)
     assertEquals(1_700_000_000L, commit.authorTime)
 

@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,6 +56,7 @@ import io.pigkin.ui.theme.PigkinFonts
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import io.pigkin.ui.workspace.relativeTime
+import kotlinx.coroutines.launch
 
 /**
  * The Commits section, docked under the diff: a header that folds and unfolds it with the number of commits once
@@ -64,14 +66,16 @@ import io.pigkin.ui.workspace.relativeTime
  */
 @Composable
 internal fun CommitsSection(
-  content: CommitsContent,
+  workspace: GitWorkspace,
   collapsed: Boolean,
   listMaxHeight: Dp,
   onToggle: () -> Unit,
   onOpenCommit: (GitCommit) -> Unit,
   onConnect: (() -> Unit)?,
 ) {
+  val content = workspace.commits
   val colors = pigkinColors
+  val scope = rememberCoroutineScope()
   val navigationBar = WindowInsets.navigationBars.asPaddingValues()
   Column(modifier = Modifier.fillMaxWidth().padding(bottom = navigationBar.calculateBottomPadding())) {
     HorizontalDivider(thickness = 1.dp, color = colors.border)
@@ -99,7 +103,7 @@ internal fun CommitsSection(
       )
       if (content is CommitsContent.Loaded) CommitCount(content.commits.commits.size)
     }
-    if (!collapsed) CommitsContentRows(content, listMaxHeight, onOpenCommit, onConnect)
+    if (!collapsed) CommitsContentRows(content, workspace, listMaxHeight, onOpenCommit, onConnect)
   }
 }
 
@@ -125,11 +129,13 @@ private fun CommitCount(count: Int) {
 @Composable
 private fun CommitsContentRows(
   content: CommitsContent,
+  workspace: GitWorkspace,
   listMaxHeight: Dp,
   onOpenCommit: (GitCommit) -> Unit,
   onConnect: (() -> Unit)?,
 ) {
   val colors = pigkinColors
+  val scope = rememberCoroutineScope()
   var query by rememberSaveable { mutableStateOf("") }
   val notePadding = Modifier.padding(
     start = PigkinTokens.Spacing.s16,
@@ -174,13 +180,13 @@ private fun CommitsContentRows(
             onOpenCommit(commit)
           })
         }
-        val total = content.commits.total
-        if (total > commits.size) {
+        if (content.commits.next != null) {
           item(key = TRUNCATED_KEY) {
-            CommitsNote(
-              pluralStringResource(R.plurals.git_commits_truncated, total, commits.size, total),
-              colors.foregroundMuted,
-              notePadding,
+            PillButton(
+              label = stringResource(R.string.git_load_older_commits),
+              onClick = { scope.launch { workspace.loadOlderCommits() } },
+              tone = PillTone.Tonal,
+              modifier = notePadding,
             )
           }
         }

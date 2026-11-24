@@ -43,13 +43,10 @@
     </plurals>
     <string name="git_commits_search">Search commits</string>
     <string name="git_commits_no_match">No commit matches that search.</string>
+    <string name="git_load_older_commits">Load older commits</string>
     <string name="git_commits_loading">Loading commits…</string>
     <string name="git_commits_failed">Failed to load commits</string>
     <string name="git_commits_none_ahead">No commits ahead of %1$s yet</string>
-    <plurals name="git_commits_truncated">
-        <item quantity="one">Showing the first %1$d of %2$d commit</item>
-        <item quantity="other">Showing the first %1$d of %2$d commits</item>
-    </plurals>
     <string name="git_base">base</string>
 
     <string name="git_commit_not_found">Commit not found</string>

@@ -541,6 +541,7 @@ describe("git mode", () => {
           { sha: second, subject: "second", authorTime: clock },
           { sha: first, subject: 'first: with "quotes" and ünïcode', authorTime: firstTime },
         ],
+        next: null,
       });
       expect(await commits({ known: reply?.fingerprint })).toEqual({ type: "pigkin_git_commits_result", id: nextId, fingerprint: reply?.fingerprint, unchanged: true });
 
@@ -563,11 +564,21 @@ describe("git mode", () => {
       execFileSync("git", ["fast-import", "--quiet"], { cwd: workspace, input: stream, env: { ...process.env, ...ISOLATED } });
       await git(workspace, "checkout", "-q", "feature");
       const reply = await commits();
-      const listed = reply?.commits as { subject: string }[];
+      const listed = reply?.commits as { sha: string; subject: string }[];
       expect(reply).toMatchObject({ baseRef: "main", total: 501 });
       expect(listed).toHaveLength(500);
       expect(listed[0]?.subject).toBe("commit 501");
       expect(listed[499]?.subject).toBe("commit 2");
+      const cursor = reply?.next;
+      expect(cursor).toBe(listed[499]?.sha);
+
+      const older = await commits({ before: cursor });
+      const olderListed = older?.commits as { sha: string; subject: string }[];
+      expect(older).toMatchObject({ baseRef: "main", total: 501, next: null });
+      expect(olderListed.map((commit) => commit.subject)).toEqual(["commit 1"]);
+      expect(olderListed[0]?.sha).not.toBe(cursor);
+      expect(older?.fingerprint).not.toBe(reply?.fingerprint);
+      expect((await commits({ before: "not-a-sha" }))?.commits).toEqual(listed);
     });
   });
 

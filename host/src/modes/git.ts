@@ -856,28 +856,46 @@ async function changes(ctx: ModeContext, root: string, mode: string, ignoreWhite
 }
 
 /**
- * The commits ahead of the ref the committed diff compares with, on any branch including the base one:
- * `git log <comparison>..HEAD`, the newest [COMMITS_LIMIT] of `total`. None while detached (outside a rebase)
- * or unborn.
+ * One page of the commits ahead of the ref the committed diff compares with, newest first: `git log <range>`, at most
+ * [COMMITS_LIMIT], with `next` holding the oldest sha sent when more remain. `before` is that cursor from the previous
+ * page. None while detached (outside a rebase) or unborn.
  */
-async function commits(ctx: ModeContext, root: string, known: unknown): Promise<JsonObject> {
+async function commits(ctx: ModeContext, root: string, known: unknown, before: unknown): Promise<JsonObject> {
   try {
     const repo = await openRepo(ctx, root);
     await requireRepo(repo);
     const [branch, head, base] = await Promise.all([currentBranch(repo), headCommit(repo), defaultBranch(repo)]);
     const comparison = branch === null || head === null || base === null ? null : await comparisonRef(repo, base);
-    if (comparison === null) return fingerprinted({ baseRef: comparison, total: 0, commits: [] }, known);
-    const range = `${comparison}..HEAD`;
-    const [log, count] = await Promise.all([
-      run(repo, ["log", "--no-color", "--no-show-signature", "-z", `--max-count=${String(COMMITS_LIMIT)}`, "--format=%H%x00%at%x00%s", range, "--"]),
+    if (comparison === null) return fingerprinted({ baseRef: comparison, total: 0, commits: [], next: null }, known);
+    const requested = typeof before === "string" && SHA.test(before) ? before : null;
+    let cursor = requested;
+    // A force-push or a change of base can leave the cursor outside the range; start again rather than show a gap.
+    if (cursor !== null) {
+      try {
+        await run(repo, ["merge-base", "--is-ancestor", cursor, "HEAD"]);
+      } catch {
+        cursor = null;
+      }
+    }
+    const range = `${comparison}..${cursor ?? "HEAD"}`;
+    const [log, pageCount, totalCount] = await Promise.all([
+      run(repo, ["log", "--no-color", "--no-show-signature", "--topo-order", "-z", `--max-count=${String(COMMITS_LIMIT)}`, "--format=%H%x00%at%x00%s", range, ...(cursor === null ? [] : ["--skip=1"]), "--"]),
       run(repo, ["rev-list", "--count", range, "--"]),
+      cursor === null ? Promise.resolve(null) : run(repo, ["rev-list", "--count", `${comparison}..HEAD`, "--"]),
     ]);
     const fields = log.stdout.split("\0");
     const list: JsonObject[] = [];
     for (let i = 0; i + 2 < fields.length; i += 3) {
       list.push({ sha: fields[i] ?? "", subject: fields[i + 2] ?? "", authorTime: Number(fields[i + 1]) });
     }
-    return fingerprinted({ baseRef: comparison, total: Number(count.stdout.trim()), commits: list }, known);
+    const remaining = Math.max(0, Number(pageCount.stdout.trim()) - (cursor === null ? 0 : 1));
+    const next = list.length > 0 && remaining > list.length ? (list[list.length - 1]?.sha ?? null) : null;
+    return fingerprinted({
+      baseRef: comparison,
+      total: Number((totalCount ?? pageCount).stdout.trim()),
+      commits: list,
+      next,
+    }, known);
   } catch (error) {
     if (ctx.signal.aborted) throw error;
     return failure(error);
@@ -914,8 +932,9 @@ async function commitDiff(ctx: ModeContext, root: string, sha: string, ignoreWhi
  * - `pigkin_git_changes {mode: "uncommitted" | "base", ignoreWhitespace, known?}` with
  *   `pigkin_git_changes_result {fingerprint, branch, baseRef, files, tooLarge?}`, or
  *   `{fingerprint, unchanged: true}` when `known` is the current fingerprint.
- * - `pigkin_git_commits {known?}` with `pigkin_git_commits_result {fingerprint, baseRef, total, commits}`
- *   (at most 500 `{sha, subject, authorTime}`, newest first, of `total`), or `{fingerprint, unchanged: true}`.
+ * - `pigkin_git_commits {known?, before?}` with `pigkin_git_commits_result {fingerprint, baseRef, total, commits, next}`
+ *   (at most 500 `{sha, subject, authorTime}`, newest first, of `total`; `next` is the cursor for the older page,
+ *   or null at the end), or `{fingerprint, unchanged: true}`.
  * - `pigkin_git_commit_diff {sha, ignoreWhitespace}` with `pigkin_git_commit_diff_result {files, tooLarge?}`.
  * Failures are `{error, code, errorI18n?}` in the reply: `not_repo`, `no_git`, `commit_not_found` or `failed`.
  *
@@ -943,7 +962,7 @@ export async function git(ctx: ModeContext): Promise<JsonObject> {
     } else if (message.type === "pigkin_git_changes" && (message.mode === "uncommitted" || message.mode === "base") && typeof ignoreWhitespace === "boolean") {
       reply("pigkin_git_changes_result", id, changes(ctx, root, message.mode, ignoreWhitespace, message.known));
     } else if (message.type === "pigkin_git_commits") {
-      reply("pigkin_git_commits_result", id, commits(ctx, root, message.known));
+      reply("pigkin_git_commits_result", id, commits(ctx, root, message.known, message.before));
     } else if (message.type === "pigkin_git_commit_diff" && typeof message.sha === "string" && typeof ignoreWhitespace === "boolean") {
       reply("pigkin_git_commit_diff_result", id, commitDiff(ctx, root, message.sha, ignoreWhitespace));
     }

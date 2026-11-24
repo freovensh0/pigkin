@@ -125,7 +125,7 @@ internal fun ChangesPane(
       )
       ChangesBody(workspace, wrapLines, connect, Modifier.weight(1f))
       CommitsSection(
-        content = workspace.commits,
+        workspace = workspace,
         collapsed = commitsCollapsed,
         listMaxHeight = commitsMaxHeight,
         onToggle = { preferences.setCommitsCollapsed(!commitsCollapsed) },

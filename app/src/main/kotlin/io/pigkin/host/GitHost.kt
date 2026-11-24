@@ -48,9 +48,16 @@ internal class GitCommit(val sha: String, val subject: String, val authorTime: L
 }
 
 /**
- * The commits ahead of the comparison base [baseRef], newest first: the host's first ones, out of [total] in all.
+ * One page of the commits ahead of [baseRef], newest first: the host's ones out of [total] in all, with [next] the
+ * cursor for the older page, or null at the end.
  */
-internal class GitCommits(val fingerprint: String, val baseRef: String?, val commits: List<GitCommit>, val total: Int)
+internal data class GitCommits(
+  val fingerprint: String,
+  val baseRef: String?,
+  val commits: List<GitCommit>,
+  val total: Int,
+  val next: String? = null,
+)
 
 internal enum class GitErrorCode { NotRepo, NoGit, Failed, CommitNotFound }
 
@@ -105,10 +112,11 @@ internal class GitHost(hostClient: HostClient, scope: CoroutineScope) {
     return withContext(Dispatchers.Default) { parseGitChanges(reply) }
   }
 
-  /** [root]'s commits ahead of its comparison base; [known] works as in [changes]. */
-  suspend fun commits(root: String, known: String?): GitReply<GitCommits> {
+  /** [root]'s commits ahead of its comparison base; [known] works as in [changes], [before] pages back in time. */
+  suspend fun commits(root: String, known: String?, before: String? = null): GitReply<GitCommits> {
     val message = JSONObject().put("type", COMMITS).put("root", root)
     if (known != null) message.put("known", known)
+    if (before != null) message.put("before", before)
     val reply = host.request(message, DIFF_TIMEOUT)
     return withContext(Dispatchers.Default) { parseGitCommits(reply) }
   }
@@ -164,6 +172,7 @@ internal fun parseGitCommits(reply: JSONObject): GitReply<GitCommits> = parseRep
     fingerprint = reply.optString("fingerprint"),
     baseRef = reply.optNullableString("baseRef"),
     commits = commits,
+    next = reply.optNullableString("next"),
     // Never fewer than were sent, so a reply without a total reads as the whole list.
     total = maxOf(reply.optInt("total"), commits.size),
   )

@@ -151,6 +151,25 @@ internal class GitWorkspace(val root: String, private val git: GitHost) {
     reply != null && reply !is GitReply.Failed
   }
 
+  /** Appends the next page of commits; a failure keeps the pages already shown. */
+  suspend fun loadOlderCommits(): Boolean = commitsLock.withLock {
+    val shown = commits as? CommitsContent.Loaded ?: return false
+    val before = shown.commits.next ?: return false
+    commitsReloading = true
+    val reply = try {
+      git.commits(root, known = null, before = before)
+    } catch (_: IOException) {
+      null
+    } catch (_: HostRejected) {
+      null
+    } finally {
+      commitsReloading = false
+    }
+    val page = (reply as? GitReply.Loaded)?.value ?: return reply != null && reply !is GitReply.Failed
+    commits = CommitsContent.Loaded(page.copy(commits = shown.commits.commits + page.commits))
+    true
+  }
+
   /** [request]'s reply, or null when the host couldn't run it, which fails a first load and keeps a shown one. */
   private suspend fun fetchChanges(request: ChangesRequest): GitReply<GitChanges>? {
     val known = (changes as? ChangesContent.Loaded)?.takeIf { it.request == request }?.changes?.fingerprint
