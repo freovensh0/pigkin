@@ -1,9 +1,11 @@
 package io.pigkin.ui.sidebar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,20 +32,22 @@ internal fun AddWorkspaceScreen(
   onBack: () -> Unit,
 ) {
   val workspaces by LocalContext.current.appGraph.preferences.workspaces.collectAsStateWithLifecycle()
-  HeaderBar(
-    title = stringResource(R.string.shell_add_workspace),
-    leading = {
-      HeaderButton(
-        icon = R.drawable.ic_lucide_chevron_left,
-        contentDescription = stringResource(R.string.settings_back),
-        onClick = onBack,
-      )
-    },
-  )
-  FolderBrowserPane(
-    isWorkspace = { cwd -> workspaces.any { sameFolder(it, cwd) } },
-    onOpenHost = onOpenHost,
-    modifier = Modifier.fillMaxSize().background(pigkinColors.surface0).windowInsetsPadding(WindowInsets.safeDrawing),
-    onChoose = onAdd,
-  )
+  Column(modifier = Modifier.fillMaxSize().background(pigkinColors.surface0)) {
+    HeaderBar(
+      title = stringResource(R.string.shell_add_workspace),
+      leading = {
+        HeaderButton(
+          icon = R.drawable.ic_lucide_chevron_left,
+          contentDescription = stringResource(R.string.settings_back),
+          onClick = onBack,
+        )
+      },
+    )
+    FolderBrowserPane(
+      isWorkspace = { cwd -> workspaces.any { sameFolder(it, cwd) } },
+      onOpenHost = onOpenHost,
+      modifier = Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars).imePadding(),
+      onChoose = onAdd,
+    )
+  }
 }
