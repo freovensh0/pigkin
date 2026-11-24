@@ -85,7 +85,9 @@ class AppNavigator(initial: List<Destination>) {
     /** Keeps the stack across activity recreation as [key] strings. */
     val Saver: Saver<AppNavigator, List<String>> = Saver(
       save = { navigator -> navigator.stack.value.map(::key) },
-      restore = { keys -> AppNavigator(keys.mapNotNull(::destination)) },
+      // Distinct because 0.0.30 and 0.0.31 pushed the folder picker on every sidebar recomposition, and those phones
+      // saved a stack full of copies of it; a screen is never pushed twice on purpose.
+      restore = { keys -> AppNavigator(keys.mapNotNull(::destination).distinct()) },
     )
 
     /** A stable string per destination, also used as its saveable-state key. */

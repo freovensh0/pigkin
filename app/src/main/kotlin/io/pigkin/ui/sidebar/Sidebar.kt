@@ -152,7 +152,6 @@ internal fun Sidebar(
     )
   }
   RemoveWorkspaceDialog(removal, names)
-  links.onAddWorkspace()
 }
 
 /** The Add workspace row's key in the list, which can't be a workspace's folder. */
