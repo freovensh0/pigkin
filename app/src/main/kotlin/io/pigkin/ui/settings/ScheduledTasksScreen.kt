@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import io.pigkin.ui.components.HeaderBar
 import io.pigkin.ui.components.HeaderButton
 import io.pigkin.ui.components.LucideIcon
 import io.pigkin.ui.components.PigkinSheet
+import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.components.SheetRow
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
@@ -65,6 +67,7 @@ internal fun ScheduledTasksScreen(
   onOpenChat: (ChatLocation) -> Unit,
 ) {
   val tasks by ScheduledTaskStore.tasks.collectAsStateWithLifecycle()
+  var query by rememberSaveable { mutableStateOf("") }
   val actions = remember { TaskActionsState() }
   LaunchedEffect(Unit) { ScheduledTaskStore.refresh() }
   Column(modifier = Modifier.fillMaxSize().background(pigkinColors.surface0)) {
@@ -88,8 +91,22 @@ internal fun ScheduledTasksScreen(
     if (tasks.isEmpty()) {
       EmptyTasks(onAdd, modifier = Modifier.weight(1f))
     } else {
+      SearchField(
+        query = query,
+        onQueryChange = { query = it },
+        placeholder = stringResource(R.string.scheduled_search),
+      )
+      val matching = tasks.filter { it.prompt.contains(query, ignoreCase = true) }
+      if (matching.isEmpty()) {
+        Text(
+          text = stringResource(R.string.scheduled_search_empty),
+          modifier = Modifier.fillMaxWidth().padding(PigkinTokens.Spacing.s16),
+          color = pigkinColors.foregroundMuted,
+          fontSize = PigkinTokens.FontSize.base,
+        )
+      }
       TaskList(
-        tasks = tasks,
+        tasks = matching,
         onOpen = { task ->
           val path = task.sessionPath
           val cwd = task.sessionCwd

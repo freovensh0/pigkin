@@ -163,7 +163,7 @@ fun PillButton(
   }
   Button(
     onClick = onClick,
-    modifier = modifier.heightIn(min = 40.dp),
+    modifier = modifier.heightIn(min = PigkinTokens.minTouchTarget),
     enabled = enabled,
     shape = RoundedCornerShape(8.dp),
     colors = ButtonDefaults.buttonColors(
@@ -229,7 +229,7 @@ fun DialogTextField(
           .clip(shape)
           .background(colors.surface0)
           .border(if (focused) 1.5.dp else 1.dp, if (focused) colors.accent else colors.border, shape)
-          .heightIn(min = 44.dp)
+          .heightIn(min = PigkinTokens.minTouchTarget)
           .padding(start = 14.dp, end = if (trailing == null) 14.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically,
       ) {

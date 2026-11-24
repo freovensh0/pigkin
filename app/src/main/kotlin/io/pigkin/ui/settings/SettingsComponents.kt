@@ -237,7 +237,7 @@ internal fun <T> SegmentedControl(
       Box(
         modifier =
           Modifier
-            .heightIn(min = 30.dp)
+            .heightIn(min = PigkinTokens.minTouchTarget)
             .clip(CircleShape)
             .background(if (isSelected) colors.surface3 else Color.Transparent)
             .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(option) })
@@ -299,7 +299,7 @@ internal fun SmallButton(label: String, onClick: () -> Unit, modifier: Modifier 
   Box(
     modifier =
       modifier
-        .heightIn(min = 32.dp)
+        .heightIn(min = PigkinTokens.minTouchTarget)
         .clip(CircleShape)
         .background(colors.surface2)
         .alpha(if (enabled) 1f else 0.5f)

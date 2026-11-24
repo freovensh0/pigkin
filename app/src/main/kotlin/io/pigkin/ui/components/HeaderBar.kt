@@ -41,7 +41,7 @@ import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 
 /** The size of [HeaderBar]'s buttons. */
-val HeaderButtonSize = 36.dp
+val HeaderButtonSize = PigkinTokens.minTouchTarget
 
 /** A [HeaderBar] button; a [filled] one sits on a raised disc, as the explorer's toggle does. */
 @Composable

@@ -174,7 +174,7 @@ private fun RowScope.BarButton(
   Box(
     modifier = Modifier
       .weight(1f)
-      .height(36.dp)
+      .height(PigkinTokens.minTouchTarget)
       .clip(shape)
       .background(background)
       .then(ring)

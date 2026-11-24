@@ -74,7 +74,7 @@ private fun ToolbarChip(
   Row(
     modifier =
       modifier
-        .heightIn(min = 30.dp)
+        .heightIn(min = PigkinTokens.minTouchTarget)
         .clip(CircleShape)
         .background(pigkinColors.surface2)
         .clickable(onClickLabel = onClickLabel, onClick = onClick)

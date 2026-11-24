@@ -43,6 +43,9 @@ object PigkinTokens {
     val xxl = 12.dp
   }
 
+  /** The smallest tappable area, per Android accessibility guidance. */
+  val minTouchTarget = 48.dp
+
   object IconSize {
     val xs = 12.dp
     val sm = 14.dp

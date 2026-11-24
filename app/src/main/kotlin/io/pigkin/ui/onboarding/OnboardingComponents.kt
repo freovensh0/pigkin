@@ -208,7 +208,7 @@ internal fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier
   val colors = pigkinColors
   Button(
     onClick = onClick,
-    modifier = modifier.heightIn(min = 36.dp),
+    modifier = modifier.heightIn(min = PigkinTokens.minTouchTarget),
     enabled = enabled,
     shape = RoundedCornerShape(PigkinTokens.Radius.md),
     colors =
@@ -234,7 +234,7 @@ internal fun SecondaryButton(
   val colors = pigkinColors
   OutlinedButton(
     onClick = onClick,
-    modifier = modifier.heightIn(min = 36.dp),
+    modifier = modifier.heightIn(min = PigkinTokens.minTouchTarget),
     enabled = enabled,
     shape = RoundedCornerShape(PigkinTokens.Radius.md),
     border = BorderStroke(1.dp, colors.borderAccent),

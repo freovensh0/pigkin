@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -66,7 +67,7 @@ fun LucideIcon(
   )
 }
 
-/** A circular icon button, 28dp unless [modifier] sets a size, which comes first and so wins. */
+/** A circular icon button, 48dp at least, however small its icon is. */
 @Composable
 fun RoundIconButton(
   @DrawableRes icon: Int,
@@ -86,10 +87,13 @@ fun RoundIconButton(
   }
 }
 
-/** A [size] circle filled with [background] that calls [onClick], dimmed while not [enabled]. */
+/** A circle filled with [background] that calls [onClick], at least 48dp across so it stays tappable. */
 internal fun Modifier.roundButton(size: Dp, background: Color, enabled: Boolean, onClick: () -> Unit): Modifier =
   alpha(if (enabled) 1f else 0.5f)
-    .size(size)
+    .sizeIn(
+      minWidth = size.coerceAtLeast(PigkinTokens.minTouchTarget),
+      minHeight = size.coerceAtLeast(PigkinTokens.minTouchTarget),
+    )
     .clip(CircleShape)
     .background(background)
     .clickable(enabled = enabled, onClick = onClick)
@@ -135,7 +139,7 @@ fun SheetRow(
       modifier =
         Modifier
           .fillMaxWidth()
-          .heightIn(min = 44.dp)
+          .heightIn(min = PigkinTokens.minTouchTarget)
           .alpha(if (enabled) 1f else 0.5f)
           .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
           .padding(horizontal = PigkinTokens.Spacing.s16),

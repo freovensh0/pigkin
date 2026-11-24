@@ -25,6 +25,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +50,7 @@ import io.pigkin.host.RemoteFailure
 import io.pigkin.ui.components.LucideIcon
 import io.pigkin.ui.components.PillButton
 import io.pigkin.ui.components.PillTone
+import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.theme.PigkinFonts
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
@@ -74,7 +79,7 @@ internal fun CommitsSection(
       modifier = Modifier
         .fillMaxWidth()
         .clickable(onClick = onToggle)
-        .heightIn(min = 44.dp)
+        .heightIn(min = PigkinTokens.minTouchTarget)
         .padding(horizontal = PigkinTokens.Spacing.s16, vertical = PigkinTokens.Spacing.s8),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s8),
@@ -125,6 +130,7 @@ private fun CommitsContentRows(
   onConnect: (() -> Unit)?,
 ) {
   val colors = pigkinColors
+  var query by rememberSaveable { mutableStateOf("") }
   val notePadding = Modifier.padding(
     start = PigkinTokens.Spacing.s16,
     end = PigkinTokens.Spacing.s16,
@@ -147,12 +153,24 @@ private fun CommitsContentRows(
         CommitsNote(stringResource(R.string.git_commits_none_ahead, base), colors.foregroundMuted, notePadding)
         return
       }
+      SearchField(
+        query = query,
+        onQueryChange = { query = it },
+        placeholder = stringResource(R.string.git_commits_search),
+      )
+      val shown = commits.filter {
+        it.subject.contains(query, ignoreCase = true) || it.sha.startsWith(query, ignoreCase = true)
+      }
+      if (shown.isEmpty()) {
+        CommitsNote(stringResource(R.string.git_commits_no_match), colors.foregroundMuted, notePadding)
+        return
+      }
       LazyColumn(
         modifier = Modifier.fillMaxWidth().heightIn(max = listMaxHeight),
         contentPadding = PaddingValues(bottom = PigkinTokens.Spacing.s8),
       ) {
-        itemsIndexed(commits, key = { _, commit -> commit.sha }) { index, commit ->
-          CommitRow(commit, isFirst = index == 0, isLast = index == commits.lastIndex, onOpen = {
+        itemsIndexed(shown, key = { _, commit -> commit.sha }) { index, commit ->
+          CommitRow(commit, isFirst = index == 0, isLast = index == shown.lastIndex, onOpen = {
             onOpenCommit(commit)
           })
         }

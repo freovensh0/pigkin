@@ -1,10 +1,9 @@
 package io.pigkin.ui.workspace
 
 import android.text.format.DateUtils
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +49,7 @@ import io.pigkin.ui.theme.pigkinColors
 
 /**
  * One chat in the tab menu: what Pi is doing in it, its title, and the statuses its extensions set, else its age;
- * highlighted while it is the one shown, with an actions button that long-press also opens.
+ * highlighted while it is the one shown, with a separate actions button.
  */
 @Composable
 internal fun ChatTabRow(
@@ -159,7 +158,6 @@ internal fun CommitTabRow(
 }
 
 /** A tab's row: its [mark] in a tile, its title over its [detail], and its actions; the shown tab is a raised card. */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TabRow(
   mark: @Composable () -> Unit,
@@ -178,7 +176,7 @@ private fun TabRow(
       .padding(horizontal = PigkinTokens.Spacing.s12, vertical = 1.dp)
       .clip(ROW_SHAPE)
       .background(if (current) colors.surface2 else Color.Transparent)
-      .combinedClickable(onClick = onOpen, onLongClick = onActions)
+      .clickable(onClick = onOpen)
       .heightIn(min = 56.dp)
       .padding(start = 10.dp, end = PigkinTokens.Spacing.s4),
     verticalAlignment = Alignment.CenterVertically,

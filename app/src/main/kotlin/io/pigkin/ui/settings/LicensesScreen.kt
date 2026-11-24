@@ -5,12 +5,16 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.pigkin.R
 import io.pigkin.ui.components.LucideIcon
+import io.pigkin.ui.components.SearchField
 import io.pigkin.ui.theme.PigkinFonts
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
@@ -29,10 +33,22 @@ internal fun LicensesScreen(onBack: () -> Unit, onOpenLicense: (path: String) ->
   val assets = LocalContext.current.assets
   val components = remember(assets) { licensePaths(assets, COMPONENT_LICENSES) }
   val grammars = remember(assets) { licensePaths(assets, SYNTAX_LICENSES) }
+  var query by rememberSaveable { mutableStateOf("") }
   SettingsPage(title = stringResource(R.string.settings_licenses), onBack = onBack) {
     SettingsCaption(text = stringResource(R.string.settings_licenses_caption))
-    LicenseSection(stringResource(R.string.settings_licenses_components), components, onOpenLicense)
-    LicenseSection(stringResource(R.string.settings_licenses_syntax), grammars, onOpenLicense)
+    SearchField(
+      query = query,
+      onQueryChange = { query = it },
+      placeholder = stringResource(R.string.settings_licenses_search),
+    )
+    val matches = { path: String -> path.contains(query, ignoreCase = true) }
+    val shownComponents = components.filter(matches)
+    val shownGrammars = grammars.filter(matches)
+    if (shownComponents.isEmpty() && shownGrammars.isEmpty()) {
+      SettingsCaption(text = stringResource(R.string.settings_licenses_no_match))
+    }
+    LicenseSection(stringResource(R.string.settings_licenses_components), shownComponents, onOpenLicense)
+    LicenseSection(stringResource(R.string.settings_licenses_syntax), shownGrammars, onOpenLicense)
   }
 }
 

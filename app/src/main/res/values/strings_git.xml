@@ -41,6 +41,8 @@
         <item quantity="one">%1$d workspace commit</item>
         <item quantity="other">%1$d workspace commits</item>
     </plurals>
+    <string name="git_commits_search">Search commits</string>
+    <string name="git_commits_no_match">No commit matches that search.</string>
     <string name="git_commits_loading">Loading commits…</string>
     <string name="git_commits_failed">Failed to load commits</string>
     <string name="git_commits_none_ahead">No commits ahead of %1$s yet</string>

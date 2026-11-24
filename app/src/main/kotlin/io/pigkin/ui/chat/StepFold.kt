@@ -79,7 +79,7 @@ private fun StepFoldLine(fold: TimelineItem.Steps, expanded: Boolean, onToggle: 
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .heightIn(min = 30.dp)
+      .heightIn(min = PigkinTokens.minTouchTarget)
       .clip(RoundedCornerShape(PigkinTokens.Radius.md))
       .clickable(
         onClickLabel = stringResource(if (expanded) R.string.chat_steps_collapse else R.string.chat_steps_expand),

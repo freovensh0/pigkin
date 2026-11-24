@@ -281,7 +281,8 @@ private fun InboxTray(entries: List<InboxEntry>, onOpen: (InboxEntry) -> Unit, o
         modifier = Modifier
           .clip(CircleShape)
           .clickable(onClick = onClearAll)
-          .padding(horizontal = PigkinTokens.Spacing.s12, vertical = PigkinTokens.Spacing.s8),
+          .heightIn(min = PigkinTokens.minTouchTarget)
+          .padding(horizontal = PigkinTokens.Spacing.s12),
         color = colors.foreground,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,

@@ -51,7 +51,7 @@ fun SearchField(
         modifier =
           Modifier
             .fillMaxWidth()
-            .heightIn(min = 40.dp)
+            .heightIn(min = PigkinTokens.minTouchTarget)
             .background(colors.surface2, CircleShape)
             .padding(horizontal = PigkinTokens.Spacing.s16),
         verticalAlignment = Alignment.CenterVertically,

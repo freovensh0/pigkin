@@ -95,7 +95,7 @@ internal fun ToolRow(
     modifier =
       modifier
         .fillMaxWidth()
-        .heightIn(min = 30.dp)
+        .heightIn(min = PigkinTokens.minTouchTarget)
         .clip(RoundedCornerShape(PigkinTokens.Radius.md))
         .clickable(onClickLabel = onClickLabel, onClick = onClick)
         .then(description?.let { Modifier.clearAndSetSemantics { contentDescription = it } } ?: Modifier)

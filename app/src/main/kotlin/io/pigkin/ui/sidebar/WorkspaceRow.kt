@@ -1,10 +1,8 @@
 package io.pigkin.ui.sidebar
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,9 +51,8 @@ import java.text.BreakIterator
  * with a server badge for a remote workspace, its name over its host for a remote one and its [status], and its
  * actions and New chat. [names] names the folder [cwd], its host and its path. The row is outlined in cobalt while the
  * sidebar's pane shows one of its chats or tabs.
- * Tapping it shows the workspace; long-press opens its actions.
+ * Tapping it shows the workspace.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun WorkspaceRow(
   cwd: String,
@@ -82,11 +79,7 @@ internal fun WorkspaceRow(
           Modifier
         },
       )
-      .combinedClickable(
-        onClickLabel = stringResource(R.string.shell_workspace_open, name),
-        onClick = onOpen,
-        onLongClick = onActions,
-      )
+      .clickable(onClickLabel = stringResource(R.string.shell_workspace_open, name), onClick = onOpen)
       .heightIn(min = 56.dp)
       .padding(
         start = 10.dp,

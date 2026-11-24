@@ -127,6 +127,8 @@
     <string name="settings_licenses_caption">Pigkin is open source under the MIT License. It\'s built with the code, fonts and icons below, each under its own license.</string>
     <string name="settings_licenses_components">Code, fonts and icons</string>
     <string name="settings_licenses_syntax">Syntax highlighting</string>
+    <string name="settings_licenses_search">Search licenses</string>
+    <string name="settings_licenses_no_match">No license matches that search.</string>
     <string name="settings_privacy_policy">Privacy policy</string>
     <string name="settings_no_browser">No app on this device can open web pages.</string>
 
