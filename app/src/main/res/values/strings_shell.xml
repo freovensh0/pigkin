@@ -37,6 +37,10 @@
     <!-- The session sheet, opened from a screen's tabs button: the labels over its tabs, then over what the shown tab
          can do. -->
     <string name="shell_tabs_search">Search tabs and chats</string>
+    <!-- The one muted line in the tab menu when the workspace has no open tabs or saved chats. -->
+    <string name="shell_tabs_empty">No open tabs or chats.</string>
+    <!-- The one muted line in the tab menu when the search finds no tab or chat. -->
+    <string name="shell_tabs_no_match">No tab or chat matches that search.</string>
         <string name="shell_tabs_label">Tabs</string>
     <string name="shell_tabs_swipe_hint">Swipe to close</string>
     <string name="shell_actions_label">Actions</string>

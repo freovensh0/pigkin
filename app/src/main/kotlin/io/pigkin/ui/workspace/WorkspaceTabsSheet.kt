@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -66,6 +67,7 @@ import io.pigkin.ui.components.SwipeAway
 import io.pigkin.ui.components.scrollFades
 import io.pigkin.ui.sidebar.pathTextStyle
 import io.pigkin.ui.sidebar.rememberFolderNames
+import io.pigkin.ui.terminal.terminalTitle
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
 import io.pigkin.workspace.Pane
@@ -105,7 +107,8 @@ internal fun WorkspaceTabsScreen(
     modifier = Modifier
       .fillMaxSize()
       .background(pigkinColors.surface0)
-      .windowInsetsPadding(WindowInsets.safeDrawing),
+      .windowInsetsPadding(WindowInsets.navigationBars)
+      .imePadding(),
   ) {
     Column {
       HeaderBar(
@@ -139,9 +142,12 @@ internal fun WorkspaceTabsScreen(
         modifier = Modifier.weight(1f),
       )
       if (pinActions) shownTab.current?.let { TabActionGrid(it) }
-      SnackbarStackOverlay(snackbar)
       TabMenuOverlay(menu, actions, archiving, tabs, onShownInSplit, onBack) { menu = null }
     }
+    SnackbarStackOverlay(
+      snackbar,
+      modifier = Modifier.align(Alignment.BottomCenter).padding(PigkinTokens.Spacing.s16),
+    )
   }
   ConfirmArchive(archiving)
   ConfirmCloseTab(closing)
@@ -305,33 +311,61 @@ private fun TabList(
       )
     }
   }
+  val matchingTabs = titledTabs(tabs.tabs)
+    .filter { (_, title) -> title.contains(query, ignoreCase = true) }
+    .map { (tab, _) -> tab }
+  val shownChat = tabs.shownChat?.takeIf { it.matchesQuery(query) }
+  val matchingChats = tabs.otherChats.filter { it.matchesQuery(query) }
+  val hasResults = shownChat != null || matchingTabs.isNotEmpty() || matchingChats.isNotEmpty()
+  val emptyMessage = emptyLine(tabs, hasResults)
   LazyColumn(modifier = modifier.scrollFades(listState, fadeTo), state = listState) {
-    tabs.shownChat?.takeIf { it.matchesQuery(query) }?.let { shown -> item(key = shown.path) { chatRow(shown) } }
-    tabRows(tabs, query, closing, callbacks)
-    items(tabs.otherChats.filter { it.matchesQuery(query) }, key = { it.path }) { chatRow(it) }
+    emptyMessage?.let { message ->
+      item(key = EMPTY_KEY) {
+        Text(
+          text = stringResource(message),
+          modifier = Modifier.fillMaxWidth().padding(PigkinTokens.Spacing.s16),
+          color = pigkinColors.foregroundMuted,
+          fontSize = PigkinTokens.FontSize.base,
+        )
+      }
+    }
+    shownChat?.let { shown -> item(key = shown.path) { chatRow(shown) } }
+    tabRows(tabs, matchingTabs, closing, callbacks)
+    items(matchingChats, key = { it.path }) { chatRow(it) }
     footer?.takeIf { query.isEmpty() }?.let { item(key = FOOTER_KEY) { it() } }
   }
+}
+
+/** [tabs] with the titles their rows show, so search also finds an unnamed terminal's "Terminal N". */
+@Composable
+private fun titledTabs(tabs: List<WorkspaceTab>): List<Pair<WorkspaceTab, String>> = tabs.map { tab ->
+  val title = when (tab) {
+    is WorkspaceTab.Terminal -> terminalTitle(tab.session)
+    is WorkspaceTab.File -> tab.file.name
+    is WorkspaceTab.Commit -> tab.commit.title
+  }
+  tab to title
+}
+
+/** The one empty-state line to show, or null when a row matches. */
+private fun emptyLine(tabs: WorkspaceTabs, hasResults: Boolean): Int? = when {
+  tabs.tabs.isEmpty() && tabs.chats.isEmpty() -> R.string.shell_tabs_empty
+  !hasResults -> R.string.shell_tabs_no_match
+  else -> null
 }
 
 /** Whether [this] chat's name or session path contains [query], ignoring case. */
 private fun SessionInfo.matchesQuery(query: String): Boolean =
   name.orEmpty().contains(query, ignoreCase = true) || path.contains(query, ignoreCase = true)
 
-/** Whether [this] tab's visible title contains [query], ignoring case. */
-private fun WorkspaceTab.matchesQuery(query: String): Boolean = when (this) {
-  is WorkspaceTab.Terminal -> session.name.value.orEmpty().contains(query, ignoreCase = true)
-  is WorkspaceTab.File -> file.name.contains(query, ignoreCase = true)
-  is WorkspaceTab.Commit -> commit.title.contains(query, ignoreCase = true)
-}
-
 /** The workspace's open tabs; one closes by swiping it right, as a chat archives. */
 private fun LazyListScope.tabRows(
   tabs: WorkspaceTabs,
-  query: String,
+  matchingTabs: List<WorkspaceTab>,
   closing: TabClosing,
   callbacks: TabListCallbacks,
 ) {
-  items(tabs.tabs.filter { it.matchesQuery(query) }, key = { it.key }) { tab ->
+  items(matchingTabs, key = { it.key }) { tab ->
     SwipeAway(
       leaving = tab.key in closing.leaving,
       onSwiped = { closing.close(tab) },
@@ -433,3 +467,6 @@ private val PINNED_ACTIONS_MIN_HEIGHT = 600.dp
 
 /** The list key of the tiles when they scroll at the end of the tabs. */
 private const val FOOTER_KEY = "pigkin:tab-actions"
+
+/** The list key of the one empty-state line. */
+private const val EMPTY_KEY = "pigkin:tabs-empty"
