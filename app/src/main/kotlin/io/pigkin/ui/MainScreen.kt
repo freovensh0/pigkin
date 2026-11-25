@@ -396,34 +396,36 @@ private fun WorkspacePanes(
         val controls = remember(pane, panels, actions, closesSplit) {
           panels.controls(pane, actions, closesSplit) { tabsOpen = true }
         }
-        val onShownInSplit = {
-          panels.show(Pane.Secondary, Panel.Chat)
-        }.takeIf { pane == Pane.Primary && splitAvailable }
+        val onShownInSplit = { panels.show(Pane.Secondary, Panel.Chat) }
+          .takeIf { pane == Pane.Primary && splitAvailable }
         val swapPanes = { panels.swapFrom(pane) }
         BackHandler(enabled = panel != Panel.Chat) { panels.show(pane, Panel.Chat) }
         SidePanelOpenedEffect(panel)
-        MobilePanels(
-          modifier = Modifier.onTouch { panels.active = pane },
-          state = panels[pane],
-          sidebar = {
-            // The sidebar stays composed behind the pane, where its working chats' pots would redraw for nothing.
-            CompositionLocalProvider(LocalPotsSimmer provides (panel == Panel.Sidebar)) {
-              sidebar(pane, onShownInSplit)
+        // PaneRow measures one child per pane, so the tabs screen shares the pane's box.
+        Box(Modifier.fillMaxSize()) {
+          MobilePanels(
+            modifier = Modifier.onTouch { panels.active = pane },
+            state = panels[pane],
+            sidebar = {
+              // The sidebar stays composed behind the pane, where its working chats' pots would redraw for nothing.
+              CompositionLocalProvider(LocalPotsSimmer provides (panel == Panel.Sidebar)) {
+                sidebar(pane, onShownInSplit)
+              }
+            },
+            workspace = {
+              // Covered until the panel has settled on the screen, so a chat picked in the sidebar comes in with it.
+              val covered = panel != Panel.Chat || panels[pane].currentValue != Panel.Chat
+              WorkspacePane(item, covered, actions, views, controls, onOpenSettings, onOpenProviders, onOpenOnboarding)
+            },
+            explorer = {
+              PaneExplorer(pane, item, panel == Panel.Explorer, snackbar, swapPanes) { panels.show(pane, Panel.Chat) }
+            },
+          )
+          if (tabsOpen && item != null) {
+            BackHandler(enabled = tabsOpen) { tabsOpen = false }
+            WorkspaceTabsScreen(pane, item.cwd, actions, snackbar, controls.shownTab, onShownInSplit, swapPanes) {
+              tabsOpen = false
             }
-          },
-          workspace = {
-            // Covered until the panel has settled on the screen, so a chat picked in the sidebar comes in with it.
-            val covered = panel != Panel.Chat || panels[pane].currentValue != Panel.Chat
-            WorkspacePane(item, covered, actions, views, controls, onOpenSettings, onOpenProviders, onOpenOnboarding)
-          },
-          explorer = {
-            PaneExplorer(pane, item, panel == Panel.Explorer, snackbar, swapPanes) { panels.show(pane, Panel.Chat) }
-          },
-        )
-        if (tabsOpen && item != null) {
-          BackHandler(enabled = tabsOpen) { tabsOpen = false }
-          WorkspaceTabsScreen(pane, item.cwd, actions, snackbar, controls.shownTab, onShownInSplit, swapPanes) {
-            tabsOpen = false
           }
         }
       }
