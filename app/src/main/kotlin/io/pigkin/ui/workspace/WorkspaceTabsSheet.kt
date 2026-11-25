@@ -129,7 +129,10 @@ internal fun WorkspaceTabsScreen(
         callbacks = TabListCallbacks(
           onOpenChat = { session -> if (actions.openChat(pane, session.cwd, session.path)) onBack() },
           onShow = { tab -> if (!graph.tabs.show(pane, tab)) onSwapPanes() },
-          onSwapPanes = onSwapPanes,
+          onSwapPanes = {
+            onSwapPanes()
+            onBack()
+          },
           onActions = { menu = it },
         ),
         footer = shownTab.current?.takeUnless { pinActions }?.let { { TabActionGrid(it) } },
@@ -303,22 +306,32 @@ private fun TabList(
     }
   }
   LazyColumn(modifier = modifier.scrollFades(listState, fadeTo), state = listState) {
-    tabs.shownChat?.let { shown -> item(key = shown.path) { chatRow(shown) } }
-    if (query.isEmpty()) tabRows(tabs, closing, callbacks)
-    items(
-      tabs.otherChats.filter {
-        it.name.orEmpty().contains(query, ignoreCase = true) ||
-          it.path.contains(query, ignoreCase = true)
-      },
-      key = { it.path },
-    ) { chatRow(it) }
-    footer?.let { item(key = FOOTER_KEY) { it() } }
+    tabs.shownChat?.takeIf { it.matchesQuery(query) }?.let { shown -> item(key = shown.path) { chatRow(shown) } }
+    tabRows(tabs, query, closing, callbacks)
+    items(tabs.otherChats.filter { it.matchesQuery(query) }, key = { it.path }) { chatRow(it) }
+    footer?.takeIf { query.isEmpty() }?.let { item(key = FOOTER_KEY) { it() } }
   }
 }
 
+/** Whether [this] chat's name or session path contains [query], ignoring case. */
+private fun SessionInfo.matchesQuery(query: String): Boolean =
+  name.orEmpty().contains(query, ignoreCase = true) || path.contains(query, ignoreCase = true)
+
+/** Whether [this] tab's visible title contains [query], ignoring case. */
+private fun WorkspaceTab.matchesQuery(query: String): Boolean = when (this) {
+  is WorkspaceTab.Terminal -> session.name.value.orEmpty().contains(query, ignoreCase = true)
+  is WorkspaceTab.File -> file.name.contains(query, ignoreCase = true)
+  is WorkspaceTab.Commit -> commit.title.contains(query, ignoreCase = true)
+}
+
 /** The workspace's open tabs; one closes by swiping it right, as a chat archives. */
-private fun LazyListScope.tabRows(tabs: WorkspaceTabs, closing: TabClosing, callbacks: TabListCallbacks) {
-  items(tabs.tabs, key = { it.key }) { tab ->
+private fun LazyListScope.tabRows(
+  tabs: WorkspaceTabs,
+  query: String,
+  closing: TabClosing,
+  callbacks: TabListCallbacks,
+) {
+  items(tabs.tabs.filter { it.matchesQuery(query) }, key = { it.key }) { tab ->
     SwipeAway(
       leaving = tab.key in closing.leaving,
       onSwiped = { closing.close(tab) },
