@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -113,7 +114,8 @@ internal fun ForkScreen(messages: List<JSONObject>, onFork: (entryId: String) ->
     modifier = Modifier
       .fillMaxSize()
       .background(pigkinColors.surface0)
-      .windowInsetsPadding(WindowInsets.safeDrawing),
+      .windowInsetsPadding(WindowInsets.navigationBars)
+      .imePadding(),
   ) {
     HeaderBar(
       title = stringResource(R.string.chat_fork_title),
@@ -131,6 +133,7 @@ internal fun ForkScreen(messages: List<JSONObject>, onFork: (entryId: String) ->
           text = message.optString("text").trim(),
           modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clickable { onFork(message.optString("entryId")) }
             .padding(horizontal = PigkinTokens.Spacing.s16, vertical = PigkinTokens.Spacing.s12),
           color = colors.foreground,

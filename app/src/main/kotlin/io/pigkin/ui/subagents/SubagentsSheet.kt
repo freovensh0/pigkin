@@ -13,8 +13,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -96,7 +97,8 @@ internal fun SubagentsScreen(
     modifier = Modifier
       .fillMaxSize()
       .background(pigkinColors.surface0)
-      .windowInsetsPadding(WindowInsets.safeDrawing),
+      .windowInsetsPadding(WindowInsets.navigationBars)
+      .imePadding(),
   ) {
     HeaderBar(
       title = stringResource(R.string.subagents_title),

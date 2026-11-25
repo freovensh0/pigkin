@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +83,9 @@ internal fun ModelScreen(
   val accounts = LocalContext.current.appGraph.accountRepository
   val status by accounts.status.collectAsStateWithLifecycle()
   val refreshError by accounts.refreshError.collectAsStateWithLifecycle()
+  val keyboard = LocalSoftwareKeyboardController.current
+  // The picker opens over the chat, whose composer may still own the IME; hide it so the list gets the full window.
+  LaunchedEffect(Unit) { keyboard?.hide() }
   LaunchedEffect(controller) { models = controller.query { availableModels() }.orEmpty() }
   LaunchedEffect(accounts) { accounts.refresh() }
   // Pi's RPC lists every model with credentials; settings.json `enabledModels` picks the ones shown.
@@ -96,7 +101,8 @@ internal fun ModelScreen(
     modifier = Modifier
       .fillMaxSize()
       .background(pigkinColors.surface0)
-      .windowInsetsPadding(WindowInsets.safeDrawing),
+      .windowInsetsPadding(WindowInsets.navigationBars)
+      .imePadding(),
   ) {
     HeaderBar(
       title = stringResource(R.string.chat_model),
