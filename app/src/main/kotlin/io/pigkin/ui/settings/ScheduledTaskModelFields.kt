@@ -1,6 +1,9 @@
 package io.pigkin.ui.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -16,6 +20,8 @@ import io.pigkin.appGraph
 import io.pigkin.host.ModelConfig
 import io.pigkin.ui.chat.thinkingLevelLabel
 import io.pigkin.ui.components.SearchField
+import io.pigkin.ui.theme.PigkinTokens
+import io.pigkin.ui.theme.pigkinColors
 
 private data class ModelChoice(val key: String, val label: String)
 
@@ -78,7 +84,9 @@ internal fun ModelFields(
         listOf(stringResource(R.string.scheduled_thinking_default) to null) +
           ModelConfig.THINKING_LEVELS.map { thinkingLevelLabel(it) to it }
       }
-    entries.filter { it.first.contains(query, ignoreCase = true) }.forEach { (label, value) ->
+    val matching = entries.filter { it.first.contains(query, ignoreCase = true) }
+    if (matching.isEmpty()) NoChoiceMatch()
+    matching.forEach { (label, value) ->
       SettingsRow(title = label, onClick = {
         if (kind == ChoiceKind.Model) onModel(value) else onThinking(value)
         choosing = null
@@ -86,4 +94,14 @@ internal fun ModelFields(
       })
     }
   }
+}
+
+@Composable
+private fun NoChoiceMatch() {
+  Text(
+    text = stringResource(R.string.settings_choice_no_match),
+    modifier = Modifier.fillMaxWidth().padding(PigkinTokens.Spacing.s16),
+    color = pigkinColors.foregroundMuted,
+    fontSize = PigkinTokens.FontSize.base,
+  )
 }

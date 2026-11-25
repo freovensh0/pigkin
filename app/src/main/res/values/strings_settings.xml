@@ -3,6 +3,8 @@
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_search">Search</string>
+    <!-- Shown when neither a model nor a thinking level matches the search. -->
+    <string name="settings_choice_no_match">No model or thinking level matches the search.</string>
     <string name="settings_copy">Copy</string>
     <string name="settings_section_models">Models</string>
     <string name="settings_section_chats">Chats</string>
