@@ -300,6 +300,7 @@ private fun SettingsPages(top: Destination, navigator: AppNavigator) {
     else -> SettingsScreen(
       SettingsNav(
         onBack = { navigator.pop() },
+        onOpenProviders = { navigator.push(Destination.Providers) },
         onOpenRemoteHost = { navigator.push(Destination.RemoteHostEditor(it)) },
       ),
     )

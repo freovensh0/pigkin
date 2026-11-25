@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,14 +52,14 @@ internal fun ProviderEditorScreen(form: ProviderForm, onBack: () -> Unit, onDone
   val failed = stringResource(R.string.provider_failed)
   var confirmRemove by remember { mutableStateOf(false) }
   var confirmDiscard by remember { mutableStateOf(false) }
-  var modelPage by remember { mutableStateOf<ModelPage?>(null) }
+  var modelPageKey by rememberSaveable { mutableStateOf<String?>(null) }
   val leave = { if (form.dirty) confirmDiscard = true else onBack() }
   val loading = loadSavedProvider(form, accounts, failed)
   val selection = rememberModelSelection()
-  BackHandler(enabled = form.dirty && modelPage == null) { confirmDiscard = true }
-  val page = modelPage
+  BackHandler(enabled = form.dirty && modelPageKey == null) { confirmDiscard = true }
+  val page = modelPageKey.toModelPage()
   if (page != null) {
-    ModelPageScreen(page, form) { modelPage = null }
+    ModelPageScreen(page, form) { modelPageKey = null }
     return
   }
   SettingsPage(
@@ -80,8 +81,8 @@ internal fun ProviderEditorScreen(form: ProviderForm, onBack: () -> Unit, onDone
       draft = form,
       selection = selection,
       emptyText = stringResource(modelsEmptyText(form)),
-      onAddModels = { modelPage = ModelPage.Add },
-      onOpenModel = { modelPage = ModelPage.Edit(it) },
+      onAddModels = { modelPageKey = ModelPage.Add.toSavedKey() },
+      onOpenModel = { modelPageKey = ModelPage.Edit(it).toSavedKey() },
     )
     ProviderActions(
       form = form,

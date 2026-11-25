@@ -94,7 +94,12 @@ internal fun SettingsScreen(nav: SettingsNav) {
           )
         },
       )
-      SettingsContent(graph = graph, snackbar = snackbar, onOpenPage = { page = it })
+      SettingsContent(
+        graph = graph,
+        snackbar = snackbar,
+        onOpenProviders = nav.onOpenProviders,
+        onOpenPage = { page = it },
+      )
     }
     SnackbarStack(
       snackbar,
@@ -104,7 +109,12 @@ internal fun SettingsScreen(nav: SettingsNav) {
 }
 
 @Composable
-private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, onOpenPage: (SettingsSubpage) -> Unit) {
+private fun SettingsContent(
+  graph: AppGraph,
+  snackbar: SnackbarStackState,
+  onOpenProviders: () -> Unit,
+  onOpenPage: (SettingsSubpage) -> Unit,
+) {
   Column(
     modifier =
       Modifier
@@ -118,6 +128,7 @@ private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, onOpe
       modifier = Modifier.widthIn(max = PigkinTokens.contentMaxWidth).fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s24),
     ) {
+      ModelsSection(accounts = graph.accountRepository, onOpenProviders = onOpenProviders)
       ChatsSection(preferences = graph.preferences)
       ExtensionsSection(graph = graph, snackbar = snackbar)
       AgentSection(
@@ -130,6 +141,36 @@ private fun SettingsContent(graph: AppGraph, snackbar: SnackbarStackState, onOpe
       })
       ConfigurationSection(graph = graph, snackbar = snackbar, onOpenBackups = { onOpenPage(SettingsSubpage.Backups) })
       AboutSection(onOpenLicenses = { onOpenPage(SettingsSubpage.Licenses) })
+    }
+  }
+}
+
+/**
+ * One row into the providers page, naming the providers added so far. It shows what the last refresh found and asks
+ * for none itself, since that would start the host just for opening Settings.
+ */
+@Composable
+private fun ModelsSection(accounts: AccountRepository, onOpenProviders: () -> Unit) {
+  val status by accounts.status.collectAsStateWithLifecycle()
+  val locale = LocalConfiguration.current.locales[0]
+  val added = status?.let { current ->
+    subscriptions.filter { current.isSignedIn(it.id) }.map { stringResource(it.title) } + current.custom.map { it.id }
+  }
+  val summary = when {
+    added == null -> null
+    added.isEmpty() -> stringResource(R.string.settings_providers_none)
+    else -> ListFormatter.getInstance(locale).format(added)
+  }
+  SettingsSection(title = stringResource(R.string.settings_section_models)) {
+    SettingsRow(
+      title = stringResource(R.string.providers_title),
+      subtitle = summary,
+      onClick = onOpenProviders,
+      leading = {
+        LucideIcon(icon = R.drawable.ic_lucide_plug, contentDescription = null, tint = pigkinColors.foregroundMuted)
+      },
+    ) {
+      Chevron()
     }
   }
 }

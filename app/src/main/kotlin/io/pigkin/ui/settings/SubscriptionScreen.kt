@@ -53,7 +53,7 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
   var busy by remember { mutableStateOf(false) }
   var signingIn by rememberSaveable { mutableStateOf(false) }
   var confirmDiscard by remember { mutableStateOf(false) }
-  var modelPage by remember { mutableStateOf<ModelPage?>(if (openModels) ModelPage.Add else null) }
+  var modelPageKey by rememberSaveable { mutableStateOf(if (openModels) "add" else null) }
   val failed = stringResource(R.string.provider_failed)
   val id = form.providerId
   val name = subscriptions.firstOrNull { it.id == id }?.let { stringResource(it.title) } ?: id
@@ -61,12 +61,12 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
   // Reads Pi's files afresh, so changes made outside Pigkin (for example by the agent) show here.
   LaunchedEffect(form) { accounts.refresh() }
   LaunchedEffect(status) { status?.builtin?.firstOrNull { it.id == id }?.let(form::prefill) }
-  BackHandler(enabled = form.dirty && modelPage == null) { confirmDiscard = true }
+  BackHandler(enabled = form.dirty && modelPageKey == null) { confirmDiscard = true }
   val selection = rememberModelSelection()
   // Editing a model stays on this page: another destination would put it three levels below the main screen.
-  val page = modelPage
+  val page = modelPageKey.toModelPage()
   if (page != null) {
-    ModelPageScreen(page, form) { modelPage = null }
+    ModelPageScreen(page, form) { modelPageKey = null }
     return
   }
   val signOut = rememberSignOut(accounts, id, failed, snackbar, onBack) { busy = it }
@@ -84,8 +84,8 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
         busy = busy,
         onSave = { scope.launch { if (form.save(accounts, failed)) onBack() } },
         onSignOut = signOut,
-        onAddModels = { modelPage = ModelPage.Add },
-        onOpenModel = { modelPage = ModelPage.Edit(it) },
+        onAddModels = { modelPageKey = ModelPage.Add.toSavedKey() },
+        onOpenModel = { modelPageKey = ModelPage.Edit(it).toSavedKey() },
       )
     }
     listOfNotNull(status?.settingsError?.localized(), status?.modelsError?.localized(), refreshError).forEach {

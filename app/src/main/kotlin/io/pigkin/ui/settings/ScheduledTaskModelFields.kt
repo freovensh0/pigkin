@@ -1,5 +1,6 @@
 package io.pigkin.ui.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +33,10 @@ internal fun ModelFields(
   val status by accounts.status.collectAsStateWithLifecycle()
   var choosing by rememberSaveable { mutableStateOf<ChoiceKind?>(null) }
   var query by rememberSaveable { mutableStateOf("") }
+  BackHandler(enabled = choosing != null) {
+    choosing = null
+    query = ""
+  }
   LaunchedEffect(Unit) { if (accounts.status.value == null) accounts.refresh() }
   val models = remember(status) {
     val all = status?.builtin.orEmpty().flatMap { provider ->
