@@ -561,7 +561,7 @@ tasks.withType<dev.detekt.gradle.Detekt>().named { it == "detektDebug" }.configu
 }
 
 tasks.named("check") {
-  dependsOn("detektDebug", "detektDebugUnitTest", goHostBuild)
+  dependsOn("detektDebug", "detektDebugUnitTest", goHostBuild, hostCheck)
 }
 
 dependencies {

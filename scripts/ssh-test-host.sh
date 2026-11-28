@@ -2,7 +2,8 @@
 # Runs SSH servers in Docker (OrbStack on the Mac) for testing Pigkin's remote hosts on an emulator. The emulator
 # reaches the Mac's localhost as 10.0.2.2, so a host published on port 2222 here is 10.0.2.2:2222 in Pigkin.
 #
-#   scripts/ssh-test-host.sh up [name] [port] [options]   start a host; options: --password, --no-bash, --key <file>
+#   scripts/ssh-test-host.sh up [name] [port] [options]   start a host; options: --password, --no-bash, --key <file>,
+#                                                       --force/--recreate to replace an existing container
 #   scripts/ssh-test-host.sh authorize [name] <key>      add a public key line to the pigkin user's authorized_keys
 #   scripts/ssh-test-host.sh rekey [name]                recreate the container, giving it new host keys
 #   scripts/ssh-test-host.sh pause|unpause [name]        freeze it, so connections hang instead of failing
@@ -66,17 +67,23 @@ case "$cmd" in
     if [ $# -gt 0 ] && [[ $1 != --* ]]; then name=$1; shift; fi
     if [ $# -gt 0 ] && [[ $1 != --* ]]; then port=$1; shift; fi
     envs=()
+    force=false
     while [ $# -gt 0 ]; do
       case "$1" in
         --password) envs+=(PIGKIN_PASSWORD_AUTH=1) ;;
         --no-bash) envs+=(PIGKIN_NO_BASH=1) ;;
         --key) envs+=("PIGKIN_AUTHORIZED_KEY=$(cat "$2")"); shift ;;
+        --force | --recreate) force=true ;;
         *) usage ;;
       esac
       shift
     done
+    if docker inspect "$name" >/dev/null 2>&1 && [ "$force" != true ]; then
+      echo "$name already exists; pass --force to replace it, or run 'down $name' first" >&2
+      exit 1
+    fi
     build
-    docker rm --force "$name" >/dev/null 2>&1 || true
+    if [ "$force" = true ]; then docker rm --force "$name" >/dev/null 2>&1 || true; fi
     run "$name" "$port" ${envs[@]+"${envs[@]}"}
     ;;
   authorize)

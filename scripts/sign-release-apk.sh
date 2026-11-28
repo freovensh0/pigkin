@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Signs an unsigned release APK with Pigkin's release key and checks that the result carries the release certificate.
-# .github/workflows/release.yml runs it in a job that holds the signing secrets and nothing else.
+# For local use; .github/workflows/release.yml keeps the same commands inline so the signing job never runs repo code.
 #
 # Usage: sign-release-apk.sh <unsigned.apk> <signed.apk>
 #
