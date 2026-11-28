@@ -52,6 +52,18 @@ internal object ScheduledTaskStore {
 
   private lateinit var prefs: SharedPreferences
 
+  /** Tasks whose run is under way; a second alarm for one of these must not start it again. */
+  private val running = HashSet<String>()
+
+  /** Claims [id] for one run; false when a run is already under way. */
+  fun beginRun(id: String): Boolean = synchronized(this) { running.add(id) }
+
+  fun endRun(id: String) {
+    synchronized(this) { running.remove(id) }
+  }
+
+  fun isRunning(id: String): Boolean = synchronized(this) { id in running }
+
   /** Loads the saved tasks once; safe to call from the app and from a receiver in the same process. */
   fun init(context: Context) {
     if (this::applicationContext.isInitialized) return

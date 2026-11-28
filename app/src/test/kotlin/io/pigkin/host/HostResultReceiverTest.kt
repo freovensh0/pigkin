@@ -13,7 +13,9 @@ class HostResultReceiverTest {
     assertEquals(HostFailure.Kind.NodeMissing, kind(72))
     assertEquals(HostFailure.Kind.NodeTooOld, kind(73))
     assertEquals(HostFailure.Kind.NodeMissing, kind(74))
-    assertEquals(HostFailure.Kind.Internal, kind(80))
+    assertEquals(HostFailure.Kind.HostDownloadFailed, kind(75))
+    assertEquals(HostFailure.Kind.HostChecksumFailed, kind(76))
+    assertEquals(HostFailure.Kind.HostTokenMissing, kind(80))
   }
 
   @Test

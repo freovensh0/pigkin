@@ -72,15 +72,14 @@ internal class RpcClient(
     try {
       // Checked after registering, so a concurrent close either sees this call or this call sees it.
       closed.get()?.let { throw it.error(command) }
-      try {
-        send(params.put("type", command).put("id", id))
-      } catch (error: IOException) {
-        throw RpcError(command, RpcError.Reason.NotRunning, cause = error)
-      }
       val response = if (timeoutMillis == null) {
+        sendCommand(command, params, id)
         reply.await()
       } else {
-        withTimeoutOrNull(timeoutMillis) { reply.await() } ?: throw RpcError(command, RpcError.Reason.TimedOut)
+        withTimeoutOrNull(timeoutMillis) {
+          sendCommand(command, params, id)
+          reply.await()
+        } ?: throw RpcError(command, RpcError.Reason.TimedOut)
       }
       if (!response.optBoolean("success")) {
         throw RpcError(command, RpcError.Reason.Rejected, piError = response.optString("error"))
@@ -107,6 +106,14 @@ internal class RpcClient(
     for (id in pending.keys.toList()) {
       val entry = pending.remove(id) ?: continue
       entry.reply.completeExceptionally(first.error(entry.command))
+    }
+  }
+
+  private suspend fun sendCommand(command: String, params: JSONObject, id: String) {
+    try {
+      send(params.put("type", command).put("id", id))
+    } catch (error: IOException) {
+      throw RpcError(command, RpcError.Reason.NotRunning, cause = error)
     }
   }
 

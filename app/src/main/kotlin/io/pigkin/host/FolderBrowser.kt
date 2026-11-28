@@ -62,12 +62,12 @@ internal class FolderBrowser(
 
   private suspend fun request(message: JSONObject, replyType: String, timeoutMillis: Long): JSONObject = lock.withLock {
     val id = ++nextId
-    try {
-      channel.send(message.put("id", id))
-    } catch (error: IOException) {
-      throw HostFailure.Disconnected(error)
-    }
     withTimeoutOrNull(timeoutMillis) {
+      try {
+        channel.send(message.put("id", id))
+      } catch (error: IOException) {
+        throw HostFailure.Disconnected(error)
+      }
       channel.lines.firstOrNull { it.optString("type") == replyType && it.optLong("id") == id }
         ?: throw HostFailure.Disconnected()
     } ?: throw HostFailure.Timeout()

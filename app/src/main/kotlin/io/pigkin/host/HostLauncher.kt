@@ -219,21 +219,26 @@ private class BinaryServer(bytes: ByteArray, token: String) : AutoCloseable {
         } catch (_: IOException) {
           return@Thread
         }
-        client.use { connection ->
-          val reader = BufferedReader(InputStreamReader(connection.getInputStream(), Charsets.US_ASCII))
-          val request = reader.readLine() ?: return@use
-          var header = reader.readLine()
-          while (header?.isNotEmpty() == true) header = reader.readLine()
-          val ok = request.split(' ').getOrNull(1) == path
-          val head = if (ok) {
-            "HTTP/1.1 200 OK\r\nContent-Length: ${bytes.size}\r\n"
-          } else {
-            "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n"
+        try {
+          client.soTimeout = REQUEST_TIMEOUT_MILLIS
+          client.use { connection ->
+            val reader = BufferedReader(InputStreamReader(connection.getInputStream(), Charsets.US_ASCII))
+            val request = reader.readLine() ?: return@use
+            var header = reader.readLine()
+            while (header?.isNotEmpty() == true) header = reader.readLine()
+            val ok = request.split(' ').getOrNull(1) == path
+            val head = if (ok) {
+              "HTTP/1.1 200 OK\r\nContent-Length: ${bytes.size}\r\n"
+            } else {
+              "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n"
+            }
+            val output = connection.getOutputStream()
+            output.write((head + "Connection: close\r\n\r\n").toByteArray(Charsets.US_ASCII))
+            if (ok) output.write(bytes)
+            output.flush()
           }
-          val output = connection.getOutputStream()
-          output.write((head + "Connection: close\r\n\r\n").toByteArray(Charsets.US_ASCII))
-          if (ok) output.write(bytes)
-          output.flush()
+        } catch (_: IOException) {
+          // A client that stops mid-request must not take the single accept thread with it.
         }
       }
     }.apply { isDaemon = true }.start()
@@ -241,6 +246,10 @@ private class BinaryServer(bytes: ByteArray, token: String) : AutoCloseable {
 
   override fun close() {
     socket.close()
+  }
+
+  private companion object {
+    const val REQUEST_TIMEOUT_MILLIS = 5_000
   }
 }
 

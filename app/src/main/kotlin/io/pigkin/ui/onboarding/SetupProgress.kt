@@ -7,7 +7,6 @@ import io.pigkin.R
 import io.pigkin.appGraph
 import io.pigkin.host.HostFailure
 import io.pigkin.host.HostRejected
-import io.pigkin.termux.TermuxInstall
 import io.pigkin.termux.TermuxSetup
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -122,10 +121,8 @@ internal object SetupProgress {
    * [literal] when a failure names its own fix, else the installed build's setup command; the Play build's opens a
    * fresh pairing session each time, which reads assets and may bind Pigkin's server, so it runs off the main thread.
    */
-  suspend fun setupCommand(context: Context, literal: String?): String {
-    TermuxInstall.installation(context)?.let(context.appGraph.preferences::setSetupCommandCopiedFor)
-    return literal ?: withContext(Dispatchers.IO) { TermuxSetup.command(context, context.appGraph.keepAlive) }
-  }
+  suspend fun setupCommand(context: Context, literal: String?): String =
+    literal ?: withContext(Dispatchers.IO) { TermuxSetup.command(context, context.appGraph.keepAlive) }
 
   fun setPermissionBlocked(permission: String, blocked: Boolean) {
     blockedPermissionsState.update { if (blocked) it + permission else it - permission }

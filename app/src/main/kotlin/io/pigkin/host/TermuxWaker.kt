@@ -43,6 +43,7 @@ internal object TermuxWaker {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
   private val lock = Mutex()
   private var attempt: Deferred<Boolean>? = null
+  private var attemptAsked = false
 
   /** Completed by whichever comes first of Termux covering Pigkin and the timeout; that one switches back. */
   @Volatile
@@ -68,13 +69,23 @@ internal object TermuxWaker {
   /**
    * Whether the helper answers, after opening Termux for it if it didn't. [asked] is the user's tap on Open Termux;
    * without it, Termux isn't opened again after a wake that failed, and with it Pigkin stays in Termux, which shows
-   * why the helper didn't start. Concurrent callers share one attempt. Termux is only opened while Pigkin is on
-   * screen: from the background, Android would block the switch back.
+   * why the helper didn't start. Concurrent callers share one attempt, unless an asked caller finds a non-asked one
+   * under way, in which case it starts its own. Termux is only opened while Pigkin is on screen: from the background,
+   * Android would block the switch back.
    */
   suspend fun wake(context: Context, asked: Boolean): Boolean {
     val app = context.applicationContext
     val shared = lock.withLock {
-      attempt?.takeIf { it.isActive } ?: scope.async { wakeOnce(app, asked) }.also { attempt = it }
+      val active = attempt?.takeIf { it.isActive }
+      // A tap that asks for Termux must not be served by an unasked attempt already in progress.
+      if (active == null || (asked && !attemptAsked)) {
+        scope.async { wakeOnce(app, asked) }.also {
+          attempt = it
+          attemptAsked = asked
+        }
+      } else {
+        active
+      }
     }
     return shared.await()
   }

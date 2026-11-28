@@ -15,6 +15,8 @@ internal const val EXTRA_RETRY = "io.pigkin.scheduler.RETRY"
 internal object ScheduledTaskAlarms {
   fun rescheduleAll() {
     for (task in ScheduledTaskStore.tasks.value) {
+      // A run already under way will reschedule itself; re-arming its overdue alarm now would run it twice.
+      if (ScheduledTaskStore.isRunning(task.id)) continue
       if (task.enabled && !task.failed) schedule(task) else cancel(task.id)
     }
   }

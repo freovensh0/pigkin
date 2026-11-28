@@ -76,12 +76,14 @@ internal class SharedHost(
       pending[id] = reply
       try {
         if (!alive) throw HostFailure.Disconnected()
-        try {
-          channel.send(message)
-        } catch (error: IOException) {
-          throw HostFailure.Disconnected(error)
-        }
-        return withTimeoutOrNull(timeoutMillis) { reply.await() } ?: throw HostFailure.Timeout()
+        return withTimeoutOrNull(timeoutMillis) {
+          try {
+            channel.send(message)
+          } catch (error: IOException) {
+            throw HostFailure.Disconnected(error)
+          }
+          reply.await()
+        } ?: throw HostFailure.Timeout()
       } finally {
         pending.remove(id)
         if (retired && pending.isEmpty()) close()

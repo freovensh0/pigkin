@@ -28,7 +28,9 @@ internal sealed class HostFailure(
     TermuxNotInitialized,
     NodeMissing,
     NodeTooOld,
-    Internal,
+    HostDownloadFailed,
+    HostChecksumFailed,
+    HostTokenMissing,
     Crashed,
     Timeout,
     Disconnected,
@@ -66,13 +68,20 @@ internal sealed class HostFailure(
 
   class TermuxNotInitialized : HostFailure(Kind.TermuxNotInitialized, R.string.host_failure_termux_not_initialized)
 
+  /** The bootstrap couldn't download the bundled host binary from Pigkin. */
+  class HostDownloadFailed : HostFailure(Kind.HostDownloadFailed, R.string.host_failure_download_failed)
+
+  /** The downloaded host binary didn't match the bundled binary's checksum. */
+  class HostChecksumFailed : HostFailure(Kind.HostChecksumFailed, R.string.host_failure_checksum_failed)
+
+  /** The bootstrap didn't receive the token Pigkin sent on stdin. */
+  class HostTokenMissing : HostFailure(Kind.HostTokenMissing, R.string.host_failure_token_missing)
+
   class NodeMissing : HostFailure(Kind.NodeMissing, R.string.host_failure_node_missing)
 
   class NodeTooOld : HostFailure(Kind.NodeTooOld, R.string.host_failure_node_too_old, UPGRADE_COMMAND) {
     override val message: String get() = AppStrings.get(messageRes, UPGRADE_COMMAND)
   }
-
-  class Internal : HostFailure(Kind.Internal, R.string.host_failure_internal)
 
   class Crashed(val exitCode: Int) : HostFailure(Kind.Crashed, R.string.host_failure_crashed) {
     override val message: String get() = AppStrings.get(messageRes, exitCode)

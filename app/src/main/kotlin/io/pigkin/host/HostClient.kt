@@ -155,6 +155,7 @@ internal class HostClient(context: Context, private val foreground: Flow<Boolean
         id?.let { put("id", it) }
         sessionPath?.let { put("sessionPath", it) }
       },
+      SCHEDULED_TASK_TIMEOUT_MILLIS,
     )
     return ScheduledTaskRun(
       result = data.optString("result"),
@@ -485,10 +486,14 @@ internal class HostClient(context: Context, private val foreground: Flow<Boolean
    * Asks the shared `utility` host for one-off operation [op], starting the host when none is running, and returns
    * the operation's data as [call] does for a host of its own.
    */
-  private suspend fun utilityCall(op: String, params: JSONObject): JSONObject {
+  private suspend fun utilityCall(
+    op: String,
+    params: JSONObject,
+    timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
+  ): JSONObject {
     val message = JSONObject().put("type", UTILITY_REQUEST).put("op", op).put("params", params)
     // SharedHost is main-thread confined, and callers come from any dispatcher.
-    val result = withContext(Dispatchers.Main.immediate) { utility.request(message, DEFAULT_TIMEOUT_MILLIS) }
+    val result = withContext(Dispatchers.Main.immediate) { utility.request(message, timeoutMillis) }
     HostRejected.from(result)?.let { throw it }
     return result.optJSONObject("data") ?: JSONObject()
   }
@@ -534,6 +539,7 @@ internal class HostClient(context: Context, private val foreground: Flow<Boolean
     const val PACKAGE_LOCK = "pi/package-lock.json"
     const val PI_PACKAGE = "@earendil-works/pi-coding-agent"
     const val DEFAULT_TIMEOUT_MILLIS = 60_000L
+    const val SCHEDULED_TASK_TIMEOUT_MILLIS = 6 * 60_000L
     const val ENSURE_TIMEOUT_MILLIS = 15 * 60_000L
     const val BACKUP_TIMEOUT_MILLIS = 15 * 60_000L
     const val PACKAGE_INSTALL_TIMEOUT_MILLIS = 15 * 60_000L

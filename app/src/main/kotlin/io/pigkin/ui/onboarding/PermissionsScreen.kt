@@ -106,7 +106,10 @@ internal fun rememberSetupActions(
 
       SetupAction.CopyAndOpenTermux -> scope.launch {
         val command = SetupProgress.setupCommand(context, literal)
-        context.startSafely { TermuxSetup.copyAndOpen(context, command) }
+        context.startSafely {
+          TermuxSetup.copyAndOpen(context, command)
+          TermuxInstall.installation(context)?.let(graph.preferences::setSetupCommandCopiedFor)
+        }
       }
 
       SetupAction.InstallPi -> SetupProgress.install(graph)
