@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
@@ -38,6 +39,10 @@ func decodeJSONObject(text []byte) (host.Message, error) {
 	return object, nil
 }
 
+// configWriteMu serializes writers of the same config file: separate utility
+// requests run on separate goroutines and must not race to publish a rename.
+var configWriteMu sync.Mutex
+
 func writeJSONFile(path string, value any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
@@ -47,8 +52,29 @@ func writeJSONFile(path string, value any) error {
 		return err
 	}
 	data = append(data, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+
+	configWriteMu.Lock()
+	defer configWriteMu.Unlock()
+
+	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
+	if err != nil {
+		return err
+	}
+	tmp := file.Name()
+	defer func() { _ = os.Remove(tmp) }()
+	if err := file.Chmod(0o600); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		return err
+	}
+	if err := file.Close(); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)

@@ -555,27 +555,30 @@ func swapConfig(configDir, staging, old string) error {
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return err
 	}
+	if err := os.MkdirAll(old, 0o755); err != nil {
+		return err
+	}
+	// Mark the swap before moving anything, so a crash mid-loop can be finished
+	// instead of having old discarded as an abandoned staging.
 	if !exists(old + ".moved") {
-		if err := os.MkdirAll(old, 0o755); err != nil {
-			return err
-		}
-		entries, err := os.ReadDir(configDir)
-		if err != nil {
-			return err
-		}
-		for _, entry := range entries {
-			if backupExcluded[entry.Name()] {
-				continue
-			}
-			if err := os.Rename(filepath.Join(configDir, entry.Name()), filepath.Join(old, entry.Name())); err != nil {
-				return err
-			}
-		}
 		if err := os.WriteFile(old+".moved", nil, 0o644); err != nil {
 			return err
 		}
 	}
-	entries, err := os.ReadDir(staging)
+	entries, err := os.ReadDir(configDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if backupExcluded[entry.Name()] {
+			continue
+		}
+		// Entries an earlier attempt moved are gone from configDir, so a resumed swap moves only the rest.
+		if err := os.Rename(filepath.Join(configDir, entry.Name()), filepath.Join(old, entry.Name())); err != nil {
+			return err
+		}
+	}
+	entries, err = os.ReadDir(staging)
 	if err != nil {
 		return err
 	}

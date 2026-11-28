@@ -209,6 +209,24 @@ func TestRPCChannelEndToEndWithFakeChild(t *testing.T) {
 	}
 }
 
+func TestOutputMergerFlushesChannelWithoutStdout(t *testing.T) {
+	var written [][]byte
+	merger := &outputMerger{write: func(line []byte) {
+		written = append(written, append([]byte(nil), line...))
+	}}
+	merger.channel(channelMessage{Topic: "todos", Data: host.Message{"state": 42}})
+	if len(written) != 1 {
+		t.Fatalf("wrote %d lines before any stdout, want 1", len(written))
+	}
+	var message host.Message
+	if err := json.Unmarshal(written[0], &message); err != nil {
+		t.Fatal(err)
+	}
+	if message["type"] != channelType || message["topic"] != "todos" {
+		t.Fatalf("flushed line = %s", written[0])
+	}
+}
+
 func writeLine(conn net.Conn, message host.Message) error {
 	line, err := host.EncodeLine(message)
 	if err != nil {

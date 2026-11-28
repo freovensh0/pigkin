@@ -337,6 +337,35 @@ func TestRemoteConnectWithAskpass(t *testing.T) {
 	}
 }
 
+func TestConnectAskpassSocketStaysInSSHDir(t *testing.T) {
+	env := testEnv(t)
+	paths := remoteLayoutFor(env)
+	t.Setenv("PIGKIN_TEST_ASKPASS", "1")
+	if err := os.Symlink("/bin/sh", filepath.Join(env.Prefix, "bin", "sh")); err != nil {
+		t.Fatal(err)
+	}
+	recorded := filepath.Join(t.TempDir(), "socket-path")
+	writeTool(t, env, "ssh", `#!/bin/sh
+case " $* " in
+  *" -G "*) echo "hostname 127.0.0.1"; exit 0 ;;
+esac
+printf '%s' "$PIGKIN_ASKPASS_SOCKET" > `+channelQuote(recorded)+`
+printf '%s\n' /home/me /usr/bin/bash
+`)
+	id := saveTestHost(t, env, host.Message{"name": "box", "auth": "key", "address": "me@box", "port": float64(22)})
+	if _, err, _ := testConnect(t, env, id, func(remotePrompt) (string, bool) { return "", true }); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(recorded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := paths.ssh + string(os.PathSeparator)
+	if !strings.HasPrefix(string(got), want) {
+		t.Fatalf("socket %q is outside %q", got, want)
+	}
+}
+
 func TestRemoteConnectHostKey(t *testing.T) {
 	env := testEnv(t)
 	t.Setenv("PIGKIN_TEST_ASKPASS", "1")

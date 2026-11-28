@@ -48,10 +48,19 @@ func authBridge(ctx *Context) ai.AuthInteraction {
 		ch <- promptResult{err: errors.New("cancelled")}
 	})
 
-	forget := func(id int) {
+	forget := func(id int) bool {
 		mu.Lock()
+		_, ok := pending[id]
 		delete(pending, id)
 		mu.Unlock()
+		return ok
+	}
+	// Only dismiss a prompt that is still waiting: a response may have arrived
+	// at the same moment as cancellation.
+	dismiss := func(id int) {
+		if forget(id) {
+			ctx.Conn.Send(host.Message{"type": "pigkin_auth_prompt_dismiss", "id": id})
+		}
 	}
 
 	return ai.AuthInteraction{
@@ -86,10 +95,10 @@ func authBridge(ctx *Context) ai.AuthInteraction {
 			case result := <-ch:
 				return result.value, result.err
 			case <-promptCtx.Done():
-				forget(id)
+				dismiss(id)
 				return "", errors.New("cancelled")
 			case <-ctx.Conn.Done():
-				forget(id)
+				dismiss(id)
 				return "", errors.New("cancelled")
 			}
 		},

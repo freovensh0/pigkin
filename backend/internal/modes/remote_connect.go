@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -126,7 +127,8 @@ func connect(r remote, opts connectOptions) (*probeResult, error) {
 		return reply, true
 	}
 
-	socketPath := fmt.Sprintf("%sa%d-%d", r.paths.ssh, os.Getpid(), bridgeNumbers.Add(1))
+	// In the SSH folder, whose path is short enough for a Unix socket's sun_path.
+	socketPath := filepath.Join(r.paths.ssh, fmt.Sprintf("a%d-%d", os.Getpid(), bridgeNumbers.Add(1)))
 	environment := sshEnvironment(map[string]string{
 		"SSH_ASKPASS":         r.paths.askpassFile(),
 		"SSH_ASKPASS_REQUIRE": "force",

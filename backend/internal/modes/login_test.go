@@ -1,12 +1,14 @@
 package modes
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/MichaelKinsy/PiG/ai"
 	"github.com/freovensh0/pigkin/backend/internal/host"
 )
 
@@ -78,6 +80,60 @@ checked:
 		if entry["id"] == "google" && (entry["configured"] != true || entry["type"] != "api_key") {
 			t.Fatalf("google status = %v", entry)
 		}
+	}
+}
+
+func TestAuthBridgeDismissesPromptOnCancel(t *testing.T) {
+	hostConn, appConn := net.Pipe()
+	defer hostConn.Close()
+	defer appConn.Close()
+	conn := host.NewConnection(hostConn)
+	ctx := &Context{Conn: conn}
+
+	lines := make(chan host.Message, 16)
+	go func() {
+		scanner := host.ScanLines(appConn)
+		for scanner.Scan() {
+			var message host.Message
+			if json.Unmarshal(scanner.Bytes(), &message) == nil {
+				lines <- message
+			}
+		}
+	}()
+
+	interaction := authBridge(ctx)
+	promptCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, err := interaction.Prompt(promptCtx, ai.AuthSecretPrompt{Message: "Key"})
+		result <- err
+	}()
+
+	select {
+	case prompt := <-lines:
+		if prompt["type"] != "pigkin_auth_prompt" {
+			t.Fatalf("first message = %v", prompt)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("no prompt was sent")
+	}
+	cancel()
+	select {
+	case err := <-result:
+		if err == nil {
+			t.Fatal("cancellation did not fail the prompt")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("prompt did not return on cancellation")
+	}
+	select {
+	case dismiss := <-lines:
+		if dismiss["type"] != "pigkin_auth_prompt_dismiss" {
+			t.Fatalf("message after cancellation = %v", dismiss)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("no dismiss was sent when the prompt was cancelled")
 	}
 }
 

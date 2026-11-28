@@ -586,6 +586,30 @@ func TestBackupProgressLines(t *testing.T) {
 	}
 }
 
+func TestSwapConfigMarksBeforeMovingEntries(t *testing.T) {
+	f := newBackupFixture(t)
+	old := f.config + ".old-interrupted"
+	if err := os.MkdirAll(filepath.Join(old, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(old, "sub", "occupied"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(f.config, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	staging := filepath.Join(t.TempDir(), "staging")
+	if err := os.MkdirAll(staging, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := swapConfig(f.config, staging, old); err == nil {
+		t.Fatal("a blocked rename did not fail the swap")
+	}
+	if !exists(old + ".moved") {
+		t.Fatal("the swap started without writing the .moved marker")
+	}
+}
+
 func TestSettleRestoresCleansUnfinishedAndSwapsFinished(t *testing.T) {
 	f := newBackupFixture(t)
 	staging := f.config + ".restore-1"

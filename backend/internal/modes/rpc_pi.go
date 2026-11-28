@@ -171,7 +171,9 @@ func rpcWithPi(ctx *Context, cwd, sessionPath string, extensions []pigkinExtensi
 	}
 	for _, extension := range extensions {
 		if extension.name == webAccessExtension {
-			defaultWebToolsToEager(ctx.Env.ConfigDir)
+			if err := defaultWebToolsToEager(ctx.Env.ConfigDir); err != nil {
+				return nil, err
+			}
 			break
 		}
 	}
