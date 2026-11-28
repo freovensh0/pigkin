@@ -3,7 +3,7 @@ import type { AgentToolResult, ExtensionAPI, ExtensionContext } from "@earendil-
 import { Box, Text, truncateToWidth, type KeyId } from "@earendil-works/pi-tui";
 import { Type, type TOptional, type TString } from "typebox";
 import type { ExtractedContent } from "./extract.ts";
-import { normalizeFetchContentParams } from "./fetch-params.ts";
+import { MAX_FETCH_URLS, normalizeFetchContentParams } from "./fetch-params.ts";
 import { answerFromPage } from "./page-query.ts";
 import { rewriteSearchQuery } from "./query-rewrite.ts";
 import { clearCloneCache, releaseClonesUnusedSince, touchClones } from "./github-extract.ts";
@@ -537,6 +537,11 @@ function closeCurator(callId?: string): void {
 	activeCurators.clear();
 }
 
+/** The curator URL without its session token, safe to print in results and notifications. */
+function displayCuratorUrl(url: string): string {
+	return url.split("?")[0] ?? url;
+}
+
 async function openInBrowser(pi: ExtensionAPI, url: string): Promise<void> {
 	const plat = platform();
 	if (plat !== "darwin" && plat !== "win32") {
@@ -858,12 +863,13 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	function startBackgroundFetch(urls: string[], proxy?: string, provided?: ExtractedContent[]): string | null {
-		if (urls.length === 0) return null;
+		const bounded = urls.slice(0, MAX_FETCH_URLS);
+		if (bounded.length === 0) return null;
 		const fetchId = generateId();
 		const controller = new AbortController();
 		pendingFetches.set(fetchId, controller);
 		Promise.resolve()
-			.then(() => fetchUncoveredContent(urls, provided, missing => runWithProxy(proxy, () => fetchAllContent(missing, controller.signal, withRegisteredFetchOptions(undefined, registeredToolNames, proxy)))))
+			.then(() => fetchUncoveredContent(bounded, provided, missing => runWithProxy(proxy, () => fetchAllContent(missing, controller.signal, withRegisteredFetchOptions(undefined, registeredToolNames, proxy)))))
 			.then((fetched) => {
 				if (!sessionActive || !pendingFetches.has(fetchId)) return;
 				const data = {
@@ -1139,11 +1145,11 @@ export default function (pi: ExtensionAPI) {
 		const sendCuratorFallbackUpdate = (message: string) => {
 			if (!handle) return;
 			pc.onUpdate?.({
-				content: [{ type: "text", text: `${message}\nOpen manually: ${handle.url}` }],
+				content: [{ type: "text", text: `${message}\nOpen manually: ${displayCuratorUrl(handle.url)}` }],
 				details: {
 					phase: "curator-fallback",
 					progress: searchesComplete ? 1 : 0.5,
-					curatorUrl: handle.url,
+					curatorUrl: displayCuratorUrl(handle.url),
 					timeoutSeconds: pc.timeoutSeconds,
 					shortcut: curateKey,
 					browserOpenError: pc.browserOpenError,
@@ -1309,7 +1315,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			activeCurators.set(callId, handle);
-			pc.curatorUrl = handle.url;
+			pc.curatorUrl = displayCuratorUrl(handle.url);
 
 			for (const [qi, data] of pc.searchResults) {
 				const slotIndex = pc.resultSlots.get(qi);
@@ -1332,7 +1338,7 @@ export default function (pi: ExtensionAPI) {
 				details: {
 					phase: "curating",
 					progress: searchesComplete ? 1 : 0.5,
-					curatorUrl: handle.url,
+					curatorUrl: displayCuratorUrl(handle.url),
 					timeoutSeconds: pc.timeoutSeconds,
 					shortcut: curateKey,
 				},
@@ -2490,7 +2496,7 @@ export default function (pi: ExtensionAPI) {
 				activeCurators.set(commandCallId, handle);
 				let browserOpenError: string | null = null;
 				if (!shouldAutoOpenCuratorBrowser(loadConfig())) {
-					ctx.ui.notify(`Search curator is running. Open manually: ${handle.url}`, "info");
+					ctx.ui.notify(`Search curator is running. Open manually: ${displayCuratorUrl(handle.url)}`, "info");
 				} else {
 					const open = platform() === "darwin" ? await getGlimpseOpen() : null;
 					if (open) {
@@ -2522,7 +2528,7 @@ export default function (pi: ExtensionAPI) {
 					}
 					if (browserOpenError) {
 						console.error(`Failed to open curator UI: ${browserOpenError}`);
-						ctx.ui.notify(`Search curator is running, but the browser did not open automatically. Open manually: ${handle.url}`, "info");
+						ctx.ui.notify(`Search curator is running, but the browser did not open automatically. Open manually: ${displayCuratorUrl(handle.url)}`, "info");
 					}
 				}
 

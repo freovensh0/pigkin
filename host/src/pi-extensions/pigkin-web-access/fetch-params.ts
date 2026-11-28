@@ -1,6 +1,9 @@
 // Vendored from pi-web-access 0.47.0 (https://github.com/nicobailon/pi-web-access), MIT License: see LICENSE and UPSTREAM.md.
 import { normalizeProxyUrl } from "./utils.ts";
 
+/** More than this many URLs in one call would fetch too many pages at once. */
+export const MAX_FETCH_URLS = 20;
+
 export interface FetchContentParams {
 	url?: unknown;
 	urls?: unknown;
@@ -19,6 +22,8 @@ export interface FetchContentParams {
 
 export interface NormalizedFetchContentParams {
 	urlList: string[];
+	/** How many URLs were dropped because the list exceeded MAX_FETCH_URLS. */
+	omittedUrls: number;
 	options: {
 		forceClone?: boolean;
 		prompt?: string;
@@ -35,7 +40,9 @@ export interface NormalizedFetchContentParams {
 
 export function normalizeFetchContentParams(params: FetchContentParams): NormalizedFetchContentParams {
 	const normalizedUrls = uniqueUrls(normalizeUrlArray(params.urls));
-	const urlList = normalizedUrls.length > 0 ? normalizedUrls : normalizeSingleUrl(params.url);
+	const allUrls = normalizedUrls.length > 0 ? normalizedUrls : normalizeSingleUrl(params.url);
+	const urlList = allUrls.slice(0, MAX_FETCH_URLS);
+	const omittedUrls = allUrls.length - urlList.length;
 	const prompt = normalizeOptionalString(params.prompt);
 	const timestamp = normalizeOptionalString(params.timestamp);
 	const frames = normalizeOptionalFrameCount(params.frames);
@@ -52,6 +59,7 @@ export function normalizeFetchContentParams(params: FetchContentParams): Normali
 
 	return {
 		urlList,
+		omittedUrls,
 		options: {
 			...(forceClone !== undefined ? { forceClone } : {}),
 			...(prompt !== undefined ? { prompt } : {}),

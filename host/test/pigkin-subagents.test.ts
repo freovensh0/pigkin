@@ -24,6 +24,7 @@ import {
   pigkinSubagents,
   removeChannel,
   removeDir,
+  replyText,
   type Script,
   subagentResults,
   type Turn,
@@ -184,7 +185,7 @@ describe("stand-in tools", () => {
     await session.prompt("PARENT go");
     expect(log).toContainEqual({ toolName: "read", toolCallId: "sub1/1", parentToolCallId: "sub1" });
     const result = subagentResults(session).get("sub1");
-    expect(messageText(result)).toBe("child got ok: hello from the project");
+    expect(replyText(result)).toBe("child got ok: hello from the project");
     expect(result?.isError).toBe(false);
     session.dispose();
   });
@@ -198,7 +199,7 @@ describe("stand-in tools", () => {
     await session.prompt("PARENT go");
     expect(ui.asked).toHaveLength(1);
     const result = subagentResults(session).get("sub1");
-    expect(messageText(result)).toBe("child got error: user denied bash");
+    expect(replyText(result)).toBe("child got error: user denied bash");
     expect(result?.details).toMatchObject({ status: "done" });
     session.dispose();
   });
@@ -219,7 +220,7 @@ describe("permission questions", () => {
       expect(ui.asked).toHaveLength(1);
       expect(ui.asked[0]?.runs).toEqual([expect.objectContaining({ toolCallId: "sub1", status: "running", inFlight: 1 })]);
       expect(channel.latest()).toEqual([expect.objectContaining({ status: "done", inFlight: 0 })]);
-      expect(messageText(subagentResults(session).get("sub1"))).toBe("child got ok: hi");
+      expect(replyText(subagentResults(session).get("sub1"))).toBe("child got ok: hi");
       session.dispose();
     });
 
@@ -242,7 +243,7 @@ describe("permission questions", () => {
       expect(ui.asked).toHaveLength(1);
       expect(ui.asked[0]?.message).toBe("subagent");
       expect(ui.asked[0]?.runs).toEqual([]);
-      expect(messageText(subagentResults(session).get("sub1"))).toBe("child done");
+      expect(replyText(subagentResults(session).get("sub1"))).toBe("child done");
       session.dispose();
     });
   }
@@ -256,7 +257,7 @@ describe("permission questions", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(true);
-    expect(messageText(result)).toContain("user denied subagent");
+    expect(replyText(result)).toContain("user denied subagent");
     expect(channel.sent.flatMap((message) => message.runs)).toEqual([]);
     session.dispose();
   });
@@ -272,7 +273,7 @@ describe("permission questions", () => {
     const inFlight = channel.sent.map((message) => message.runs[0]?.inFlight).filter((value) => value !== undefined);
     expect(inFlight).toContain(1);
     expect(inFlight.at(-1)).toBe(0);
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("child got error: blocked bash");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("child got error: blocked bash");
     session.dispose();
   });
 });
@@ -290,8 +291,8 @@ describe("parallel runs", () => {
     );
     expect(together).toBe(true);
     const results = subagentResults(session);
-    expect(messageText(results.get("subA"))).toBe("child got ok: x");
-    expect(messageText(results.get("subB"))).toBe("child got ok: x");
+    expect(replyText(results.get("subA"))).toBe("child got ok: x");
+    expect(replyText(results.get("subB"))).toBe("child got ok: x");
     session.dispose();
   });
 
@@ -313,7 +314,7 @@ describe("parallel runs", () => {
     await prompt;
     expect(channel.latest().map((run) => run.status)).toEqual(Array(8).fill("done"));
     const results = subagentResults(session);
-    for (const call of calls) expect(messageText(results.get(call.id))).toBe(`done ${call.task}`);
+    for (const call of calls) expect(replyText(results.get(call.id))).toBe(`done ${call.task}`);
     session.dispose();
   });
 });
@@ -329,7 +330,7 @@ describe("stop", () => {
     expect(Date.now() - began).toBeLessThan(10_000);
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(false);
-    expect(messageText(result)).toBe("The user stopped the subagent before it finished.");
+    expect(replyText(result)).toBe("The user stopped the subagent before it finished.");
     expect(result?.details).toMatchObject({ status: "stopped" });
     expect(channel.latest()).toEqual([expect.objectContaining({ status: "stopped", inFlight: 0 })]);
     expect(lastText(session.messages)).toMatch(/^parent done/);
@@ -352,7 +353,7 @@ describe("stop", () => {
     release.open();
     await prompt;
     const result = subagentResults(session).get("sub7");
-    expect(messageText(result)).toBe("The user stopped the subagent before it started.");
+    expect(replyText(result)).toBe("The user stopped the subagent before it started.");
     expect(result?.details).toMatchObject({ status: "stopped", startedAt: null });
     expect(channel.latest().find((run) => run.toolCallId === "sub7")).toMatchObject({ status: "stopped", startedAt: null });
     session.dispose();
@@ -433,7 +434,7 @@ describe("steer", () => {
     channel.fromApp({ action: "steer", id: channel.latest()[0]?.id, text: "STEER look at auth" });
     release.open();
     await prompt;
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("steered: STEER look at auth");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("steered: STEER look at auth");
     session.dispose();
   });
 
@@ -488,7 +489,7 @@ describe("steer", () => {
     await eventually(() => channel.latest()[0]?.steering.length === 0);
     release.open();
     await prompt;
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("never steered");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("never steered");
     session.dispose();
   });
 
@@ -562,7 +563,7 @@ describe("results", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     const details = result?.details as { sessionFile: string; usage: { totalTokens: number; cacheWrite: number } };
-    const text = messageText(result);
+    const text = replyText(result);
     expect(text.startsWith("x".repeat(RESULT_LIMIT_BYTES))).toBe(true);
     expect(text).not.toContain("x".repeat(RESULT_LIMIT_BYTES + 1));
     expect(text).toContain(`Cut at 50 KB of 60 KB. The full reply is in the subagent's transcript: ${details.sessionFile}`);
@@ -585,7 +586,7 @@ describe("results", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(true);
-    expect(messageText(result)).toBe("The subagent failed: scripted provider failure");
+    expect(replyText(result)).toBe("The subagent failed: scripted provider failure");
     expect(result?.details).toMatchObject({ status: "failed" });
     expect(channel.latest()).toEqual([expect.objectContaining({ status: "failed", error: "scripted provider failure" })]);
     session.dispose();
@@ -601,7 +602,7 @@ describe("results", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(true);
-    expect(messageText(result)).toContain("No API key");
+    expect(replyText(result)).toContain("No API key");
     expect(result?.details).toMatchObject({ status: "failed" });
     expect(result?.details).not.toHaveProperty("sessionFile");
     const run = channel.latest()[0];
@@ -848,8 +849,8 @@ describe("agents", () => {
     });
     await session.prompt("PARENT go");
     const results = subagentResults(session);
-    expect(messageText(results.get("subE"))).toBe("find,grep,lookup,ls,read");
-    expect(messageText(results.get("subG"))).toBe("bash,edit,find,grep,lookup,ls,read,write");
+    expect(replyText(results.get("subE"))).toBe("find,grep,lookup,ls,read");
+    expect(replyText(results.get("subG"))).toBe("bash,edit,find,grep,lookup,ls,read,write");
     session.dispose();
   });
 
@@ -858,7 +859,7 @@ describe("agents", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(true);
-    expect(messageText(result)).toBe('Unknown agent "Nope". Available agents: Explore, General.');
+    expect(replyText(result)).toBe('Unknown agent "Nope". Available agents: Explore, General.');
     // The app tells Pigkin subagents' results from another `subagent` tool's by this marker alone.
     expect(result?.details).toEqual({ extension: "pigkin-subagents", agent: "Nope", description: "a task", status: "failed" });
     expect(channel.sent.flatMap((message) => message.runs)).toEqual([]);
@@ -881,8 +882,8 @@ describe("agents", () => {
     await session.prompt("PARENT go");
     const results = subagentResults(session);
     expect(results.get("sub1")?.isError).toBe(true);
-    expect(messageText(results.get("sub1"))).toContain(`The agent definition ${file} could not be read:`);
-    expect(messageText(results.get("sub2"))).toContain(`These definition files could not be read: ${file}`);
+    expect(replyText(results.get("sub1"))).toContain(`The agent definition ${file} could not be read:`);
+    expect(replyText(results.get("sub2"))).toContain(`These definition files could not be read: ${file}`);
     session.dispose();
   });
 
@@ -905,7 +906,7 @@ describe("agents", () => {
     };
     const { session } = await start(parentCalling([{ id: "sub1", agent: "Reviewer", task: "CHILD review" }], child));
     await session.prompt("PARENT go");
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("reviewed");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("reviewed");
     expect(seen?.toolNames.toSorted()).toEqual(["bash", "read"]);
     const prompt = seen?.systemPrompt ?? "";
     expect(prompt.indexOf(SYSTEM_APPEND)).toBeGreaterThan(-1);
@@ -923,7 +924,7 @@ describe("agents", () => {
     await session.prompt("PARENT go");
     const result = subagentResults(session).get("sub1");
     expect(result?.isError).toBe(true);
-    expect(messageText(result)).toContain('Unknown agent "Local"');
+    expect(replyText(result)).toContain('Unknown agent "Local"');
     session.dispose();
   });
 
@@ -938,7 +939,7 @@ describe("agents", () => {
       projectTrusted: true,
     });
     await session.prompt("PARENT go");
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("local done");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("local done");
     expect(prompt).toContain("LOCAL-MARKER");
     session.dispose();
   });
@@ -951,9 +952,9 @@ describe("agents", () => {
     const { session } = await start(parentCalling(calls, (turn) => fauxAssistantMessage(`model ${turn.model}`)));
     await session.prompt("PARENT go");
     const results = subagentResults(session);
-    expect(messageText(results.get("sub1"))).toBe("model faux-2");
+    expect(replyText(results.get("sub1"))).toBe("model faux-2");
     expect(results.get("sub2")?.isError).toBe(true);
-    expect(messageText(results.get("sub2"))).toBe('Unknown model "faux/nope": give it as provider/id, as Pi lists it');
+    expect(replyText(results.get("sub2"))).toBe('Unknown model "faux/nope": give it as provider/id, as Pi lists it');
     expect(results.get("sub2")?.details).toMatchObject({ extension: "pigkin-subagents", status: "failed" });
     expect(results.get("sub1")?.details).toMatchObject({ extension: "pigkin-subagents", status: "done" });
     session.dispose();
@@ -970,9 +971,9 @@ describe("agents", () => {
     const { session } = await start(parentCalling(calls, (turn) => fauxAssistantMessage(`model ${turn.model}`)));
     await session.prompt("PARENT go");
     const results = subagentResults(session);
-    expect(messageText(results.get("sub1"))).toBe("model faux-1");
-    expect(messageText(results.get("sub2"))).toBe("model faux-1");
-    expect(messageText(results.get("sub3"))).toBe("model faux-2");
+    expect(replyText(results.get("sub1"))).toBe("model faux-1");
+    expect(replyText(results.get("sub2"))).toBe("model faux-1");
+    expect(replyText(results.get("sub3"))).toBe("model faux-2");
     session.dispose();
   });
 
@@ -983,7 +984,7 @@ describe("agents", () => {
     const standingAside = { version: 1, standingAside: true, runs: [] };
     expect(channel.sent).toEqual([standingAside]);
     await session.prompt("PARENT go");
-    expect(messageText(subagentResults(session).get("sub1"))).toBe("theirs");
+    expect(replyText(subagentResults(session).get("sub1"))).toBe("theirs");
     expect(channel.sent).toEqual([standingAside]);
     await session.reload();
     expect(channel.sent).toEqual([standingAside, standingAside]);

@@ -12,7 +12,7 @@ import {
   storedCostTiers,
   withoutManagedFields,
 } from "../model-def.js";
-import { readModelsJson, writeModelsJson } from "../models-json.js";
+import { readModelsJson, readModelsJsonText, writeModelsJson, writeModelsJsonText } from "../models-json.js";
 import { stringArrayParam, stringParam } from "../params.js";
 import { BUILTIN_PROVIDERS, createRuntime } from "../runtime.js";
 import { putDefaultFirst, rebuildForProvider, scopeResolver, scopeUniverse } from "../scope.js";
@@ -65,6 +65,7 @@ export async function subscriptionSave(ctx: ModeContext): Promise<JsonObject> {
 
   const pi = await loadPi(ctx.env.root);
   // Both files are checked before either is written.
+  const original = await readModelsJsonText(ctx.env.configDir);
   const document = await readModelsJson(ctx.env.configDir);
   const settings = openSettings(ctx, pi);
   const builtin = (await createRuntime(ctx, { builtinOnly: true })).getModels(providerId);
@@ -103,14 +104,20 @@ export async function subscriptionSave(ctx: ModeContext): Promise<JsonObject> {
   else delete entry.modelOverrides;
   if (Object.keys(entry).length > 0) document.providers[providerId] = entry;
   else delete document.providers[providerId];
-  if (!isDeepStrictEqual(before, document.providers[providerId])) await writeModelsJson(ctx.env.configDir, document);
+  const modelsChanged = !isDeepStrictEqual(before, document.providers[providerId]);
+  if (modelsChanged) await writeModelsJson(ctx.env.configDir, document);
 
   const all = [...ids].every((id) => enabled.includes(id));
   if (settings.enabledModels.length === 0 && all) return {};
-  // Created after the write, so the runtime already lists this provider's new models.
-  const universe = await scopeUniverse(await createRuntime(ctx), ctx.signal);
-  const resolve = scopeResolver(pi, universe);
-  const patterns = await rebuildForProvider(settings.enabledModels, providerId, all ? "all" : enabled, universe, resolve);
-  await saveEnabledModels(settings, await putDefaultFirst(patterns, settings.defaultRef, resolve));
+  try {
+    // Created after the write, so the runtime already lists this provider's new models.
+    const universe = await scopeUniverse(await createRuntime(ctx), ctx.signal);
+    const resolve = scopeResolver(pi, universe);
+    const patterns = await rebuildForProvider(settings.enabledModels, providerId, all ? "all" : enabled, universe, resolve);
+    await saveEnabledModels(settings, await putDefaultFirst(patterns, settings.defaultRef, resolve));
+  } catch (error) {
+    if (modelsChanged) await writeModelsJsonText(ctx.env.configDir, original);
+    throw error;
+  }
   return {};
 }

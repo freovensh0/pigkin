@@ -356,7 +356,19 @@ export function toolResult(
 function isDetails(value: unknown): value is TodoDetails {
   if (typeof value !== "object" || value === null) return false;
   const details = value as Partial<TodoDetails>;
-  return Array.isArray(details.tasks) && typeof details.nextId === "number";
+  return Array.isArray(details.tasks) && typeof details.nextId === "number" && details.tasks.every(isTask);
+}
+
+function isTask(value: unknown): value is Task {
+  if (typeof value !== "object" || value === null) return false;
+  const task = value as Partial<Task>;
+  return Number.isFinite(task.id) &&
+    typeof task.subject === "string" &&
+    (task.status === "pending" || task.status === "in_progress" || task.status === "completed" || task.status === "deleted") &&
+    (task.description === undefined || typeof task.description === "string") &&
+    (task.activeForm === undefined || typeof task.activeForm === "string") &&
+    (task.owner === undefined || typeof task.owner === "string") &&
+    (task.blockedBy === undefined || (Array.isArray(task.blockedBy) && task.blockedBy.every((id) => Number.isFinite(id))));
 }
 
 /**

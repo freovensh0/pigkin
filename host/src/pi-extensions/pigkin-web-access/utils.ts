@@ -433,7 +433,7 @@ export function installGlobalProxyFetch(): void {
  * `envProxy` names the env proxy the SSRF check trusted for the URL. Callers pass a URL. */
 export function createCurlFetch(
 	command: readonly string[],
-	{ maxBytes, envProxy }: { maxBytes: number; envProxy: (url: URL) => string | null },
+	{ maxBytes, envProxy, resolve }: { maxBytes: number; envProxy: (url: URL) => string | null; resolve?: (url: URL) => readonly string[] },
 ): typeof fetch {
 	return async (input: RequestInfo | URL, init?: ProxiedRequestInit) => {
 		const url = new URL(input instanceof Request ? input.url : input);
@@ -448,6 +448,8 @@ export function createCurlFetch(
 			command,
 			proxy,
 			maxBytes,
+			// Pin the addresses the SSRF check validated; curl keeps the original Host and SNI.
+			resolve: resolve?.(url),
 			notFound: `fetchContent.curl command not found: ${command[0]}`,
 		});
 	};
@@ -491,6 +493,8 @@ interface CurlTransport {
 	notFound?: string;
 	/** Largest body to download; curl stops a bigger one instead of saving all of it. */
 	maxBytes?: number;
+	/** Validated addresses to connect to, in `host:port:ip` form for curl's --resolve. */
+	resolve?: readonly string[];
 }
 
 async function fetchViaCurl(url: URL, init: RequestInit, transport: CurlTransport): Promise<Response> {
@@ -530,7 +534,7 @@ async function fetchViaCurl(url: URL, init: RequestInit, transport: CurlTranspor
 	}
 }
 
-async function fetchViaCurlOnce(url: URL, init: RequestInit, { command, proxy, notFound, maxBytes }: CurlTransport): Promise<Response> {
+async function fetchViaCurlOnce(url: URL, init: RequestInit, { command, proxy, notFound, maxBytes, resolve }: CurlTransport): Promise<Response> {
 	const method = (init.method ?? "GET").toUpperCase();
 	const headers = new Headers(init.headers);
 
@@ -552,6 +556,8 @@ async function fetchViaCurlOnce(url: URL, init: RequestInit, { command, proxy, n
 		"-x", proxy ?? "",
 		// The caller already chose the proxy; curl must not send a host direct because of its own NO_PROXY reading.
 		...(proxy ? ["--noproxy", ""] : []),
+		// Connect to the addresses the SSRF check approved, not to a fresh DNS answer.
+		...((resolve ?? []).flatMap((entry) => ["--resolve", entry])),
 		"-D", headerFile,
 		"--output", bodyFile,
 		"--write-out", "%{json}",

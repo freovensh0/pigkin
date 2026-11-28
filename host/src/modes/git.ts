@@ -203,7 +203,8 @@ function localLauncher(binary: string, root: string, safeArgs: string[]): GitLau
       const { promise, resolve: done, reject } = Promise.withResolvers<number | null>();
       const child = spawn(binary, [...safeArgs, ...args], {
         cwd: root,
-        env: { ...process.env, ...env },
+        // Stable English diagnostics, so the app can tell a missing repo from another failure.
+        env: { ...process.env, ...env, LC_ALL: "C" },
         stdio: ["ignore", "pipe", "pipe"],
         detached: true,
       });
@@ -263,7 +264,7 @@ function remoteGitCommand(root: string, args: string[], env: Record<string, stri
   return [
     `cd -- ${quote(root)} 2>/dev/null || { echo ${quote(REMOTE_NO_FOLDER)} >&2; exit ${String(REMOTE_SETUP_FAILED)}; }`,
     `command -v git >/dev/null 2>&1 || { echo ${quote(REMOTE_NO_GIT)} >&2; exit ${String(REMOTE_SETUP_FAILED)}; }`,
-    ...Object.entries(env).map(([name, value]) => `export ${name}=${quote(value)}`),
+    ...Object.entries({ ...env, LC_ALL: "C" }).map(([name, value]) => `export ${name}=${quote(value)}`),
     // The real path is captured with an `x` after it, as `$(…)` drops trailing newlines a folder name may end with.
     `real=$(pwd -P && echo x); real=\${real%x}; real=\${real%$'\\n'}`,
     `exec git -c safe.directory=${quote(root)} -c "safe.directory=$real" ${args.map(quote).join(" ")}`,

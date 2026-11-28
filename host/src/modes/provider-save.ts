@@ -2,7 +2,7 @@ import { HostError, loadPi } from "../env.js";
 import { isObject, type JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
 import { mergeManagedFields, modelDefsParam, objectsById } from "../model-def.js";
-import { NO_API_KEY, readModelsJson, writeModelsJson } from "../models-json.js";
+import { NO_API_KEY, readModelsJson, readModelsJsonText, writeModelsJson, writeModelsJsonText } from "../models-json.js";
 import { stringParam } from "../params.js";
 import { createRuntime } from "../runtime.js";
 import { keepProviderInScope, replaceProviderModels, scopeResolver, scopeUniverse } from "../scope.js";
@@ -28,6 +28,7 @@ export async function providerSave(ctx: ModeContext): Promise<JsonObject> {
   }
   if (!APIS.includes(api)) throw new HostError("bad_params", `Unsupported API type ${api}`);
 
+  const original = await readModelsJsonText(ctx.env.configDir);
   const document = await readModelsJson(ctx.env.configDir);
   // Built-in ids (including the subscriptions, whose overrides also live under `providers`) are never custom.
   const builtin = await createRuntime(ctx, { builtinOnly: true });
@@ -50,12 +51,17 @@ export async function providerSave(ctx: ModeContext): Promise<JsonObject> {
   };
   await writeModelsJson(ctx.env.configDir, document);
 
-  if (settings !== undefined && settings.enabledModels.length > 0) {
-    const saved = models.map((model) => ({ provider: id, id: model.id, name: model.name ?? model.id }));
-    const universe = replaceProviderModels(await scopeUniverse(runtime, ctx.signal), id, saved);
-    const resolve = scopeResolver(pi, universe);
-    const patterns = await keepProviderInScope(settings.enabledModels, id, settings.defaultRef, universe, resolve);
-    if (patterns !== undefined) await saveEnabledModels(settings, patterns);
+  try {
+    if (settings !== undefined && settings.enabledModels.length > 0) {
+      const saved = models.map((model) => ({ provider: id, id: model.id, name: model.name ?? model.id }));
+      const universe = replaceProviderModels(await scopeUniverse(runtime, ctx.signal), id, saved);
+      const resolve = scopeResolver(pi, universe);
+      const patterns = await keepProviderInScope(settings.enabledModels, id, settings.defaultRef, universe, resolve);
+      if (patterns !== undefined) await saveEnabledModels(settings, patterns);
+    }
+  } catch (error) {
+    await writeModelsJsonText(ctx.env.configDir, original);
+    throw error;
   }
   return {};
 }

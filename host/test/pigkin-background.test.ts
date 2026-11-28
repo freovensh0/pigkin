@@ -1,10 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  LOG_MAX_BYTES,
   readTail,
   resultText,
   signalGroup,
@@ -120,6 +121,16 @@ describe("task processes", () => {
     const started = startProcess(SHELL, "echo out; echo err >&2; exit 3", dir, log);
     expect(await started.ended).toEqual({ code: 3, signal: null });
     expect(readTail(log)).toBe("out\nerr");
+  });
+
+  it("caps a runaway log and reports the overflow once", async () => {
+    const log = path.join(dir, "big.log");
+    let overflows = 0;
+    const started = startProcess(SHELL, "head -c 11000000 /dev/zero", dir, log, () => { overflows++; });
+    await started.ended;
+    expect(statSync(log).size).toBeLessThanOrEqual(LOG_MAX_BYTES);
+    expect(readFileSync(log, "utf8")).toContain("log reached its 10 MB limit");
+    expect(overflows).toBe(1);
   });
 
   it("stops the command's whole process group, children included", async () => {

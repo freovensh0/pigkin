@@ -141,6 +141,20 @@ describe("replay", () => {
   it("starts empty on a branch without a list, skipping malformed entries", () => {
     expect(replayBranch([{ type: "custom", customType: "pigkin-todo-state", data: { tasks: "no" } }], "pigkin-todo-state")).toEqual(EMPTY_STATE);
   });
+
+  it("rejects snapshots whose tasks aren't valid tasks", () => {
+    const malformed = [
+      { tasks: [null], nextId: 2 },
+      { tasks: [{ id: 1, subject: "One", status: "pending", blockedBy: [null] }], nextId: 2 },
+      { tasks: [{ id: "1", subject: "One", status: "pending" }], nextId: 2 },
+      { tasks: [{ id: 1, subject: "One", status: "unknown" }], nextId: 2 },
+      { tasks: [{ id: 1, subject: 42, status: "pending" }], nextId: 2 },
+    ];
+    for (const data of malformed) {
+      expect(replayBranch([custom(three), { type: "custom", customType: "pigkin-todo-state", data }], "pigkin-todo-state")).toEqual(three);
+      expect(replayBranch([{ type: "message", message: { role: "toolResult", toolName: "todo", details: data } }], "pigkin-todo-state")).toEqual(EMPTY_STATE);
+    }
+  });
 });
 
 describe("widget", () => {

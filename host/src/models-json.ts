@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { HostError } from "./env.js";
 import { isObject, type JsonObject } from "./framing.js";
@@ -18,18 +19,23 @@ export interface ModelsJson {
   providers: JsonObject;
 }
 
-/** Reads `models.json`; a missing file is `{}`. Never returns a document it could not parse. */
-export async function readModelsJson(configDir: string): Promise<ModelsJson> {
-  let text: string;
+/** The verbatim file, so a save that fails later can put it back; undefined when it never existed. */
+export async function readModelsJsonText(configDir: string): Promise<string | undefined> {
   try {
-    text = await readFile(join(configDir, "models.json"), "utf8");
+    return await readFile(join(configDir, "models.json"), "utf8");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { root: {}, providers: {} };
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw error;
   }
+}
+
+/** Reads `models.json`; a missing file is `{}`. Never returns a document it could not parse. */
+export async function readModelsJson(configDir: string): Promise<ModelsJson> {
+  const text = await readModelsJsonText(configDir);
+  if (text === undefined) return { root: {}, providers: {} };
   let root: unknown;
   try {
-    root = JSON.parse(text);
+    root = JSON.parse(text.replace(/^\uFEFF/, ""));
   } catch {
     throw new HostError("models_invalid", MODELS_INVALID, { key: "models_invalid" });
   }
@@ -39,10 +45,29 @@ export async function readModelsJson(configDir: string): Promise<ModelsJson> {
   return { root, providers };
 }
 
+// Save order is queued: two saves must not race to publish the same file, and one failure must not block the next.
+let writes: Promise<void> = Promise.resolve();
+
+/** Replaces `models.json` atomically so Pi never reads a half-written file; undefined restores a missing file. */
+export async function writeModelsJsonText(configDir: string, text: string | undefined): Promise<void> {
+  const write = writes.then(async () => {
+    const path = join(configDir, "models.json");
+    if (text === undefined) {
+      await unlink(path).catch((error) => {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      });
+      return;
+    }
+    await mkdir(configDir, { recursive: true });
+    const temp = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    await writeFile(temp, text);
+    await rename(temp, path);
+  });
+  writes = write.catch(() => undefined);
+  return write;
+}
+
 /** Replaces `models.json` atomically so Pi never reads a half-written file. */
 export async function writeModelsJson(configDir: string, models: ModelsJson): Promise<void> {
-  await mkdir(configDir, { recursive: true });
-  const path = join(configDir, "models.json");
-  await writeFile(`${path}.tmp`, `${JSON.stringify({ ...models.root, providers: models.providers }, null, 2)}\n`);
-  await rename(`${path}.tmp`, path);
+  await writeModelsJsonText(configDir, `${JSON.stringify({ ...models.root, providers: models.providers }, null, 2)}\n`);
 }

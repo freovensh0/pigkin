@@ -2,7 +2,7 @@ import { loadPi, type PiSdk } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
 import { type ModelDef, modelDefsParam, TEXT_ONLY } from "../model-def.js";
-import { readModelsJson, writeModelsJson } from "../models-json.js";
+import { readModelsJson, readModelsJsonText, writeModelsJson, writeModelsJsonText } from "../models-json.js";
 import { stringParam } from "../params.js";
 import { createRuntime } from "../runtime.js";
 import { dropProvider, keepProviderInScope, replaceProviderModels, scopeResolver, scopeUniverse } from "../scope.js";
@@ -61,6 +61,7 @@ export async function localModelsSync(ctx: ModeContext): Promise<JsonObject> {
   const apiKey = stringParam(ctx.params, "apiKey");
   const models = modelDefsParam(ctx.params, "models");
 
+  const original = await readModelsJsonText(ctx.env.configDir);
   const document = await readModelsJson(ctx.env.configDir);
   const pi = await loadPi(ctx.env.root);
   const settings = openSettingsIfValid(ctx, pi);
@@ -80,9 +81,14 @@ export async function localModelsSync(ctx: ModeContext): Promise<JsonObject> {
   if (providerChanged) await writeModelsJson(ctx.env.configDir, document);
   if (settings === undefined) return { changed: providerChanged };
 
-  const scopeChanged = await saveScope(ctx, pi, settings, models);
-  const compactionChanged = await saveCompaction(settings, models);
-  return { changed: providerChanged || scopeChanged || compactionChanged };
+  try {
+    const scopeChanged = await saveScope(ctx, pi, settings, models);
+    const compactionChanged = await saveCompaction(settings, models);
+    return { changed: providerChanged || scopeChanged || compactionChanged };
+  } catch (error) {
+    if (providerChanged) await writeModelsJsonText(ctx.env.configDir, original);
+    throw error;
+  }
 }
 
 /** Whether it saved new `enabledModels`. */

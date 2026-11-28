@@ -22,6 +22,7 @@ import {
   messageText,
   pigkinSubagents,
   removeChannel,
+  replyText,
   type Script,
   subagentResults,
   type Turn,
@@ -177,7 +178,7 @@ describe.skipIf(unavailable !== null)(`a remote chat against a throwaway sshd${u
 
     it("run their tools on the remote and are told where it is, with the remote folder as their working directory", async () => {
       const result = await call("subagent", { agent: "General", task: "CHILD pwd", description: "where" });
-      expect(messageText(result)).toBe(`child got: ${fixture.remoteDir}`);
+      expect(replyText(result)).toBe(`child got: ${fixture.remoteDir}`);
       const child = turns.find((turn) => turn.who === "child");
       expect(child?.systemPrompt).toContain(remoteSystemAppend(fixture.host, fixture.remoteDir));
       expect(child?.systemPrompt).toContain(`<cwd>\n${fixture.remoteDir}\n</cwd>`);

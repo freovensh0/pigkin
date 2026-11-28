@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { configBusy, isConfigLocked } from "../config-lock.js";
 import { HostError, piEntry } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
@@ -50,6 +51,8 @@ async function findSession(dir: string, id: string): Promise<string | undefined>
  * Mirrors backend/internal/modes/scheduled_task.go.
  */
 export async function scheduledTaskRun(ctx: ModeContext): Promise<JsonObject> {
+  // A restore swaps Pi's config while it holds the lock; refuse instead of running on a half-changed one.
+  if (await isConfigLocked(ctx.env)) throw configBusy();
   const text = prompt(ctx.params);
   const model = optionalText(ctx.params, "model");
   const thinking = optionalText(ctx.params, "thinking");

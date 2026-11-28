@@ -125,9 +125,9 @@ export function remoteFailed(host: string, detail: string): HostError {
  * How shells say `bash` isn't there when the command wrapper `exec`s it: dash, busybox and bash's `sh`
  * (`exec: bash: not found`, `sh: bash: not found`), zsh (`command not found: bash`), fish (`Unknown command: bash`)
  * and csh (`bash: Command not found.`). A command that bash runs and can't find reads `bash: line 1: x: command not
- * found`, which none of these match.
+ * found`, which none of these match. The `exec: bash:` form is matched whatever the locale says after it.
  */
-const NO_BASH = /(^|[\s:])bash: ([Cc]ommand )?not found|command not found: bash|Unknown command:? '?bash\b|exec: bash: No such file/m;
+const NO_BASH = /(^|[\s:])bash: ([Cc]ommand )?not found|command not found: bash|Unknown command:? '?bash\b|exec: bash: \S/m;
 
 /** Whether a run that exited with [code] failed because the remote has no `bash` to run the wrapper. */
 export function isBashMissing(code: number | null, stderr: string): boolean {

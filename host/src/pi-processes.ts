@@ -4,7 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { HostError } from "./env.js";
 
 /** Tests point this at a fake process table; on a machine without `/proc` no process is ever found. */
-const PROC = process.env.PIPKIN_PROC_DIR ?? "/proc";
+const PROC = process.env.PIGKIN_PROC_DIR ?? "/proc";
 /** Pi gets this long after its chat closed: the rpc host waits 5 s for it to exit before SIGTERM, then 5 s before SIGKILL. */
 export const PI_EXIT_TIMEOUT_MS = 20_000;
 const POLL_MS = 250;

@@ -25,17 +25,23 @@ import { extractWithCrawl4ai, isCrawl4aiAvailable } from "./crawl4ai.ts";
 import { extractWithBrightDataUnlocker, isBrightDataUnlockerAvailable } from "./brightdata-unlocker.ts";
 import { isVideoFile, extractVideo, extractVideoFrame, getLocalVideoDuration } from "./video-extract.ts";
 import { appendDeclaredWebLinks, discoverDeclaredWebLinks, type DeclaredWebLink } from "./declared-web-links.ts";
-import { fetchRemoteUrl, loadConfiguredFetchContentUserAgent, loadFetchContentCurl, loadFetchContentDomainPolicy, loadFetchContentRedirectPolicy, loadFetchContentUserAgent, loadSsrfConfig, trustedEnvProxyFor, validateRemoteUrl, type DomainPolicy, type Lookup, type RedirectPolicy, type SsrfConfig } from "./ssrf-protection.ts";
+import { fetchRemoteUrl, loadConfiguredFetchContentUserAgent, loadFetchContentCurl, loadFetchContentDomainPolicy, loadFetchContentRedirectPolicy, loadFetchContentUserAgent, loadSsrfConfig, trustedEnvProxyFor, validateRemoteUrl, type DomainPolicy, type Lookup, type LookupAddress, type RedirectPolicy, type SsrfConfig } from "./ssrf-protection.ts";
 import { createCurlFetch, formatSeconds, getWebSearchConfigPath, type ProxiedRequestInit } from "./utils.ts";
 import { isImageEnabled } from "./feature-config.ts";
 import { assertAuthFetchUrl, authFetchRedirectGuard, type AuthFetchProfile } from "./auth-fetch.ts";
 import { getBrowserCookiesForHosts, getLastBrowserCookieDiagnostic } from "./chrome-cookies.ts";
 import { sanitizeInlineDataUris } from "./data-uri-sanitize.ts";
+import { MAX_FETCH_URLS } from "./fetch-params.ts";
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_CONFIGURED_TIMEOUT_MS = 2_147_483_647;
 const CONCURRENT_LIMIT = 3;
 const WEB_SEARCH_CONFIG_PATH = getWebSearchConfigPath();
+
+/** The host:port a validated address applies to, used to pin curl's connection. */
+function fetchAddressKey(url: URL): string {
+	return `${url.hostname.toLowerCase()}:${url.port || (url.protocol === "https:" ? "443" : "80")}`;
+}
 
 function loadFetchTimeoutMs(): number {
 	if (!existsSync(WEB_SEARCH_CONFIG_PATH)) return DEFAULT_TIMEOUT_MS;
@@ -188,12 +194,12 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 async function fetchAuthenticatedRemoteUrl(
 	url: string,
 	init: RequestInit,
-	validationOptions: { ssrf: SsrfConfig; domainPolicy: DomainPolicy; lookup?: Lookup; proxy?: string; redirects?: RedirectPolicy },
+	validationOptions: { ssrf: SsrfConfig; trustEnvProxy: boolean; domainPolicy: DomainPolicy; lookup?: Lookup; proxy?: string; redirects?: RedirectPolicy },
 	profile: AuthFetchProfile,
 ): Promise<Response> {
 	let current = await validateRemoteUrl(url, {
 		allowRanges: validationOptions.ssrf.allowRanges,
-		trustEnvProxy: validationOptions.ssrf.trustEnvProxy,
+		trustEnvProxy: validationOptions.trustEnvProxy,
 		domainPolicy: validationOptions.domainPolicy,
 		proxy: validationOptions.proxy,
 		...(validationOptions.lookup ? { lookup: validationOptions.lookup } : {}),
@@ -215,7 +221,7 @@ async function fetchAuthenticatedRemoteUrl(
 		}
 		current = await validateRemoteUrl(next, {
 			allowRanges: validationOptions.ssrf.allowRanges,
-			trustEnvProxy: validationOptions.ssrf.trustEnvProxy,
+			trustEnvProxy: validationOptions.trustEnvProxy,
 			domainPolicy: validationOptions.domainPolicy,
 			proxy: validationOptions.proxy,
 			...(validationOptions.lookup ? { lookup: validationOptions.lookup } : {}),
@@ -575,10 +581,10 @@ export async function extractContent(
 			const domainPolicy = loadFetchContentDomainPolicy();
 			// An invalid configured User-Agent or curl command fails here, before any provider fallback runs.
 			loadFetchContentUserAgent();
-			loadFetchContentCurl();
+			const curlConfigured = loadFetchContentCurl() !== null;
 			await validateRemoteUrl(remoteUrl, {
 				allowRanges: ssrf.allowRanges,
-				trustEnvProxy: ssrf.trustEnvProxy,
+				trustEnvProxy: ssrf.trustEnvProxy && curlConfigured,
 				domainPolicy,
 				proxy: options?.proxy,
 				...(options?.lookup ? { lookup: options.lookup } : {}),
@@ -1329,6 +1335,16 @@ async function extractViaHttp(
 		const authProfile = options?.authFetchProfile;
 		// Auth fetches keep Node's fetch, so browser cookies never appear in a command line.
 		const curl = authProfile ? null : loadFetchContentCurl();
+		// Skipping local DNS is only safe when the request really goes through the curl transport that honors the env proxy.
+		const trustEnvProxy = ssrf.trustEnvProxy && curl !== null;
+		// Addresses approved by the SSRF check, kept per host so curl can pin them again after each redirect.
+		const resolvedAddresses = new Map<string, readonly string[]>();
+		const onAddresses = (target: URL, addresses: readonly LookupAddress[]): void => {
+			const key = fetchAddressKey(target);
+			const port = target.port || (target.protocol === "https:" ? "443" : "80");
+			if (addresses.length === 0) resolvedAddresses.delete(key);
+			else resolvedAddresses.set(key, addresses.map(({ address }) => `${target.hostname}:${port}:${address}`));
+		};
 		// Through curl only a configured User-Agent is sent, so curl-impersonate keeps its browser User-Agent.
 		const userAgent = curl ? loadConfiguredFetchContentUserAgent() : loadFetchContentUserAgent();
 		const requestInit: ProxiedRequestInit = {
@@ -1347,23 +1363,25 @@ async function extractViaHttp(
 			},
 		};
 		const response = authProfile
-			? await fetchAuthenticatedRemoteUrl(url, requestInit, { ssrf, domainPolicy, redirects, proxy: options?.proxy, ...(options?.lookup ? { lookup: options.lookup } : {}) }, authProfile)
+			? await fetchAuthenticatedRemoteUrl(url, requestInit, { ssrf, domainPolicy, redirects, proxy: options?.proxy, trustEnvProxy, ...(options?.lookup ? { lookup: options.lookup } : {}) }, authProfile)
 			: await fetchRemoteUrl(
 				url,
 				requestInit,
 				{
 					allowRanges: ssrf.allowRanges,
-					trustEnvProxy: ssrf.trustEnvProxy,
+					trustEnvProxy,
 					domainPolicy,
 					redirects,
 					proxy: options?.proxy,
+					onAddresses,
 					...(options?.lookup ? { lookup: options.lookup } : {}),
 					...(curl ? {
 						fetch: createCurlFetch(curl, {
 							// The type, and so the exact limit, is known only after the response; the size checks below still apply.
 							// curl rejects a fractional --max-filesize, and pdf.maxSizeMB may be fractional.
 							maxBytes: Math.floor(Math.max(5, loadPDFConfig().maxSizeMB) * 1024 * 1024),
-							envProxy: (target) => trustedEnvProxyFor(target, ssrf.trustEnvProxy),
+							envProxy: (target) => trustedEnvProxyFor(target, trustEnvProxy),
+							resolve: (target) => resolvedAddresses.get(fetchAddressKey(target)) ?? [],
 						}),
 					} : {}),
 				},
@@ -1673,7 +1691,8 @@ export async function fetchAllContent(
 	signal?: AbortSignal,
 	options?: ExtractOptions,
 ): Promise<ExtractedContent[]> {
-	const results = await Promise.all(urls.map((url) => fetchLimit(() => extractContent(url, signal, options))));
+	// Callers cap their lists too; this is the last line of defense for every path into this function.
+	const results = await Promise.all(urls.slice(0, MAX_FETCH_URLS).map((url) => fetchLimit(() => extractContent(url, signal, options))));
 	if (options?.mode === "raw") return results;
 	// Inline data: URIs in extracted markdown would otherwise flow into tool
 	// results and the fetch cache as opaque base64; typed thumbnail/frame image

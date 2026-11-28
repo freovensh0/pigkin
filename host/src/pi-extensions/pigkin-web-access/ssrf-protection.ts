@@ -203,6 +203,8 @@ interface ValidationOptions {
 	proxy?: string;
 	/** Allow loopback URLs for explicit provider base endpoints, not fetched targets. */
 	allowLoopback?: boolean;
+	/** Receives the addresses a URL was validated against, so a transport can pin them. */
+	onAddresses?: (url: URL, addresses: readonly LookupAddress[]) => void;
 }
 
 /** Parsed entry from `allowRanges`: a network address (4 or 16 bytes) + prefix length. */
@@ -232,6 +234,12 @@ async function defaultLookup(hostname: string): Promise<LookupAddress[]> {
 
 export async function validateRemoteUrl(rawUrl: string | URL, options: ValidationOptions = {}): Promise<URL> {
 	const url = rawUrl instanceof URL ? rawUrl : new URL(rawUrl);
+	// shortcut: only the curl transport pins these addresses with --resolve; native Node fetch resolves again,
+	// so a hostname flipped after this check can still reach a different address. Pin it when undici is available.
+	const validated = (addresses: readonly LookupAddress[]): URL => {
+		options.onAddresses?.(url, addresses);
+		return url;
+	};
 	if (url.protocol !== "http:" && url.protocol !== "https:") {
 		throw new Error("Only HTTP and HTTPS URLs can be fetched remotely");
 	}
@@ -239,7 +247,7 @@ export async function validateRemoteUrl(rawUrl: string | URL, options: Validatio
 	const hostname = normalizeHostname(url.hostname);
 	if (!hostname) throw new Error("URL must include a hostname");
 	if (hostname === "localhost") {
-		if (options.allowLoopback === true) return url;
+		if (options.allowLoopback === true) return validated([]);
 		throw new Error(`Blocked internal hostname: ${hostname}`);
 	}
 	if (hostname.endsWith(".localhost")) {
@@ -254,14 +262,14 @@ export async function validateRemoteUrl(rawUrl: string | URL, options: Validatio
 			? [...allowRanges, ...parseAllowRanges(LOOPBACK_ALLOW_RANGES)]
 			: allowRanges;
 		assertPublicAddress(hostname, hostname, addressAllowRanges);
-		return url;
+		return validated([]);
 	}
 
 	const trustProxy = options.trustEnvProxy === true;
 	const proxy = options.proxy !== undefined
 		? normalizeProxyUrl(options.proxy, "proxy")
 		: hasScopedProxyDecision() ? getActiveProxy() : undefined;
-	if (proxy === undefined ? shouldTrustEnvProxy(url, trustProxy) : trustProxy && isConfiguredRemoteDnsProxy(url, proxy)) return url;
+	if (proxy === undefined ? shouldTrustEnvProxy(url, trustProxy) : trustProxy && isConfiguredRemoteDnsProxy(url, proxy)) return validated([]);
 
 	let addresses: LookupAddress[];
 	try {
@@ -278,7 +286,7 @@ export async function validateRemoteUrl(rawUrl: string | URL, options: Validatio
 	for (const { address } of addresses) {
 		assertPublicAddress(address, hostname, allowRanges);
 	}
-	return url;
+	return validated(addresses);
 }
 
 export async function fetchRemoteUrl(

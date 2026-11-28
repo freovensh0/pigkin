@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { configBusy, isConfigLocked } from "../config-lock.js";
+import { configBusy, isConfigLocked, withConfigLock } from "../config-lock.js";
 import { HostError, piEntry } from "../env.js";
 import type { JsonObject } from "../framing.js";
 import type { ModeContext } from "../mode.js";
@@ -21,17 +21,20 @@ const ATTEMPTS = 2;
 export async function packageInstall(ctx: ModeContext): Promise<JsonObject> {
   const source = stringParam(ctx.params, "source");
   // A restore swaps the configuration while it holds the lock, which would drop the settings Pi writes, and an
-  // extension update runs npm in the same folder Pi installs into.
+  // extension update runs npm in the same folder Pi installs into. Hold the lock across both attempts, not just the
+  // first one, so a restore cannot slip in between them.
   if (await isConfigLocked(ctx.env)) throw configBusy();
   const args = [await piEntry(ctx.env.root), "install", source];
   const env = await termuxSessionEnv(ctx.env);
-  let result = { code: null as number | null, lastLine: "" };
-  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-    result = await runPi(ctx, args, env);
-    if (result.code === 0) return {};
-  }
-  if (result.lastLine !== "") throw new HostError("install_failed", result.lastLine);
-  throw commandFailed("install_failed", "pi install", result.code);
+  return withConfigLock(ctx.env, async () => {
+    let result = { code: null as number | null, lastLine: "" };
+    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+      result = await runPi(ctx, args, env);
+      if (result.code === 0) return {};
+    }
+    if (result.lastLine !== "") throw new HostError("install_failed", result.lastLine);
+    throw commandFailed("install_failed", "pi install", result.code);
+  });
 }
 
 /** One run of Pi, forwarding its output as progress lines; returns its exit code and last non-blank line. */

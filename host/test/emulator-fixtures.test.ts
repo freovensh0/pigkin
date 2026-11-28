@@ -17,9 +17,9 @@ import {
   installChannel,
   makeDir,
   makeParent,
-  messageText,
   pigkinSubagents,
   removeChannel,
+  replyText,
   removeDir,
   subagentResults,
 } from "./subagents-harness.js";
@@ -75,7 +75,7 @@ async function scripted(ui: FakeUi, paths: string[], extensions: ExtensionFactor
 
 function reply(session: AgentSession): string {
   const last = session.messages.findLast((message) => message.role === "assistant");
-  return last && last.role === "assistant" ? messageText(last) : "";
+  return last && last.role === "assistant" ? replyText(last) : "";
 }
 
 describe("pigkin-test-model", () => {
@@ -85,8 +85,8 @@ describe("pigkin-test-model", () => {
     await session.prompt("Please run sa-one-explore");
     const [result] = subagentResults(session).values();
     expect(result?.details).toMatchObject({ agent: "Explore", status: "done" });
-    expect(messageText(result)).toBe("Subagent 1 finished (ok: Project readme).");
-    expect(reply(session)).toBe(`Finished sa-one-explore. Results:\n- subagent: ${messageText(result)}`);
+    expect(replyText(result)).toBe("Subagent 1 finished (ok: Project readme).");
+    expect(reply(session)).toBe(`Finished sa-one-explore. Results:\n- subagent: ${replyText(result)}`);
     session.dispose();
   });
 
@@ -109,7 +109,7 @@ describe("pigkin-test-model", () => {
   it("runs two General subagents with bash in parallel", async () => {
     const session = await scripted(fakeUi(channel), [MODEL]);
     await session.prompt("sa-two-general-bash");
-    const results = [...subagentResults(session).values()].map((result) => messageText(result));
+    const results = [...subagentResults(session).values()].map((result) => replyText(result));
     expect(results).toEqual(["Subagent 1 finished (ok: x).", "Subagent 2 finished (ok: x)."]);
     expect(channel.sent.some((message) => message.runs.filter((run) => run.status === "running").length === 2)).toBe(true);
     session.dispose();
@@ -127,7 +127,7 @@ describe("pigkin-test-model", () => {
   it("sleeps in a subagent for sa-slow", async () => {
     const session = await scripted(fakeUi(channel), [MODEL]);
     await session.prompt("sa-slow");
-    expect(messageText([...subagentResults(session).values()][0])).toBe("Subagent 1 finished (ok: slept).");
+    expect(replyText([...subagentResults(session).values()][0])).toBe("Subagent 1 finished (ok: slept).");
     session.dispose();
   });
 
@@ -135,7 +135,7 @@ describe("pigkin-test-model", () => {
     const session = await scripted(fakeUi(channel), [MODEL]);
     await session.prompt("sa-explore-bash");
     const [result] = subagentResults(session).values();
-    expect(messageText(result)).toMatch(/^Subagent 1 finished \(error: Tool bash not found/);
+    expect(replyText(result)).toMatch(/^Subagent 1 finished \(error: Tool bash not found/);
     session.dispose();
   });
 
@@ -143,7 +143,7 @@ describe("pigkin-test-model", () => {
     const session = await scripted(fakeUi(channel), [MODEL]);
     await session.prompt("sa-long-output");
     const [result] = subagentResults(session).values();
-    expect(messageText(result)).toMatch(/\[Cut at 50 KB of 7\d KB\. /);
+    expect(replyText(result)).toMatch(/\[Cut at 50 KB of 7\d KB\. /);
     session.dispose();
   });
 
@@ -152,7 +152,7 @@ describe("pigkin-test-model", () => {
     await session.prompt("sa-eight-fail");
     const results = [...subagentResults(session).values()];
     expect(results).toHaveLength(8);
-    expect(results.filter((result) => result.isError).map((result) => messageText(result))).toEqual([
+    expect(results.filter((result) => result.isError).map((result) => replyText(result))).toEqual([
       "The subagent failed: Pigkin test model: scripted provider failure",
     ]);
     expect(channel.latest()[4]).toMatchObject({ status: "failed", error: "Pigkin test model: scripted provider failure" });
@@ -166,7 +166,7 @@ describe("pigkin-test-model", () => {
     expect(ui.asked).toEqual([expect.objectContaining({ title: "Pigkin test question: which do you pick?" })]);
     expect(ui.asked[0]?.runs).toEqual([expect.objectContaining({ inFlight: 1 })]);
     const [result] = subagentResults(session).values();
-    expect(messageText(result)).toBe("Subagent 1 finished (ok: The user picked Yes).");
+    expect(replyText(result)).toBe("Subagent 1 finished (ok: The user picked Yes).");
     session.dispose();
   });
 
@@ -200,7 +200,7 @@ describe("pigkin-test-gate", () => {
     const session = await scripted(ui, [MODEL, GATE]);
     await session.prompt("sa-general-edit");
     const [result] = subagentResults(session).values();
-    expect(messageText(result)).toBe("Subagent 1 finished (error: The user refused this write call).");
+    expect(replyText(result)).toBe("Subagent 1 finished (error: The user refused this write call).");
     session.dispose();
   });
 

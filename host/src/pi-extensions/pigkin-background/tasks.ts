@@ -3,7 +3,7 @@
  * command in its own process group, with its output in a log file, so Pi reads nothing while it runs.
  */
 import { spawn } from "node:child_process";
-import { closeSync, mkdirSync, openSync, readSync, fstatSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, readSync, fstatSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { type Static, Type } from "typebox";
@@ -26,12 +26,16 @@ export const REPORT_TYPE = "pigkin-background-report";
 /** Each running task is a process Android counts toward its limit of 32 across all apps. */
 export const MAX_RUNNING = 4;
 
-/** What a result shows of a task's output; the log file keeps all of it. */
+/** What a result shows of a task's output; the log file keeps all of it, up to the cap below. */
 const TAIL_LINES = 40;
 const TAIL_BYTES = 4096;
 
+/** A log stops growing here: an unbounded `yes` would otherwise fill the phone's storage. */
+export const LOG_MAX_BYTES = 10 * 1024 * 1024;
+const TRUNCATION_NOTICE = Buffer.from("\n[Pigkin: the log reached its 10 MB limit, so the task was stopped.]\n");
+
 export const TOOL_DESCRIPTION =
-  "Run a shell command in the background. Actions: start (runs `command`, returns its id at once), list, stop (by `id`). When a task exits, its exit status and last output arrive as a new message, which wakes you if you are idle; the full output stays in the task's log file.";
+  "Run a shell command in the background. Actions: start (runs `command`, returns its id at once), list, stop (by `id`). When a task exits, its exit status and last output arrive as a new message, which wakes you if you are idle; up to 10 MB of output stays in the task's log file.";
 
 export const PROMPT_SNIPPET = "Run servers, watchers and long commands in the background; results arrive as a message";
 
@@ -262,35 +266,66 @@ export interface Started {
   ended: Promise<{ code: number | null; signal: string | null }>;
 }
 
+/** Writes output to [fd] until the cap, then calls [onOverflow] once and appends a notice. */
+function cappedLogWriter(fd: number, onOverflow: (() => void) | undefined): (chunk: Buffer) => void {
+  let written = 0;
+  let full = false;
+  return (chunk) => {
+    if (full) return;
+    if (written + chunk.length + TRUNCATION_NOTICE.length > LOG_MAX_BYTES) {
+      full = true;
+      writeSync(fd, TRUNCATION_NOTICE.subarray(0, LOG_MAX_BYTES - written));
+      onOverflow?.();
+      return;
+    }
+    writeSync(fd, chunk);
+    written += chunk.length;
+  };
+}
+
 /**
- * Runs [command] with [shell] in its own process group, writing stdout and stderr to [logPath]. A shell that takes the
- * command on stdin (`commandTransport: "stdin"`) gets it there. Throws when the process can't start.
+ * Runs [command] with [shell] in its own process group, writing stdout and stderr to [logPath] through a capped writer.
+ * A shell that takes the command on stdin (`commandTransport: "stdin"`) gets it there. Throws when the process can't start.
  */
 export function startProcess(
   shell: { shell: string; args: string[]; commandTransport?: "argv" | "stdin" },
   command: string,
   cwd: string,
   logPath: string,
+  onOverflow?: () => void,
 ): Started {
   const log = openSync(logPath, "w");
+  let closed = false;
+  const closeLog = (): void => {
+    if (closed) return;
+    closed = true;
+    closeSync(log);
+  };
   try {
     const fromStdin = shell.commandTransport === "stdin";
     const child = spawn(shell.shell, fromStdin ? shell.args : [...shell.args, command], {
       cwd,
       detached: true,
-      stdio: [fromStdin ? "pipe" : "ignore", log, log],
+      stdio: [fromStdin ? "pipe" : "ignore", "pipe", "pipe"],
     });
+    const write = cappedLogWriter(log, onOverflow);
+    child.stdout?.on("data", write);
+    child.stderr?.on("data", write);
     if (fromStdin) {
       child.stdin?.on("error", () => undefined);
       child.stdin?.end(command);
     }
     const ended = new Promise<{ code: number | null; signal: string | null }>((resolve, reject) => {
+      let exit: { code: number | null; signal: string | null } | undefined;
       child.once("error", reject);
-      child.once("exit", (code, signal) => resolve({ code, signal }));
+      child.once("exit", (code, signal) => { exit = { code, signal }; });
+      // "close" follows the pipes' last data, so the log is complete when callers read it.
+      child.once("close", () => { closeLog(); if (exit) resolve(exit); });
     });
     return { pid: child.pid, ended };
-  } finally {
-    closeSync(log);
+  } catch (error) {
+    closeLog();
+    throw error;
   }
 }
 
@@ -301,22 +336,34 @@ export function startProcess(
  * open while the task runs, and closes when Stop kills the group or this Pi dies, however it dies, as only this Pi
  * holds its writing end. Throws when `sh` can't start.
  */
-export function startRemoteProcess(remote: Remote, command: string, cwd: string, logPath: string): Started {
+export function startRemoteProcess(remote: Remote, command: string, cwd: string, logPath: string, onOverflow?: () => void): Started {
   const log = openSync(logPath, "w");
+  let closed = false;
+  const closeLog = (): void => {
+    if (closed) return;
+    closed = true;
+    closeSync(log);
+  };
   try {
     // Through [sessionScript], which waits while the server refuses the master a session instead of failing.
     const child = spawn(shBinary(remote.paths), ["-c", sessionScript(remote, remoteScript(watched(command, cwd)))], {
       detached: true,
-      stdio: ["pipe", log, log],
+      stdio: ["pipe", "pipe", "pipe"],
       env: sshEnvironment(),
     });
+    const write = cappedLogWriter(log, onOverflow);
+    child.stdout?.on("data", write);
+    child.stderr?.on("data", write);
     child.stdin?.on("error", () => undefined);
     const { promise: ended, resolve, reject } = Promise.withResolvers<{ code: number | null; signal: string | null }>();
+    let exit: { code: number | null; signal: string | null } | undefined;
     child.once("error", reject);
-    child.once("exit", (code, signal) => resolve({ code, signal }));
+    child.once("exit", (code, signal) => { exit = { code, signal }; });
+    child.once("close", () => { closeLog(); if (exit) resolve(exit); });
     return { pid: child.pid, ended };
-  } finally {
-    closeSync(log);
+  } catch (error) {
+    closeLog();
+    throw error;
   }
 }
 
