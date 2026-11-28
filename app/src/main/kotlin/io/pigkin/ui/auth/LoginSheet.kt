@@ -21,7 +21,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.pigkin.R
 import io.pigkin.appGraph
 import io.pigkin.ui.components.LucideIcon
@@ -57,7 +59,6 @@ import io.pigkin.ui.settings.subscriptions
 import io.pigkin.ui.theme.PigkinFonts
 import io.pigkin.ui.theme.PigkinTokens
 import io.pigkin.ui.theme.pigkinColors
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -69,34 +70,27 @@ import kotlinx.coroutines.launch
 internal fun LoginSheet(providerId: String, onDismiss: () -> Unit) {
   val context = LocalContext.current
   val accounts = context.appGraph.accountRepository
-  var attempt by remember { mutableIntStateOf(0) }
-  val flow = remember(attempt) { LoginFlowState() }
-  var offerClaudePlugin by remember(attempt) { mutableStateOf(false) }
-  var finished by remember(attempt) { mutableStateOf(false) }
+  val owner = LocalLifecycleOwner.current as ViewModelStoreOwner
+  val login = remember(owner, providerId) { ViewModelProvider(owner)[providerId, LoginViewModel::class.java] }
+  val pluginInstall = remember(owner) { ViewModelProvider(owner)[ClaudePluginViewModel::class.java] }
+  val flow = login.flow
   val noBrowser = stringResource(R.string.login_no_browser)
   val provider = subscriptions.firstOrNull { it.id == providerId }
   val open: (String) -> Unit = { url ->
     if (!openUrl(context, url)) flow.status = AuthStatusLine(noBrowser, emptyList())
   }
-  LaunchedEffect(flow) {
-    flow.run(accounts, providerId)
-    if (flow.outcome != LoginOutcome.SignedIn) return@LaunchedEffect
-    // Signing in refreshed the status, so it shows whether Pi already installs the plugin.
-    val installed = accounts.status.value?.npmPackages.orEmpty()
-    if (providerId == CLAUDE_PROVIDER && CLAUDE_PLUGIN_PACKAGE !in installed) {
-      offerClaudePlugin = true
-      return@LaunchedEffect
-    }
-    delay(1_000)
-    finished = true
-  }
+  LaunchedEffect(flow, accounts, providerId) { login.start(accounts, providerId) }
   val browserUrl = flow.browser?.url
   // Pi waits for the browser round trip, so open the page as soon as it is known.
   LaunchedEffect(browserUrl) {
     if (browserUrl != null) open(browserUrl)
   }
-  PigkinSheet(onDismissRequest = onDismiss) { dismiss ->
-    if (finished) LaunchedEffect(Unit) { dismiss {} }
+  PigkinSheet(onDismissRequest = {
+    login.reset()
+    pluginInstall.reset()
+    onDismiss()
+  }) { dismiss ->
+    if (login.finished) LaunchedEffect(Unit) { dismiss {} }
     // Large text can make the Claude plugin offer taller than the screen; scrolling keeps its buttons reachable.
     Column(
       modifier = Modifier
@@ -115,9 +109,11 @@ internal fun LoginSheet(providerId: String, onDismiss: () -> Unit) {
         flow = flow,
         usesApiKey = provider?.usesApiKey == true,
         onOpen = open,
-        onRetry = { attempt += 1 },
+        onRetry = login::reset,
       )
-      if (offerClaudePlugin) ClaudePluginOffer(onOpen = open, onDone = { dismiss {} })
+      if (login.offerClaudePlugin) {
+        ClaudePluginOffer(onOpen = open, onDone = { dismiss {} }, installer = pluginInstall)
+      }
     }
   }
 }
@@ -245,8 +241,13 @@ private fun PromptBlock(prompt: PendingPrompt, onAnswer: (String) -> Unit) {
 /** `text`, `secret` and `manual_code` prompts. */
 @Composable
 private fun TextPrompt(prompt: PendingPrompt, onAnswer: (String) -> Unit) {
-  var value by rememberSaveable(prompt.reply.id) { mutableStateOf("") }
   val secret = prompt.type == "secret"
+  // Only plain text is saved; secrets and one-time codes must never land in the activity's saved-state bundle.
+  var value by if (prompt.type == "text") {
+    rememberSaveable(prompt.reply.id) { mutableStateOf("") }
+  } else {
+    remember(prompt.reply.id) { mutableStateOf("") }
+  }
   OutlinedTextField(
     value = value,
     onValueChange = { value = it },

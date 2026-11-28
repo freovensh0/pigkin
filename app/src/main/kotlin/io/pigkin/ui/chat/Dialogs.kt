@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -49,7 +50,9 @@ internal fun TextInputDialog(
   onConfirm: (String) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  var value by remember { mutableStateOf(TextFieldValue(initial, TextRange(initial.length))) }
+  var value by rememberSaveable(initial, stateSaver = TextFieldValue.Saver) {
+    mutableStateOf(TextFieldValue(initial, TextRange(initial.length)))
+  }
   PigkinDialog(
     title = title,
     confirm = DialogConfirm(confirmLabel, { onConfirm(value.text) }, enabled = value.text.isNotBlank()),

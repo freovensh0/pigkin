@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,7 +103,9 @@ internal fun FolderBrowserPane(
   val connector = rememberRemoteConnector()
   // The folder shown on this machine, so rotating or Android recreating Pigkin comes back to it.
   var shown by rememberSaveable(host?.id) { mutableStateOf<String?>(null) }
-  val state = rememberBrowserState(host?.id, start = shown ?: names.home.takeIf { host == null })
+  // The query is saved with the folder, so rotating the phone doesn't drop what the user typed.
+  val query = rememberSaveable(host?.id) { mutableStateOf("") }
+  val state = rememberBrowserState(host?.id, start = shown ?: names.home.takeIf { host == null }, query)
   LaunchedEffect(state) { snapshotFlow { state.listing?.path }.collect { path -> if (path != null) shown = path } }
   LaunchedEffect(Unit) { graph.remoteHosts.refresh() }
   LaunchedEffect(state) { state.open() }
@@ -114,8 +117,8 @@ internal fun FolderBrowserPane(
   val choose = { path: String -> if (host == null) onChoose(path) else state.addRemote(path, onChoose) }
   Column(modifier = modifier) {
     SearchField(
-      query = state.query,
-      onQueryChange = { state.query = it },
+      query = query.value,
+      onQueryChange = { query.value = it },
       placeholder = stringResource(R.string.shell_browse_search),
       keyboardOptions = PATH_KEYBOARD,
     )
@@ -126,7 +129,7 @@ internal fun FolderBrowserPane(
       onPick = graph.preferences::setPickerMachine,
       onAddHost = { onOpenHost(null) },
     )
-    val query = state.query.trim()
+    val search = query.value.trim()
     val unreachable = state.unreachable
     if (host != null) AutoReconnect(connector, host, unreachable?.code, onConnected = state::reopen)
     when {
@@ -139,12 +142,12 @@ internal fun FolderBrowserPane(
         onConnect = { connector.connect(host.id, host.name, onConnected = state::reopen) },
       )
 
-      query.isEmpty() -> Browser(state, folders, added, choose)
+      search.isEmpty() -> Browser(state, folders, added, choose)
 
       else -> {
         // Searches need the browse host, so a host that failed to start answers every query with why.
-        val found = state.startFailure?.let { FolderSearch(query, emptyList(), it) } ?: state.found
-        FolderSearchResults(query, found, folders, added, Modifier.weight(1f), choose)
+        val found = state.startFailure?.let { FolderSearch(search, emptyList(), it) } ?: state.found
+        FolderSearchResults(search, found, folders, added, Modifier.weight(1f), choose)
       }
     }
   }
@@ -153,10 +156,10 @@ internal fun FolderBrowserPane(
 
 /** A browser session for remote host [hostId], or the phone for null, starting in [start]; a new one per machine. */
 @Composable
-private fun rememberBrowserState(hostId: String?, start: String?): FolderBrowserState {
+private fun rememberBrowserState(hostId: String?, start: String?, query: MutableState<String>): FolderBrowserState {
   val graph = LocalContext.current.appGraph
   val scope = rememberCoroutineScope()
-  return remember(hostId) { FolderBrowserState(graph.hostClient, graph.remoteHosts, scope, hostId, start) }
+  return remember(hostId) { FolderBrowserState(graph.hostClient, graph.remoteHosts, scope, hostId, start, query) }
 }
 
 /** The place tabs, the shown folder's subfolders, and the button that adds that folder. */
@@ -405,6 +408,7 @@ private class FolderBrowserState(
   private val scope: CoroutineScope,
   private val hostId: String?,
   val start: String?,
+  queryState: MutableState<String>,
 ) {
   var places by mutableStateOf(emptyList<FolderPlace>())
     private set
@@ -422,7 +426,7 @@ private class FolderBrowserState(
   /** A remote folder's stand-in is being made. */
   var adding by mutableStateOf(false)
     private set
-  var query by mutableStateOf("")
+  var query by queryState
 
   /** The latest search's answer, which may still be for an earlier [query]. */
   var found by mutableStateOf<FolderSearch?>(null)

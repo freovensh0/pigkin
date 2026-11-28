@@ -37,7 +37,7 @@ internal class NoticeStore(private val dir: File, private val writer: Executor =
       if (cache[sessionPath] == notices) return
       cache[sessionPath] = notices
       // Queued under the lock, so the writes land in the order the cache changed.
-      writer.execute { write(file, notices) }
+      writer.execute { write(sessionPath, file, notices) }
     }
   }
 
@@ -51,19 +51,28 @@ internal class NoticeStore(private val dir: File, private val writer: Executor =
     return File(dir, digest.joinToString("", postfix = ".json") { "%02x".format(Locale.ROOT, it) })
   }
 
-  private fun write(file: File, notices: List<SavedNotice>) {
-    if (notices.isEmpty()) {
-      file.delete()
-      return
+  private fun write(sessionPath: String, file: File, notices: List<SavedNotice>) {
+    if (writeOnce(file, notices)) return
+    Log.w(TAG, "Saving notices to $file failed; retrying once")
+    if (writeOnce(file, notices)) return
+    // Disk still holds the old notices, so drop the ones only memory has.
+    synchronized(cache) {
+      if (cache[sessionPath] == notices) cache.remove(sessionPath)
     }
-    try {
+  }
+
+  private fun writeOnce(file: File, notices: List<SavedNotice>): Boolean {
+    if (notices.isEmpty()) return !file.exists() || file.delete()
+    return try {
       dir.mkdirs()
       // Renamed over the old file, so a crash mid-write leaves the previous notices rather than half a file.
       val partial = File(dir, "${file.name}.partial")
       partial.writeText(notices.toJson().toString(), Charsets.UTF_8)
       if (!partial.renameTo(file)) throw IOException("Could not replace $file")
+      true
     } catch (error: IOException) {
       Log.w(TAG, "Saving notices to $file failed", error)
+      false
     }
   }
 

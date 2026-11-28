@@ -64,7 +64,11 @@ internal class RemotePasswords(private val file: File, private val cipher: Passw
       // For example when Android reset the Keystore: the password is gone, so the next connect asks for it.
       Log.w(TAG, "Deleting a saved password that no longer decrypts", error)
       entries.remove(host.id)
-      write()
+      try {
+        write()
+      } catch (failure: IOException) {
+        Log.w(TAG, "Deleting an unreadable saved password failed", failure)
+      }
       null
     }
   }
@@ -140,8 +144,8 @@ internal class RemotePasswords(private val file: File, private val cipher: Passw
     }
   }
 
+  /** Persists first, then publishes, so the UI never claims a password that failed to reach disk. */
   private fun write() {
-    publish()
     val json = JSONObject()
     for ((id, entry) in entries) {
       json.put(
@@ -162,6 +166,7 @@ internal class RemotePasswords(private val file: File, private val cipher: Passw
       temp.delete()
       throw IOException("Can't replace ${file.name}")
     }
+    publish()
   }
 
   companion object {

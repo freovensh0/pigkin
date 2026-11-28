@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.pigkin.R
 import io.pigkin.ui.components.LucideIcon
+import io.pigkin.ui.theme.PigkinTokens
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -46,8 +47,8 @@ internal fun rememberCopyText(): (String) -> Unit {
 }
 
 /**
- * A 28dp copy button whose icon turns into a check for [COPIED] after each copy, as Paseo's turn copy
- * button does. It never takes focus, so the keyboard stays up.
+ * A copy button with a 48dp tap target whose icon turns into a check for [COPIED] after each copy, as Paseo's turn
+ * copy button does. It never takes focus, so the keyboard stays up.
  */
 @Composable
 internal fun CopyButton(text: String, contentDescription: String, tint: Color, iconSize: Dp) {
@@ -63,28 +64,29 @@ internal fun CopyButton(text: String, contentDescription: String, tint: Color, i
   }
   Box(
     modifier = Modifier
-      .size(28.dp)
-      .clip(CircleShape)
+      .size(PigkinTokens.minTouchTarget)
       .clickable {
         copy(text)
         copies++
       },
     contentAlignment = Alignment.Center,
   ) {
-    AnimatedContent(
-      targetState = showCheck,
-      transitionSpec = {
-        (fadeIn(tween(ICON_SWAP_MILLIS)) + scaleIn(tween(ICON_SWAP_MILLIS), initialScale = 0.5f))
-          .togetherWith(fadeOut(tween(ICON_SWAP_MILLIS)) + scaleOut(tween(ICON_SWAP_MILLIS), targetScale = 0.5f))
-      },
-      label = "copyIcon",
-    ) { check ->
-      LucideIcon(
-        icon = if (check) R.drawable.ic_lucide_check else R.drawable.ic_lucide_copy,
-        contentDescription = if (check) stringResource(R.string.chat_copied) else contentDescription,
-        size = iconSize,
-        tint = tint,
-      )
+    Box(modifier = Modifier.size(28.dp).clip(CircleShape), contentAlignment = Alignment.Center) {
+      AnimatedContent(
+        targetState = showCheck,
+        transitionSpec = {
+          (fadeIn(tween(ICON_SWAP_MILLIS)) + scaleIn(tween(ICON_SWAP_MILLIS), initialScale = 0.5f))
+            .togetherWith(fadeOut(tween(ICON_SWAP_MILLIS)) + scaleOut(tween(ICON_SWAP_MILLIS), targetScale = 0.5f))
+        },
+        label = "copyIcon",
+      ) { check ->
+        LucideIcon(
+          icon = if (check) R.drawable.ic_lucide_check else R.drawable.ic_lucide_copy,
+          contentDescription = if (check) stringResource(R.string.chat_copied) else contentDescription,
+          size = iconSize,
+          tint = tint,
+        )
+      }
     }
   }
 }

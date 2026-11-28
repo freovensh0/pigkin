@@ -14,6 +14,8 @@ import java.io.IOException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** The workspace's top folder, as the `files` host spells it. */
 internal const val ROOT_FOLDER = "."
@@ -153,6 +155,9 @@ internal class FileExplorerState(
 
   private var pendingAnchor by mutableStateOf(savedAnchor)
 
+  /** Keeps a listing that arrives late from overwriting a folder the user just created. */
+  private val mutations = Mutex()
+
   /**
    * A [refresh] has finished listing every expanded folder, so the rows [restoreScroll] gets are the whole tree.
    * Observable, so the caller hears of it even when the listing leaves its rows as they were (an empty workspace).
@@ -193,8 +198,8 @@ internal class FileExplorerState(
    * whole tree goes, so its failure shows instead of files that may no longer be there. A lost connection to a remote
    * workspace's host shows as [lose] does.
    */
-  suspend fun refresh() {
-    if (refreshing) return
+  suspend fun refresh() = mutations.withLock {
+    if (refreshing) return@withLock
     refreshing = true
     try {
       val paths = listOf(ROOT_FOLDER) + expanded
@@ -202,7 +207,7 @@ internal class FileExplorerState(
       val lost = failures.values.firstOrNull { it?.code != null }
       if (lost != null) {
         lose(lost)
-        return
+        return@withLock
       }
       val rootFailure = failures[ROOT_FOLDER]
       if (rootFailure != null) {
@@ -211,7 +216,7 @@ internal class FileExplorerState(
         expanded = emptySet()
         directories = emptyMap()
         pendingAnchor = null
-        return
+        return@withLock
       }
       for ((path, error) in failures) if (error != null) collapse(path)
       relisted = true
@@ -221,19 +226,19 @@ internal class FileExplorerState(
   }
 
   /** Expands [folder], listing it again behind what was listed before; returns why it couldn't be listed. */
-  suspend fun toggle(folder: FileEntry): String? {
+  suspend fun toggle(folder: FileEntry): String? = mutations.withLock {
     if (folder.path in expanded) {
       expanded -= folder.path
-      return null
+      return@withLock null
     }
     expanded += folder.path
-    val failed = fetch(folder.path) ?: return null
+    val failed = fetch(folder.path) ?: return@withLock null
     if (failed.code != null) {
       lose(failed)
-      return null
+      return@withLock null
     }
     collapse(folder.path)
-    return failed.message
+    failed.message
   }
 
   /**
@@ -250,14 +255,14 @@ internal class FileExplorerState(
   }
 
   /** Creates folder [name] at the top of the workspace; returns why it couldn't. */
-  suspend fun createFolder(name: String): String? {
+  suspend fun createFolder(name: String): String? = mutations.withLock {
     creatingFolder = false
-    val failed = attempt { files.createFolder(root, ROOT_FOLDER, name) } ?: fetch(ROOT_FOLDER) ?: return null
+    val failed = attempt { files.createFolder(root, ROOT_FOLDER, name) } ?: fetch(ROOT_FOLDER) ?: return@withLock null
     if (failed.code != null) {
       lose(failed)
-      return null
+      return@withLock null
     }
-    return failed.message
+    failed.message
   }
 
   /**

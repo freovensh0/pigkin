@@ -53,6 +53,7 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
   var busy by remember { mutableStateOf(false) }
   var signingIn by rememberSaveable { mutableStateOf(false) }
   var confirmDiscard by remember { mutableStateOf(false) }
+  var pendingSignOut by remember { mutableStateOf(false) }
   var modelPageKey by rememberSaveable { mutableStateOf(if (openModels) "add" else null) }
   val failed = stringResource(R.string.provider_failed)
   val id = form.providerId
@@ -70,6 +71,8 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
     return
   }
   val signOut = rememberSignOut(accounts, id, failed, snackbar, onBack) { busy = it }
+  // Signing out also leaves, so it needs the same unsaved-edits question as Back, before the logout.
+  val requestSignOut = { askBeforeSignOut(form.dirty, signOut, { pendingSignOut = it }, { confirmDiscard = it }) }
   SettingsPage(
     title = name,
     onBack = { if (form.dirty) confirmDiscard = true else onBack() },
@@ -83,7 +86,7 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
         selection = selection,
         busy = busy,
         onSave = { scope.launch { if (form.save(accounts, failed)) onBack() } },
-        onSignOut = signOut,
+        onSignOut = requestSignOut,
         onAddModels = { modelPageKey = ModelPage.Add.toSavedKey() },
         onOpenModel = { modelPageKey = ModelPage.Edit(it).toSavedKey() },
       )
@@ -97,12 +100,44 @@ internal fun SubscriptionScreen(form: SubscriptionForm, openModels: Boolean, onB
     confirmDiscard,
     id,
     onDismissSignIn = { signingIn = false },
-    onDiscard = {
+    onDiscard = { discardEdits(pendingSignOut, onBack, signOut, { confirmDiscard = it }, { pendingSignOut = it }) },
+    onDismissDiscard = {
       confirmDiscard = false
-      onBack()
+      pendingSignOut = false
     },
-    onDismissDiscard = { confirmDiscard = false },
   )
+}
+
+/** Asks before sign-out throws the draft away, then signs out. */
+private fun askBeforeSignOut(
+  dirty: Boolean,
+  onSignOut: () -> Unit,
+  setPendingSignOut: (Boolean) -> Unit,
+  setConfirmDiscard: (Boolean) -> Unit,
+) {
+  if (dirty) {
+    setPendingSignOut(true)
+    setConfirmDiscard(true)
+  } else {
+    onSignOut()
+  }
+}
+
+/** What the discard dialog does: sign out when a sign-out was pending, otherwise go back. */
+private fun discardEdits(
+  pendingSignOut: Boolean,
+  onBack: () -> Unit,
+  onSignOut: () -> Unit,
+  setConfirmDiscard: (Boolean) -> Unit,
+  setPendingSignOut: (Boolean) -> Unit,
+) {
+  setConfirmDiscard(false)
+  if (pendingSignOut) {
+    setPendingSignOut(false)
+    onSignOut()
+  } else {
+    onBack()
+  }
 }
 
 /** Signs out, showing the provider's own error on the page when it fails. */

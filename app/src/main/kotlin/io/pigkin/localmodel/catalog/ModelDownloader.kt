@@ -117,6 +117,7 @@ internal class ModelDownloader(
       throw DownloadException(DownloadFailure.Corrupt)
     }
     val file = file(artifact)
+    coroutineContext.ensureActive()
     if (!part.renameTo(file)) throw DownloadException(DownloadFailure.Network, IOException("Can't rename $part"))
     return file
   }

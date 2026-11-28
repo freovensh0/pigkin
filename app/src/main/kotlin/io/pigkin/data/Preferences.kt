@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 /** App settings in the `pigkin` SharedPreferences file. Setters persist and publish immediately. */
@@ -369,9 +370,11 @@ internal class Preferences(context: Context) {
     prefs.edit { putString(LAYOUT, layout.toJson()) }
   }
 
-  private fun readWorkspaces(): List<String> {
+  private fun readWorkspaces(): List<String> = try {
     val array = JSONArray(prefs.getString(WORKSPACES, null) ?: return emptyList())
-    return List(array.length()) { array.getString(it) }
+    List(array.length()) { array.getString(it) }
+  } catch (_: JSONException) {
+    emptyList()
   }
 
   private fun readExplorerSort(): ExplorerSort {
@@ -381,20 +384,24 @@ internal class Preferences(context: Context) {
   }
 
   /** The JSON array of strings at [key], as a set. */
-  private fun readStringSet(key: String): Set<String> {
+  private fun readStringSet(key: String): Set<String> = try {
     val array = JSONArray(prefs.getString(key, null) ?: return emptySet())
-    return List(array.length()) { array.getString(it) }.toSet()
+    List(array.length()) { array.getString(it) }.toSet()
+  } catch (_: JSONException) {
+    emptySet()
   }
 
   /**
    * The JSON object at [key] of folder keys or model ids to names of [entries]; names no entry has any more are
    * dropped.
    */
-  private fun <T : Enum<T>> readEnumMap(key: String, entries: List<T>): Map<String, T> {
+  private fun <T : Enum<T>> readEnumMap(key: String, entries: List<T>): Map<String, T> = try {
     val json = JSONObject(prefs.getString(key, null) ?: return emptyMap())
-    return json.keys().asSequence()
+    json.keys().asSequence()
       .mapNotNull { folder -> entries.firstOrNull { it.name == json.optString(folder) }?.let { folder to it } }
       .toMap()
+  } catch (_: JSONException) {
+    emptyMap()
   }
 
   private fun writeArchived(archived: Map<String, Long>, touched: Map<String, Long>) {
@@ -407,9 +414,11 @@ internal class Preferences(context: Context) {
   }
 
   /** The JSON object at [key] of strings to epoch milliseconds. */
-  private fun readLongMap(key: String): Map<String, Long> {
+  private fun readLongMap(key: String): Map<String, Long> = try {
     val json = JSONObject(prefs.getString(key, null) ?: return emptyMap())
-    return json.keys().asSequence().associateWith(json::getLong)
+    json.keys().asSequence().associateWith(json::getLong)
+  } catch (_: JSONException) {
+    emptyMap()
   }
 
   private companion object {

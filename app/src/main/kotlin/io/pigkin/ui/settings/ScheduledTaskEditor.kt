@@ -1,6 +1,7 @@
 package io.pigkin.ui.settings
 
 import android.text.format.DateFormat
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
@@ -84,9 +85,13 @@ internal fun ScheduledTaskEditorScreen(taskId: String?, onBack: () -> Unit, onDo
   var enabled by rememberSaveable { mutableStateOf(saved?.enabled ?: true) }
   var dialog by remember { mutableStateOf<ScheduledTaskDialog?>(null) }
   var invalid by remember { mutableStateOf(false) }
+  var confirmDiscard by remember { mutableStateOf(false) }
   val title = stringResource(if (saved == null) R.string.scheduled_add_task else R.string.scheduled_edit_task)
   val draft = TaskDraft(prompt, dueAt, recurrence, days, modelId, thinking, reminder, enabled)
-  SettingsPage(title = title, onBack = onBack) {
+  val dirty = remember(taskId) { draft } != draft
+  val leave = { if (dirty) confirmDiscard = true else onBack() }
+  BackHandler(enabled = dirty && dialog == null) { confirmDiscard = true }
+  SettingsPage(title = title, onBack = leave) {
     if (taskId != null && saved == null) {
       SettingsCaption(text = stringResource(R.string.scheduled_task_gone))
       return@SettingsPage
@@ -122,6 +127,16 @@ internal fun ScheduledTaskEditorScreen(taskId: String?, onBack: () -> Unit, onDo
     )
   }
   EditorDialogs(dialog, dueAt, { dueAt = withScheduledDay(it, dueAt) }, { dueAt = it }, { dialog = null })
+  ConfirmDiscardDialog(confirmDiscard, {
+    confirmDiscard = false
+    onBack()
+  }, { confirmDiscard = false })
+}
+
+/** Asks before [onDiscard] throws the draft away; shown while [confirm] is true. */
+@Composable
+private fun ConfirmDiscardDialog(confirm: Boolean, onDiscard: () -> Unit, onDismiss: () -> Unit) {
+  if (confirm) DiscardDialog(onDiscard = onDiscard, onDismiss = onDismiss)
 }
 
 @Composable

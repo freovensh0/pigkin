@@ -138,11 +138,11 @@ private class HostEditor(
 
   fun forgetPassword(hostId: String) = attempt { withContext(Dispatchers.IO) { remoteHosts.forgetPassword(hostId) } }
 
-  /** Removes the workspaces [cwds] the way the sidebar does, archiving their chats, then forgets host [hostId]. */
+  /** Forgets host [hostId], then removes the workspaces [cwds], archiving their chats the way the sidebar does. */
   fun remove(hostId: String, cwds: List<String>, onRemoved: () -> Unit) {
-    actions.removeWorkspaces(cwds)
     attempt {
       remoteHosts.remove(hostId)
+      actions.removeWorkspaces(cwds)
       onRemoved()
     }
   }

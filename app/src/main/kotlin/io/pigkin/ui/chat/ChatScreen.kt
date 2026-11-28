@@ -99,9 +99,10 @@ private fun ChatPane(
 ) {
   val context = LocalContext.current
   val snackbar = paneChats.snackbar
-  var sheet by remember { mutableStateOf<ChatSheet?>(null) }
+  val sessionPath by process.sessionFile.collectAsStateWithLifecycle()
+  var sheet by rememberSaveable(sessionPath, saver = ChatSheetSaver) { mutableStateOf<ChatSheet?>(null) }
   // A list picker is a screen over the chat, not a sheet full of rows.
-  var drill by remember { mutableStateOf<ChatDrill?>(null) }
+  var drill by rememberSaveable(sessionPath, saver = ChatDrillSaver) { mutableStateOf<ChatDrill?>(null) }
   val openSheet: (ChatSheet) -> Unit = { asked ->
     routeChatSheet(asked, { picked -> drill = picked }, { askedSheet -> sheet = askedSheet })
   }

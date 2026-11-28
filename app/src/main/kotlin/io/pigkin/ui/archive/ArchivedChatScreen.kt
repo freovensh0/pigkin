@@ -94,6 +94,8 @@ internal fun ArchivedChatScreen(
   val marks by graph.preferences.archivedSessions.collectAsStateWithLifecycle()
   val session = archived.firstOrNull { it.session.path == path }?.session
   val snackbar = remember { SnackbarStackState() }
+  // One view per transcript, kept through a failed read and Retry so the scroll position survives.
+  val view = remember(path) { ChatView() }
   var attempt by remember { mutableIntStateOf(0) }
   val transcript by rememberTranscript(path, attempt)
   var toolKey by remember { mutableStateOf<String?>(null) }
@@ -119,6 +121,7 @@ internal fun ArchivedChatScreen(
         onBack,
         onRestored,
         ArchivedChatCallbacks(
+          view = view,
           onRetry = { attempt += 1 },
           onTool = { toolKey = it },
           onSubagent = { subagent = it },
@@ -147,6 +150,7 @@ private fun archivedDepth(id: String?): Int = if (id == null) 0 else 1
 
 /** The callbacks the archived chat's body needs from its screen. */
 private data class ArchivedChatCallbacks(
+  val view: ChatView,
   val onRetry: () -> Unit,
   val onTool: (String) -> Unit,
   val onSubagent: (String) -> Unit,
@@ -169,6 +173,7 @@ private fun ArchivedChatBody(
     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
       TranscriptBody(
         transcript,
+        callbacks.view,
         onRetry = callbacks.onRetry,
         onOpenTool = callbacks.onTool,
         onOpenSubagent = callbacks.onSubagent,
@@ -278,6 +283,7 @@ private fun TranscriptHeader(session: SessionInfo?, deleteEnabled: Boolean, onBa
 @Composable
 private fun TranscriptBody(
   transcript: Transcript,
+  view: ChatView,
   onRetry: () -> Unit,
   onOpenTool: (String) -> Unit,
   onOpenSubagent: (String) -> Unit,
@@ -309,7 +315,7 @@ private fun TranscriptBody(
       ChatStream(
         timeline = transcript.state,
         processState = AgentProcessState.Ready,
-        view = remember { ChatView() },
+        view = view,
         onOpenTool = onOpenTool,
         onOpenProviders = {},
         onOpenOnboarding = {},

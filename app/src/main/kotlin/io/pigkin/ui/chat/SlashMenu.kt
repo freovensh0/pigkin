@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -234,17 +235,25 @@ private fun CommandRow(command: SlashCommand, highlighted: Boolean, onClick: () 
 
 @Composable
 private fun MenuRow(onClick: (() -> Unit)?, modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+  // The row stays 36dp; only its clickable wrapper takes the full touch target.
   Row(
-    modifier = modifier
+    modifier = Modifier
       .fillMaxWidth()
-      .heightIn(min = 36.dp)
-      .clip(ROW_SHAPE)
-      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(horizontal = 9.dp, vertical = 7.dp),
+      .sizeIn(minWidth = PigkinTokens.minTouchTarget, minHeight = PigkinTokens.minTouchTarget)
+      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s12),
-    content = content,
-  )
+  ) {
+    Row(
+      modifier = modifier
+        .fillMaxWidth()
+        .heightIn(min = 36.dp)
+        .clip(ROW_SHAPE)
+        .padding(horizontal = 9.dp, vertical = 7.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(PigkinTokens.Spacing.s12),
+      content = content,
+    )
+  }
 }
 
 private val MENU_SHAPE = RoundedCornerShape(8.dp)

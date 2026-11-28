@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -298,23 +299,30 @@ private fun FileChip(file: Attachment.File, onRemove: () -> Unit) {
 @Composable
 private fun BoxScope.RemoveBadge(onRemove: () -> Unit) {
   val colors = pigkinColors
+  // The badge stays 22dp; only its clickable wrapper takes the full touch target.
   Box(
     modifier =
       Modifier
         .align(Alignment.TopStart)
         .offset(x = (-8).dp, y = (-8).dp)
+        .sizeIn(minWidth = PigkinTokens.minTouchTarget, minHeight = PigkinTokens.minTouchTarget)
+        .clickable(onClick = onRemove),
+    contentAlignment = Alignment.TopStart,
+  ) {
+    Box(
+      modifier = Modifier
         .size(22.dp)
         .clip(CircleShape)
         .background(colors.surface3)
-        .border(2.dp, colors.surface1, CircleShape)
-        .clickable(onClick = onRemove),
-    contentAlignment = Alignment.Center,
-  ) {
-    LucideIcon(
-      icon = R.drawable.ic_lucide_x,
-      contentDescription = stringResource(R.string.chat_remove_attachment),
-      size = PigkinTokens.IconSize.xs,
-    )
+        .border(2.dp, colors.surface1, CircleShape),
+      contentAlignment = Alignment.Center,
+    ) {
+      LucideIcon(
+        icon = R.drawable.ic_lucide_x,
+        contentDescription = stringResource(R.string.chat_remove_attachment),
+        size = PigkinTokens.IconSize.xs,
+      )
+    }
   }
 }
 

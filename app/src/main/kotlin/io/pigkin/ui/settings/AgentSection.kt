@@ -9,7 +9,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import io.pigkin.AppGraph
 import io.pigkin.R
 import io.pigkin.host.HostRejected
@@ -27,6 +32,31 @@ private sealed interface ReinstallOutcome {
   data class Failed(val message: String) : ReinstallOutcome
 }
 
+/** The reinstall's progress and outcome, kept across rotation in the activity's ViewModel store. */
+private class AgentReinstallViewModel : ViewModel() {
+  var progressLine by mutableStateOf<String?>(null)
+    private set
+  var outcome by mutableStateOf<ReinstallOutcome?>(null)
+    private set
+
+  fun reinstall(graph: AppGraph, failed: String) {
+    progressLine = null
+    outcome = null
+    // ViewModel scope: leaving Settings must not abort a half-finished npm install.
+    viewModelScope.launch {
+      outcome = try {
+        val keepAlive = graph.keepAlive.acquire("Pi install")
+        val version = keepAlive.use { graph.hostClient.ensure(reinstall = true) { line -> progressLine = line } }
+        ReinstallOutcome.Installed(version)
+      } catch (failure: IOException) {
+        ReinstallOutcome.Failed(failure.message ?: failed)
+      } catch (rejected: HostRejected) {
+        ReinstallOutcome.Failed(rejected.error)
+      }
+    }
+  }
+}
+
 /**
  * The agent and the Termux it runs in: their versions, the running agents page, the permissions page, and reinstalling
  * the pinned Pi runtime.
@@ -38,8 +68,8 @@ internal fun AgentSection(graph: AppGraph, onOpenRunningAgents: () -> Unit, onOp
   val termuxVersion = remember(context) { TermuxInstall.version(context) }
   val hello by hostClient.lastHello.collectAsStateWithLifecycle()
   val installing by hostClient.installing.collectAsStateWithLifecycle()
-  var progressLine by remember { mutableStateOf<String?>(null) }
-  var outcome by remember { mutableStateOf<ReinstallOutcome?>(null) }
+  val owner = LocalLifecycleOwner.current as ViewModelStoreOwner
+  val reinstallState = remember(owner) { ViewModelProvider(owner)[AgentReinstallViewModel::class.java] }
   val failed = stringResource(R.string.provider_failed)
   val status =
     listOfNotNull(
@@ -49,22 +79,6 @@ internal fun AgentSection(graph: AppGraph, onOpenRunningAgents: () -> Unit, onOp
           ?: stringResource(R.string.settings_pi_missing)
       },
     ).joinToString(stringResource(R.string.separator_dot))
-  val reinstall = {
-    progressLine = null
-    outcome = null
-    // App scope: leaving Settings must not abort a half-finished npm install.
-    graph.scope.launch {
-      outcome = try {
-        val keepAlive = graph.keepAlive.acquire("Pi install")
-        val version = keepAlive.use { hostClient.ensure(reinstall = true) { line -> progressLine = line } }
-        ReinstallOutcome.Installed(version)
-      } catch (failure: IOException) {
-        ReinstallOutcome.Failed(failure.message ?: failed)
-      } catch (rejected: HostRejected) {
-        ReinstallOutcome.Failed(rejected.error)
-      }
-    }
-  }
   SettingsSection(title = stringResource(R.string.settings_section_agent)) {
     SettingsRow(title = stringResource(R.string.settings_termux), subtitle = status)
     SettingsDivider()
@@ -87,9 +101,9 @@ internal fun AgentSection(graph: AppGraph, onOpenRunningAgents: () -> Unit, onOp
     ReinstallRow(
       installing = installing,
       expectedVersion = hostClient.expectedPiVersion,
-      progressLine = progressLine,
-      outcome = outcome,
-      onReinstall = { reinstall() },
+      progressLine = reinstallState.progressLine,
+      outcome = reinstallState.outcome,
+      onReinstall = { reinstallState.reinstall(graph, failed) },
     )
   }
 }
